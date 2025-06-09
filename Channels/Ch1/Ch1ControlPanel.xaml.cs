@@ -42,6 +42,13 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
             controller.VerticalOffsetSlider = VerticalOffsetSlider;
             controller.SliderValueText = SliderValueText;
 
+            // Wire up enhanced UI controls to the controller
+            controller.MaxValueDisplay = MaxValueDisplay;
+            controller.MinValueDisplay = MinValueDisplay;
+            controller.OffsetRangeText = OffsetRangeText;
+            controller.PercentageDisplay = PercentageDisplay;
+            controller.QuickZeroButton = QuickZeroButton;
+
             // Wire up additional UI elements specific to this UserControl
             WireUpAdditionalControls();
 
@@ -53,34 +60,29 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
 
             isInitialized = true;
             LogEvent?.Invoke(this, "Channel 1 control panel initialized");
-
-            controller.MaxValueDisplay = MaxValueDisplay;
-            controller.MinValueDisplay = MinValueDisplay;
-            controller.OffsetRangeText = OffsetRangeText;
-            controller.PercentageDisplay = PercentageDisplay;
-            controller.QuickZeroButton = QuickZeroButton;
-
         }
 
-        ///// <summary>
-        ///// Wire up additional controls not handled by the base controller
-        ///// </summary>
-        //private void WireUpAdditionalControls()
-        //{
-        //    if (QuickZeroButton != null)
-        //    {
-        //        QuickZeroButton.Click += QuickZero_Click;
-        //    }
+        /// <summary>
+        /// Wire up additional controls not handled by the base controller
+        /// </summary>
+        private void WireUpAdditionalControls()
+        {
+            if (QuickZeroButton != null)
+            {
+                QuickZeroButton.Click += QuickZero_Click;
+            }
 
-        //    if (VerticalOffsetSlider != null)
-        //    {
-        //        VerticalOffsetSlider.ValueChanged += VerticalOffsetSlider_ValueChanged;
-        //    }
-        //}
+            if (VerticalOffsetSlider != null)
+            {
+                VerticalOffsetSlider.ValueChanged += VerticalOffsetSlider_ValueChanged;
+            }
 
-
-
-
+            // Subscribe to settings changes to update range displays
+            if (controller != null)
+            {
+                controller.SettingsChanged += (sender, e) => UpdateRangeDisplays();
+            }
+        }
 
         /// <summary>
         /// Set up enhanced UI elements
@@ -165,7 +167,6 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
                 OffsetRangeText.Text = rangeText;
             }
         }
-
 
         /// <summary>
         /// Smart voltage formatting

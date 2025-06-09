@@ -623,10 +623,16 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
         public TextBlock OffsetRangeText { get; set; }
         public TextBlock PercentageDisplay { get; set; }
         public Button QuickZeroButton { get; set; }
-        #endregion
-             
-      #region Enhanced UI Support Methods
 
+
+        #endregion
+
+
+        #region Enhanced UI Support Methods
+
+        /// <summary>
+        /// Enhanced UpdateSliderRange with better scaling and display updates
+        /// </summary>
         /// <summary>
         /// Enhanced UpdateSliderRange with better scaling and display updates
         /// </summary>
@@ -672,6 +678,7 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
             UpdateSliderRangeEnhanced();
             UpdateCurrentSettingsDisplay();
         }
+
 
         #endregion
 

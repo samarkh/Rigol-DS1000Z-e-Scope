@@ -590,7 +590,7 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
         public Button QuickZeroButton { get; set; }
         #endregion
 
-      #region Enhanced UI Support Methods
+        #region Enhanced UI Support Methods
 
         /// <summary>
         /// Enhanced UpdateSliderRange with better scaling and display updates
@@ -626,7 +626,7 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
 
             isUpdating = false;
 
-            Log($"Channel slider range updated: {minOffset:F1}V to {maxOffset:F1}V (ticks: {tickFreq})");
+            Log($"Channel 2 slider range updated: {minOffset:F1}V to {maxOffset:F1}V (ticks: {tickFreq})");
         }
 
         /// <summary>
@@ -641,7 +641,7 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
         #endregion
 
 
-      #region Public API
+        #region Public API
 
         public Ch2Settings GetSettings()
         {

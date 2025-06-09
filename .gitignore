@@ -9,6 +9,7 @@
 *.user
 *.userosscache
 *.sln.docstates
+*.sln
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
@@ -97,6 +98,13 @@ StyleCopReport.xml
 *.pidb
 *.svclog
 *.scc
+*.csproj
+*.user
+MainWindow.xaml - Copy.cs
+README.md
+rigol_icon.ico
+.gitignore
+.gitattributes
 
 # Chutzpah Test files
 _Chutzpah*
@@ -361,3 +369,19 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+
+# zipped packages
+*.zip
+
+# Documents folder
+/.gitignore
+/.gitattributes
+/DS1000Z-E_USB_Control.csproj
+/DS1000Z-E_USB_Control.csproj
+/DS1000Z-E_USB_Control.sln
+/obj/*.*
+/bin/*.*
+/*.ico
+
+/MainWindow.xaml.cs.txt

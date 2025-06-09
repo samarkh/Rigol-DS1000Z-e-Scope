@@ -1,9 +1,10 @@
 ﻿<Window x:Class="Rigol_DS1000Z_E_Control.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Rigol DS1000Z-E USB Control" Height="300" Width="400">
+        Title="Rigol DS1000Z-E USB Control" Height="500" Width="600">
     <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -25,8 +26,96 @@
                 FontSize="14"
                 Click="ConnectButton_Click"/>
 
+        <!-- Channel 1 Gain Controls -->
+        <GroupBox x:Name="Channel1Controls" Grid.Row="2" 
+                  Header="Channel 1 Gain Controls" 
+                  Margin="10"
+                  IsEnabled="False">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="150"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Channel Enable -->
+                <CheckBox x:Name="Channel1EnableCheckBox" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2"
+                          Content="Enable Channel 1" 
+                          Margin="5"
+                          Checked="Channel1Enable_Changed"
+                          Unchecked="Channel1Enable_Changed"/>
+
+                <!-- Probe Ratio -->
+                <Label Grid.Row="1" Grid.Column="0" Content="Probe Ratio:" VerticalAlignment="Center" Margin="5"/>
+                <ComboBox x:Name="ProbeRatioComboBox" Grid.Row="1" Grid.Column="1" 
+                          Margin="5" 
+                          SelectionChanged="ProbeRatio_Changed">
+                    <ComboBoxItem Content="0.01×" Tag="0.01"/>
+                    <ComboBoxItem Content="0.02×" Tag="0.02"/>
+                    <ComboBoxItem Content="0.05×" Tag="0.05"/>
+                    <ComboBoxItem Content="0.1×" Tag="0.1"/>
+                    <ComboBoxItem Content="0.2×" Tag="0.2"/>
+                    <ComboBoxItem Content="0.5×" Tag="0.5"/>
+                    <ComboBoxItem Content="1×" Tag="1"/>
+                    <ComboBoxItem Content="2×" Tag="2"/>
+                    <ComboBoxItem Content="5×" Tag="5"/>
+                    <ComboBoxItem Content="10×" Tag="10" IsSelected="True"/>
+                    <ComboBoxItem Content="20×" Tag="20"/>
+                    <ComboBoxItem Content="50×" Tag="50"/>
+                    <ComboBoxItem Content="100×" Tag="100"/>
+                    <ComboBoxItem Content="200×" Tag="200"/>
+                    <ComboBoxItem Content="500×" Tag="500"/>
+                    <ComboBoxItem Content="1000×" Tag="1000"/>
+                </ComboBox>
+
+                <!-- Vertical Scale -->
+                <Label Grid.Row="2" Grid.Column="0" Content="Vertical Scale:" VerticalAlignment="Center" Margin="5"/>
+                <ComboBox x:Name="VerticalScaleComboBox" Grid.Row="2" Grid.Column="1" 
+                          Margin="5"
+                          SelectionChanged="VerticalScale_Changed">
+                    <!-- Values will be populated based on probe ratio -->
+                </ComboBox>
+                <Label Grid.Row="2" Grid.Column="2" Content="V/div" VerticalAlignment="Center" Margin="5"/>
+
+                <!-- Vertical Offset -->
+                <Label Grid.Row="3" Grid.Column="0" Content="Vertical Offset:" VerticalAlignment="Center" Margin="5"/>
+                <TextBox x:Name="VerticalOffsetTextBox" Grid.Row="3" Grid.Column="1" 
+                         Margin="5" Text="0"
+                         KeyDown="VerticalOffset_KeyDown"/>
+                <Label Grid.Row="3" Grid.Column="2" Content="V" VerticalAlignment="Center" Margin="5"/>
+                <Button Grid.Row="3" Grid.Column="3" Content="Set Offset" 
+                        Margin="5" Height="25"
+                        Click="SetVerticalOffset_Click"/>
+
+                <!-- Units -->
+                <Label Grid.Row="4" Grid.Column="0" Content="Display Units:" VerticalAlignment="Center" Margin="5"/>
+                <ComboBox x:Name="UnitsComboBox" Grid.Row="4" Grid.Column="1" 
+                          Margin="5"
+                          SelectionChanged="Units_Changed">
+                    <ComboBoxItem Content="Voltage" Tag="VOLTage" IsSelected="True"/>
+                    <ComboBoxItem Content="Watt" Tag="WATT"/>
+                    <ComboBoxItem Content="Ampere" Tag="AMPere"/>
+                    <ComboBoxItem Content="Unknown" Tag="UNKNown"/>
+                </ComboBox>
+
+                <!-- Current Settings Display -->
+                <TextBlock x:Name="CurrentSettingsText" Grid.Row="4" Grid.Column="2" Grid.ColumnSpan="2"
+                           Margin="5" VerticalAlignment="Center"
+                           Text="Current: Scale=1V/div, Offset=0V, Range=8V"
+                           FontSize="10" Foreground="DarkBlue"/>
+            </Grid>
+        </GroupBox>
+
         <!-- Log Output -->
-        <ScrollViewer Grid.Row="2" Margin="10">
+        <ScrollViewer Grid.Row="3" Margin="10">
             <TextBox x:Name="LogTextBox" 
                      IsReadOnly="True" 
                      TextWrapping="Wrap"

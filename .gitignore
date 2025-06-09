@@ -378,7 +378,6 @@ FodyWeavers.xsd
 /.gitignore
 /.gitattributes
 /DS1000Z-E_USB_Control.csproj
-/DS1000Z-E_USB_Control.csproj
 /DS1000Z-E_USB_Control.sln
 /obj/*.*
 /bin/*.*

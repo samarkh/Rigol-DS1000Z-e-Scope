@@ -58,6 +58,8 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Channels\Ch1\Ch1.cs" />
+    <Compile Include="Channels\Ch2\Ch2.cs" />
     <Compile Include="USB_Control\RigolDS1000ZE.cs" />
     <Compile Include="USB_Control\VisaManager.cs" />
     <Page Include="MainWindow.xaml">

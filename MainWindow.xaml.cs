@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Globalization;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using DS1000Z_E_USB_Control.Channels.Ch1;
@@ -9,20 +10,17 @@ namespace Rigol_DS1000Z_E_Control
 {
     public partial class MainWindow : Window
     {
+        #region Private Fields
         private RigolDS1000ZE oscilloscope;
         private Ch1Controller ch1Controller;
         private bool isConnected = false;
-        //private Ch1Controller ch1Controller = new Ch1Controller();
+        // TODO: Add Ch2Controller when implementing Channel 2 functionality
+        // private Ch2Controller ch2Controller;
+        #endregion
 
-        //private Ch1Controller ch1Controller; // Remove = new Ch1Controller(); if you had it
-
+        #region Constructor and Initialization
         public MainWindow()
         {
-            InitializeComponent();
-            ch1Controller = new Ch1Controller(); // Add this line
-            
-       
-
             InitializeComponent();
 
             // Initialize the oscilloscope object
@@ -30,7 +28,7 @@ namespace Rigol_DS1000Z_E_Control
             oscilloscope.LogEvent += Oscilloscope_LogEvent;
 
             // Initialize Channel 1 controller
-
+            InitializeChannel1Controller();
 
             Log("Application started. Ready to connect to Rigol DS1000Z-E.");
         }
@@ -48,14 +46,17 @@ namespace Rigol_DS1000Z_E_Control
             ch1Controller.EnableCheckBox = Channel1EnableCheckBox;
             ch1Controller.ProbeRatioComboBox = ProbeRatioComboBox;
             ch1Controller.VerticalScaleComboBox = VerticalScaleComboBox;
-            //ch1Controller.VerticalOffsetTextBox = VerticalOffsetTextBox;
             ch1Controller.UnitsComboBox = UnitsComboBox;
             ch1Controller.CurrentSettingsTextBlock = CurrentSettingsText;
+            ch1Controller.VerticalOffsetSlider = VerticalOffsetSlider;
+            ch1Controller.SliderValueText = SliderValueText;
 
             // Initialize the controller
             ch1Controller.InitializeControls();
         }
+        #endregion
 
+        #region Connection Management
         private void ConnectButton_Click(object sender, RoutedEventArgs e)
         {
             if (!isConnected)
@@ -103,10 +104,6 @@ namespace Rigol_DS1000Z_E_Control
             }
         }
 
-
-
-
-
         private void UpdateUI(bool connected)
         {
             if (connected)
@@ -115,6 +112,7 @@ namespace Rigol_DS1000Z_E_Control
                 StatusText.Foreground = Brushes.Green;
                 ConnectButton.Content = "Disconnect";
                 Channel1Controls.IsEnabled = true;
+                Channel2Controls.IsEnabled = true;
             }
             else
             {
@@ -122,76 +120,85 @@ namespace Rigol_DS1000Z_E_Control
                 StatusText.Foreground = Brushes.Red;
                 ConnectButton.Content = "Connect";
                 Channel1Controls.IsEnabled = false;
+                Channel2Controls.IsEnabled = false;
             }
         }
+        #endregion
 
-        #region Channel 1 Event Handlers - Delegated to Controller
-
+        #region Channel 1 Event Handlers (Delegated to Controller)
+        /// <summary>
+        /// All Channel 1 event handlers forward to the Ch1Controller
+        /// These methods are kept for XAML binding compatibility
+        /// </summary>
         private void Channel1Enable_Changed(object sender, RoutedEventArgs e)
         {
-            // The Ch1Controller handles this through its event handlers
-            // This method is kept for XAML compatibility but does nothing
+            // Ch1Controller handles this through its own event handlers
         }
 
-        private void ProbeRatio_Changed(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        private void ProbeRatio_Changed(object sender, SelectionChangedEventArgs e)
         {
-            // The Ch1Controller handles this through its event handlers
-            // This method is kept for XAML compatibility but does nothing
+            // Ch1Controller handles this through its own event handlers
         }
 
-        //private void VerticalScale_Changed(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
-        //{
-        //    // The Ch1Controller handles this through its event handlers
-        //    // This method is kept for XAML compatibility but does nothing
-        //}
+        private void VerticalScale_Changed(object sender, SelectionChangedEventArgs e)
+        {
+            // Ch1Controller handles this through its own event handlers
+        }
 
-
+        private void Units_Changed(object sender, SelectionChangedEventArgs e)
+        {
+            // Ch1Controller handles this through its own event handlers
+        }
 
         private void VerticalOffsetSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            ch1Controller.HandleVerticalOffsetChanged(e.NewValue);
+            // Forward to Ch1Controller - all logic is handled there
+            ch1Controller?.HandleVerticalOffsetChanged(e.NewValue);
         }
-
-        private void VerticalScale_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            // Add your vertical scale logic here
-            double scale = e.NewValue;
-            // Apply scale changes to your display
-        }
-
-        private void Units_Changed(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
-        {
-            // The Ch1Controller handles this through its event handlers
-            // This method is kept for XAML compatibility but does nothing
-        }
-
-        private void VerticalOffset_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Enter)
-            {
-                SetVerticalOffset_Click(sender, e);
-            }
-        }
-
-        private void SetVerticalOffset_Click(object sender, RoutedEventArgs e)
-        {
-            if (!isConnected) return;
-
-            if (double.TryParse(VerticalOffsetTextBox.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out double offset))
-            {
-                ch1Controller.SetVerticalOffset(offset);
-            }
-            else
-            {
-                MessageBox.Show("Please enter a valid numeric value for offset.", "Invalid Input",
-                              MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
-        }
-
         #endregion
 
-        #region Menu Commands (Future Extension Points)
+        #region Channel 2 Event Handlers (Ready for Ch2Controller)
+        /// <summary>
+        /// Channel 2 event handlers - ready for Ch2Controller implementation
+        /// Currently these are stub methods for XAML binding compatibility
+        /// </summary>
+        private void Channel2Enable_Changed(object sender, RoutedEventArgs e)
+        {
+            // TODO: Forward to Ch2Controller when implemented
+            // ch2Controller handles this through its own event handlers
+            Log("Channel 2 enable changed (Ch2Controller not yet implemented)");
+        }
 
+        private void ProbeRatio2_Changed(object sender, SelectionChangedEventArgs e)
+        {
+            // TODO: Forward to Ch2Controller when implemented
+            // ch2Controller handles this through its own event handlers
+            Log("Channel 2 probe ratio changed (Ch2Controller not yet implemented)");
+        }
+
+        private void VerticalScale2_Changed(object sender, SelectionChangedEventArgs e)
+        {
+            // TODO: Forward to Ch2Controller when implemented
+            // ch2Controller handles this through its own event handlers
+            Log("Channel 2 vertical scale changed (Ch2Controller not yet implemented)");
+        }
+
+        private void Units2_Changed(object sender, SelectionChangedEventArgs e)
+        {
+            // TODO: Forward to Ch2Controller when implemented
+            // ch2Controller handles this through its own event handlers
+            Log("Channel 2 units changed (Ch2Controller not yet implemented)");
+        }
+
+        private void VerticalOffsetSlider2_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            // TODO: Forward to Ch2Controller when implemented
+            // ch2Controller?.HandleVerticalOffsetChanged(e.NewValue);
+            Log($"Channel 2 offset slider changed to {e.NewValue:F3}V (Ch2Controller not yet implemented)");
+        }
+        #endregion
+
+        #region Menu Commands and Presets (Future Extension Points)
         /// <summary>
         /// Apply a preset configuration to Channel 1
         /// </summary>
@@ -231,9 +238,9 @@ namespace Rigol_DS1000Z_E_Control
                 Log($"Current Channel 1 settings: {settings}");
             }
         }
-
         #endregion
 
+        #region Logging and Events
         private void Oscilloscope_LogEvent(object sender, string message)
         {
             Log(message);
@@ -248,7 +255,9 @@ namespace Rigol_DS1000Z_E_Control
                 LogTextBox.ScrollToEnd();
             });
         }
+        #endregion
 
+        #region Cleanup
         protected override void OnClosed(EventArgs e)
         {
             base.OnClosed(e);
@@ -256,10 +265,12 @@ namespace Rigol_DS1000Z_E_Control
             // Clean up resources
             ch1Controller?.Dispose();
 
+            // Ensure proper cleanup
             if (isConnected)
             {
                 oscilloscope.Disconnect();
             }
         }
+        #endregion
     }
 }

@@ -37,7 +37,7 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
             controller.EnableCheckBox = EnableCheckBox;
             controller.ProbeRatioComboBox = ProbeRatioComboBox;
             controller.VerticalScaleComboBox = VerticalScaleComboBox;
-            controller.UnitsComboBox = UnitsComboBox;
+            controller.CouplingComboBox = CouplingComboBox;  // Changed from UnitsComboBox
             controller.CurrentSettingsTextBlock = CurrentSettingsText;
             controller.VerticalOffsetSlider = VerticalOffsetSlider;
             controller.SliderValueText = SliderValueText;
@@ -104,22 +104,12 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
         }
 
         /// <summary>
-        /// Quick home button handler - sets to midpoint of current range
+        /// Quick zero button handler
         /// </summary>
         private void QuickZero_Click(object sender, RoutedEventArgs e)
         {
-            if (controller == null || VerticalOffsetSlider == null) return;
-
-            // Calculate midpoint of current slider range
-            double midpoint = (VerticalOffsetSlider.Minimum + VerticalOffsetSlider.Maximum) / 2.0;
-
-            if (controller.SetVerticalOffset(midpoint))
-            {
-                // Update the slider display immediately for visual feedback
-                UpdateSliderValueDisplay();
-                UpdateRangeDisplays();
-                LogEvent?.Invoke(this, $"Channel 1 offset set to midpoint: {midpoint:F3}V");
-            }
+            controller?.SetVerticalOffset(0);
+            LogEvent?.Invoke(this, "Channel 1 offset zeroed");
         }
 
         /// <summary>

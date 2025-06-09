@@ -37,7 +37,7 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
             controller.EnableCheckBox = EnableCheckBox;
             controller.ProbeRatioComboBox = ProbeRatioComboBox;
             controller.VerticalScaleComboBox = VerticalScaleComboBox;
-            controller.UnitsComboBox = UnitsComboBox;
+            controller.CouplingComboBox = CouplingComboBox;  // Changed from UnitsComboBox
             controller.CurrentSettingsTextBlock = CurrentSettingsText;
             controller.VerticalOffsetSlider = VerticalOffsetSlider;
             controller.SliderValueText = SliderValueText;
@@ -48,18 +48,12 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
             // Initialize the controller
             controller.InitializeControls();
 
-            // IMPORTANT: Force slider range update after initialization
-            controller.UpdateSliderRange();
-
-
             // Set up additional UI elements
             SetupEnhancedUI();
 
             isInitialized = true;
             LogEvent?.Invoke(this, "Channel 2 control panel initialized");
         }
-
-
 
         /// <summary>
         /// Wire up additional controls not handled by the base controller
@@ -83,12 +77,6 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
             }
         }
 
-        // And update the UpdateSliderRange call in the controller to use the enhanced version:
-        // In your Ch1Controller.cs and Ch2Controller.cs, replace calls to UpdateSliderRange() with:
-        // UpdateSliderRangeEnhanced();
-
-
-
         /// <summary>
         /// Set up enhanced UI elements
         /// </summary>
@@ -109,22 +97,12 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
         }
 
         /// <summary>
-        /// Quick home button handler - sets to midpoint of current range
+        /// Quick zero button handler
         /// </summary>
         private void QuickZero_Click(object sender, RoutedEventArgs e)
         {
-            if (controller == null || VerticalOffsetSlider == null) return;
-
-            // Calculate midpoint of current slider range
-            double midpoint = (VerticalOffsetSlider.Minimum + VerticalOffsetSlider.Maximum) / 2.0;
-
-            if (controller.SetVerticalOffset(midpoint))
-            {
-                // Update the slider display immediately for visual feedback
-                UpdateSliderValueDisplay();
-                UpdateRangeDisplays();
-                LogEvent?.Invoke(this, $"Channel 2 offset set to midpoint: {midpoint:F3}V");
-            }
+            controller?.SetVerticalOffset(0);
+            LogEvent?.Invoke(this, "Channel 2 offset zeroed");
         }
 
         /// <summary>

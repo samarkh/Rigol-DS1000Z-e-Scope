@@ -307,7 +307,7 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
         public override string ToString()
         {
             return $"Ch1: Enabled={IsEnabled}, Probe={ProbeRatio}×, Scale={VerticalScale}V/div, " +
-                   $"Offset={VerticalOffset}V, Range={VerticalRange}V, Units={Units}";
+                   $"Offset={VerticalOffset}V, Range={VerticalRange}V, Coupling={Coupling}";
         }
 
         /// <summary>
@@ -324,7 +324,6 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
                 ProbeRatio = 10.0,
                 VerticalScale = 0.5,
                 VerticalOffset = 0.0,
-                Units = "VOLTage",
                 Coupling = "DC",
                 BandwidthLimit = "OFF"
             };
@@ -338,8 +337,7 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
                 ProbeRatio = 1.0,
                 VerticalScale = 0.01,
                 VerticalOffset = 0.0,
-                Units = "VOLTage",
-                Coupling = "AC",
+                Coupling = "AC",  // AC coupling for small signals to remove DC offset
                 BandwidthLimit = "OFF"
             };
 
@@ -352,8 +350,7 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
                 ProbeRatio = 10.0,
                 VerticalScale = 5.0,
                 VerticalOffset = -10.0,
-                Units = "WATT",
-                Coupling = "DC",
+                Coupling = "DC",  // DC coupling for power measurements
                 BandwidthLimit = "OFF"
             };
 
@@ -366,8 +363,33 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
                 ProbeRatio = 10.0,
                 VerticalScale = 1.0,
                 VerticalOffset = 0.0,
-                Units = "VOLTage",
                 Coupling = "DC",
+                BandwidthLimit = "OFF"  // Keep full bandwidth for high frequency
+            };
+
+            /// <summary>
+            /// Settings for DC voltage measurements
+            /// </summary>
+            public static Ch1Settings DCVoltage => new Ch1Settings
+            {
+                IsEnabled = true,
+                ProbeRatio = 10.0,
+                VerticalScale = 2.0,
+                VerticalOffset = 0.0,
+                Coupling = "DC",
+                BandwidthLimit = "20M"  // Limit bandwidth to reduce noise
+            };
+
+            /// <summary>
+            /// Settings for AC signal analysis
+            /// </summary>
+            public static Ch1Settings ACSignal => new Ch1Settings
+            {
+                IsEnabled = true,
+                ProbeRatio = 10.0,
+                VerticalScale = 1.0,
+                VerticalOffset = 0.0,
+                Coupling = "AC",  // AC coupling to remove DC component
                 BandwidthLimit = "OFF"
             };
         }

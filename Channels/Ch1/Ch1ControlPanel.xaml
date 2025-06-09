@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
              d:DesignHeight="350" d:DesignWidth="400">
-    
+
     <!-- Channel 1 Controls (Light Yellow Background) -->
     <GroupBox Header="Channel 1 Gain Controls" 
               Background="#FFFEF7"
@@ -65,7 +65,7 @@
             <!-- Offset Range Display -->
             <Label Grid.Row="3" Grid.Column="0" Content="Offset Range:" VerticalAlignment="Center" Margin="5"/>
             <TextBlock x:Name="OffsetRangeText" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2"
-                       Text="Range: ±20V" FontSize="10" Foreground="Gray" 
+                       Text="Range: ±100V" FontSize="10" Foreground="Gray" 
                        VerticalAlignment="Center" Margin="5"/>
 
             <!-- Enhanced Vertical Offset Control -->
@@ -76,17 +76,17 @@
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                
-                <!-- Max Value Display - Will be updated dynamically -->
-                <TextBlock Grid.Row="0" x:Name="MaxValueDisplay" Text="+20V" FontSize="8" Foreground="Gray" 
+
+                <!-- Max Value Display -->
+                <TextBlock Grid.Row="0" x:Name="MaxValueDisplay" Text="+100V" FontSize="8" Foreground="Gray" 
                            HorizontalAlignment="Center"/>
-                
-                <!-- Enhanced Slider - Proper default range that will be updated -->
+
+                <!-- Enhanced Slider -->
                 <Slider x:Name="VerticalOffsetSlider" Grid.Row="1"
                         Orientation="Vertical" 
                         Minimum="-20" Maximum="20" 
                         Value="0"
-                        TickFrequency="2"
+                        TickFrequency="5"
                         TickPlacement="Both"
                         IsSnapToTickEnabled="False"
                         Height="120"
@@ -111,9 +111,9 @@
                         </Style>
                     </Slider.Resources>
                 </Slider>
-                
-                <!-- Min Value Display - Will be updated dynamically -->
-                <TextBlock Grid.Row="2" x:Name="MinValueDisplay" Text="-20V" FontSize="8" Foreground="Gray" 
+
+                <!-- Min Value Display -->
+                <TextBlock Grid.Row="2" x:Name="MinValueDisplay" Text="-100V" FontSize="8" Foreground="Gray" 
                            HorizontalAlignment="Center"/>
             </Grid>
 
@@ -128,30 +128,29 @@
 
             <!-- Quick Zero Button -->
             <Button Grid.Row="4" Grid.Column="3" x:Name="QuickZeroButton" Content="⌂" Width="25" Height="25"
-        VerticalAlignment="Center" Margin="5" FontSize="14"
-        ToolTip="Set to Midpoint" Background="#FFF8DC" BorderBrush="#E6D700"/>
+                    VerticalAlignment="Center" Margin="5" FontSize="14"
+                    ToolTip="Set to Zero" Background="#FFF8DC" BorderBrush="#E6D700"/>
 
-            <!-- Units and Settings -->
+            <!-- Coupling and Settings -->
             <Grid Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="4" Margin="5">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="150"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                
-                <!-- Display Units -->
-                <Label Grid.Column="0" Content="Display Units:" VerticalAlignment="Center"/>
-                <ComboBox x:Name="UnitsComboBox" Grid.Column="1" Margin="5">
-                    <ComboBoxItem Content="Voltage" Tag="VOLTage" IsSelected="True"/>
-                    <ComboBoxItem Content="Watt" Tag="WATT"/>
-                    <ComboBoxItem Content="Ampere" Tag="AMPere"/>
-                    <ComboBoxItem Content="Unknown" Tag="UNKNown"/>
+
+                <!-- Input Coupling -->
+                <Label Grid.Column="0" Content="Input Coupling:" VerticalAlignment="Center"/>
+                <ComboBox x:Name="CouplingComboBox" Grid.Column="1" Margin="5">
+                    <ComboBoxItem Content="DC" Tag="DC" IsSelected="True"/>
+                    <ComboBoxItem Content="AC" Tag="AC"/>
+                    <ComboBoxItem Content="GND" Tag="GND"/>
                 </ComboBox>
-                
+
                 <!-- Current Settings Display -->
                 <TextBlock x:Name="CurrentSettingsText" Grid.Column="2"
                            Margin="5" VerticalAlignment="Center"
-                           Text="Current: Scale=1V/div, Offset=0V, Range=8V"
+                           Text="Current: Scale=1V/div, Offset=0V, Range=8V, Coupling=DC"
                            FontSize="10" Foreground="#CC6600" TextWrapping="Wrap"/>
             </Grid>
         </Grid>

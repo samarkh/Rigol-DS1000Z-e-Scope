@@ -1,19 +1,4 @@
-﻿using Rigol_DS1000Z_E_Control;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-
-namespace DS1000Z_E_USB_Control.Channels.Ch2
-{
-    public class Ch2ControlPanel
-    {
-    }
-}
-using System;
+﻿using System;
 using System.Windows;
 using System.Windows.Controls;
 using Rigol_DS1000Z_E_Control;
@@ -70,6 +55,32 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
             LogEvent?.Invoke(this, "Channel 2 control panel initialized");
         }
 
+        ///// <summary>
+        ///// Wire up additional controls not handled by the base controller
+        ///// </summary>
+        //private void WireUpAdditionalControls()
+        //{
+        //    if (QuickZeroButton != null)
+        //    {
+        //        QuickZeroButton.Click += QuickZero_Click;
+        //    }
+
+        //    if (VerticalOffsetSlider != null)
+        //    {
+        //        VerticalOffsetSlider.ValueChanged += VerticalOffsetSlider_ValueChanged;
+        //    }
+        //}
+
+
+
+
+
+        // And update the UpdateSliderRange call in the controller to use the enhanced version:
+        // In your Ch1Controller.cs and Ch2Controller.cs, replace calls to UpdateSliderRange() with:
+        // UpdateSliderRangeEnhanced();
+
+        // Also update the WireUpAdditionalControls method to use the controller's enhanced range update:
+
         /// <summary>
         /// Wire up additional controls not handled by the base controller
         /// </summary>
@@ -84,7 +95,19 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
             {
                 VerticalOffsetSlider.ValueChanged += VerticalOffsetSlider_ValueChanged;
             }
+
+            // Subscribe to settings changes to update range displays
+            if (controller != null)
+            {
+                controller.SettingsChanged += (sender, e) => UpdateRangeDisplays();
+            }
         }
+
+        // And update the UpdateSliderRange call in the controller to use the enhanced version:
+        // In your Ch1Controller.cs and Ch2Controller.cs, replace calls to UpdateSliderRange() with:
+        // UpdateSliderRangeEnhanced();
+
+
 
         /// <summary>
         /// Set up enhanced UI elements

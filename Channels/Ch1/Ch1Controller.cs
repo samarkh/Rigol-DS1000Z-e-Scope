@@ -507,7 +507,7 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
             }
         }
 
-        #region Event Handlers
+      #region Event Handlers
 
         private void OnEnableChanged(object sender, System.Windows.RoutedEventArgs e)
         {
@@ -575,7 +575,7 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
 
         #endregion
 
-        #region Event Handler Management
+      #region Event Handler Management
 
         private void DisableEventHandlers()
         {
@@ -612,6 +612,69 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
         }
 
         #endregion
+
+      #region Enhanced UI Control References
+        /// <summary>
+        /// Additional UI control references for enhanced features
+        /// Set these from the UserControl
+        /// </summary>
+        public TextBlock MaxValueDisplay { get; set; }
+        public TextBlock MinValueDisplay { get; set; }
+        public TextBlock OffsetRangeText { get; set; }
+        public TextBlock PercentageDisplay { get; set; }
+        public Button QuickZeroButton { get; set; }
+        #endregion
+             
+      #region Enhanced UI Support Methods
+
+        /// <summary>
+        /// Enhanced UpdateSliderRange with better scaling and display updates
+        /// </summary>
+        public void UpdateSliderRangeEnhanced()
+        {
+            if (VerticalOffsetSlider == null) return;
+
+            var (minOffset, maxOffset) = settings.GetOffsetRange();
+
+            isUpdating = true;
+
+            // Set the range
+            VerticalOffsetSlider.Minimum = minOffset;
+            VerticalOffsetSlider.Maximum = maxOffset;
+
+            // Calculate smart tick frequency based on range
+            double range = maxOffset - minOffset;
+            double tickFreq;
+
+            if (range <= 4) tickFreq = 0.2;    // For ±2V range
+            else if (range <= 40) tickFreq = 2;      // For ±20V range  
+            else if (range <= 200) tickFreq = 20;     // For ±100V range
+            else tickFreq = 200;    // For ±1000V range
+
+            VerticalOffsetSlider.TickFrequency = tickFreq;
+
+            // Clamp current value to new range
+            if (VerticalOffsetSlider.Value < minOffset)
+                VerticalOffsetSlider.Value = minOffset;
+            else if (VerticalOffsetSlider.Value > maxOffset)
+                VerticalOffsetSlider.Value = maxOffset;
+
+            isUpdating = false;
+
+            Log($"Channel slider range updated: {minOffset:F1}V to {maxOffset:F1}V (ticks: {tickFreq})");
+        }
+
+        /// <summary>
+        /// Update all UI elements when settings change
+        /// </summary>
+        public void UpdateAllUIElements()
+        {
+            UpdateSliderRangeEnhanced();
+            UpdateCurrentSettingsDisplay();
+        }
+
+        #endregion
+
 
         /// <summary>
         /// Get current Channel 1 settings

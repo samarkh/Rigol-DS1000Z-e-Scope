@@ -32,6 +32,13 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
             this.settings = new Ch1Settings();
         }
 
+        public void HandleVerticalOffsetChanged(double offset)
+        {
+            // Your offset logic here
+        }
+
+
+
         /// <summary>
         /// Initialize UI controls and set up event handlers
         /// </summary>

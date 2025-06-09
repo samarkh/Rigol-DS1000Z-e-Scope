@@ -65,57 +65,61 @@
             <!-- Offset Range Display -->
             <Label Grid.Row="3" Grid.Column="0" Content="Offset Range:" VerticalAlignment="Center" Margin="5"/>
             <TextBlock x:Name="OffsetRangeText" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2"
-                       Text="Range: ±100V" FontSize="10" Foreground="Gray" 
+                       Text="Range: ±20V" FontSize="10" Foreground="Gray" 
                        VerticalAlignment="Center" Margin="5"/>
 
-            <!-- Enhanced Vertical Offset Control -->
-            <Label Grid.Row="4" Grid.Column="0" Content="Vertical Offset:" VerticalAlignment="Center" Margin="5"/>
-            <Grid Grid.Row="4" Grid.Column="1" HorizontalAlignment="Center">
+
+
+              <!-- Enhanced Vertical Offset Control -->
+              <Label Grid.Row="4" Grid.Column="0" Content="Vertical Offset:" VerticalAlignment="Center" Margin="5"/>
+              <Grid Grid.Row="4" Grid.Column="1" HorizontalAlignment="Center">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="*"/>
+                  <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <!-- Max Value Display -->
-                <TextBlock Grid.Row="0" x:Name="MaxValueDisplay" Text="+100V" FontSize="8" Foreground="Gray" 
+                <!-- Max Value Display - Will be updated dynamically -->
+                <TextBlock Grid.Row="0" x:Name="MaxValueDisplay" Text="+20V" FontSize="8" Foreground="Gray"
                            HorizontalAlignment="Center"/>
 
-                <!-- Enhanced Slider -->
+                <!-- Enhanced Slider - Proper default range that will be updated -->
                 <Slider x:Name="VerticalOffsetSlider" Grid.Row="1"
-                        Orientation="Vertical" 
-                        Minimum="-20" Maximum="20" 
+                        Orientation="Vertical"
+                        Minimum="-20" Maximum="20"
                         Value="0"
-                        TickFrequency="5"
-                        TickPlacement="BothSides"
+                        TickFrequency="2"
+                        TickPlacement="Both"
                         IsSnapToTickEnabled="False"
                         Height="120"
                         Width="50"
                         HorizontalAlignment="Center">
-                    <Slider.Resources>
-                        <Style TargetType="Slider">
-                            <Setter Property="Template">
-                                <Setter.Value>
-                                    <ControlTemplate TargetType="Slider">
-                                        <Grid>
-                                            <Border Background="LightGray" Width="2" HorizontalAlignment="Center"/>
-                                            <Track Name="PART_Track">
-                                                <Track.Thumb>
-                                                    <Thumb Background="#0066CC" Width="12" Height="20" BorderBrush="#004499" BorderThickness="1"/>
-                                                </Track.Thumb>
-                                            </Track>
-                                        </Grid>
-                                    </ControlTemplate>
-                                </Setter.Value>
-                            </Setter>
-                        </Style>
-                    </Slider.Resources>
+                  <Slider.Resources>
+                    <Style TargetType="Slider">
+                      <Setter Property="Template">
+                        <Setter.Value>
+                          <ControlTemplate TargetType="Slider">
+                            <Grid>
+                              <Border Background="LightGray" Width="2" HorizontalAlignment="Center"/>
+                              <Track Name="PART_Track">
+                                <Track.Thumb>
+                                  <!-- For Channel 1: use #CC6600 -->
+                                  <!-- For Channel 2: use #0066CC -->
+                                  <Thumb Background="#0066CC" Width="12" Height="20" BorderBrush="#996600" BorderThickness="1"/>
+                                </Track.Thumb>
+                              </Track>
+                            </Grid>
+                          </ControlTemplate>
+                        </Setter.Value>
+                      </Setter>
+                    </Style>
+                  </Slider.Resources>
                 </Slider>
 
-                <!-- Min Value Display -->
-                <TextBlock Grid.Row="2" x:Name="MinValueDisplay" Text="-100V" FontSize="8" Foreground="Gray" 
+                <!-- Min Value Display - Will be updated dynamically -->
+                <TextBlock Grid.Row="2" x:Name="MinValueDisplay" Text="-20V" FontSize="8" Foreground="Gray"
                            HorizontalAlignment="Center"/>
-            </Grid>
+              </Grid>
 
             <!-- Current Value Display with Percentage -->
             <StackPanel Grid.Row="4" Grid.Column="2" VerticalAlignment="Center" Margin="5">

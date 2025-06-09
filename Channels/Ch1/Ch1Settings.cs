@@ -251,31 +251,11 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
         /// </summary>
         public (double min, double max) GetOffsetRange()
         {
-            // Simplified calculation - actual range depends on oscilloscope specifications
-            // This is based on the programming guide ranges
-            double maxOffset;
+            // Always make offset range exactly 5 times the vertical scale
+            double maxOffset = VerticalScale * 5;
 
-            if (ProbeRatio == 1.0)
-            {
-                if (VerticalScale < 0.005) // < 5mV/div
-                    maxOffset = 2.0; // ±2V
-                else if (VerticalScale < 0.5) // < 500mV/div  
-                    maxOffset = 100.0; // ±100V
-                else if (VerticalScale < 5.0) // < 5V/div
-                    maxOffset = 20.0; // ±20V
-                else
-                    maxOffset = 1000.0; // ±1000V
-            }
-            else
-            {
-                // 10X probe and others
-                if (VerticalScale < 0.5) // < 500mV/div
-                    maxOffset = 100.0; // ±100V
-                else if (VerticalScale < 5.0) // < 5V/div
-                    maxOffset = 20.0; // ±20V
-                else
-                    maxOffset = 1000.0; // ±1000V
-            }
+            // Optional: Set a reasonable upper limit to prevent extreme ranges
+            maxOffset = Math.Min(maxOffset, 1000.0);
 
             return (-maxOffset, maxOffset);
         }

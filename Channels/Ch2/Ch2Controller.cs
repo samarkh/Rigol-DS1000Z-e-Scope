@@ -143,26 +143,29 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
         }
 
         /// <summary>
-        /// Set the vertical scale for Channel 2
+        /// Set the vertical scale for Channel 1 (or 2)
         /// </summary>
         public bool SetVerticalScale(double scale)
         {
             if (!oscilloscope.IsConnected) return false;
 
-            string command = $":CHANnel2:SCALe {scale.ToString(CultureInfo.InvariantCulture)}";
+            string command = $":CHANnel2:SCALe {scale.ToString(CultureInfo.InvariantCulture)}"; // Change to CHANnel2 for Ch2
             bool success = oscilloscope.SendCommand(command);
 
             if (success)
             {
                 settings.VerticalScale = scale;
-                Log($"Channel 2 vertical scale set to {scale}V/div");
+                Log($"Channel 2 vertical scale set to {scale}V/div"); // Change to Channel 2 for Ch2
+
+                // IMPORTANT: Update slider range immediately after scale changes
                 UpdateSliderRange();
+
                 UpdateCurrentSettingsDisplay();
                 SettingsChanged?.Invoke(this, EventArgs.Empty);
             }
             else
             {
-                Log("Failed to set Channel 2 vertical scale");
+                Log("Failed to set Channel 2 vertical scale"); // Change to Channel 2 for Ch2
             }
 
             return success;
@@ -181,6 +184,18 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
             if (success)
             {
                 settings.VerticalOffset = offset;
+
+                // Update the slider UI immediately
+                if (VerticalOffsetSlider != null)
+                {
+                    isUpdating = true;
+                    VerticalOffsetSlider.Value = offset;
+                    isUpdating = false;
+                }
+
+                // Update the slider value display
+                UpdateSliderValueDisplay();
+
                 Log($"Channel 2 vertical offset set to {offset}V");
                 UpdateCurrentSettingsDisplay();
                 SettingsChanged?.Invoke(this, EventArgs.Empty);
@@ -224,49 +239,16 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
         {
             if (VerticalOffsetSlider == null) return;
 
-            double minOffset, maxOffset;
+            // Use the GetOffsetRange method from settings for consistent range calculation
+            var (minOffset, maxOffset) = settings.GetOffsetRange();
 
-            if (settings.ProbeRatio == 1.0)
-            {
-                if (settings.VerticalScale < 0.5)
-                {
-                    minOffset = -2.0;
-                    maxOffset = 2.0;
-                }
-                else if (settings.VerticalScale >= 5.0)
-                {
-                    minOffset = -1000.0;
-                    maxOffset = 1000.0;
-                }
-                else
-                {
-                    minOffset = -20.0;
-                    maxOffset = 20.0;
-                }
-            }
-            else
-            {
-                if (settings.VerticalScale < 0.5)
-                {
-                    minOffset = -20.0;
-                    maxOffset = 20.0;
-                }
-                else if (settings.VerticalScale >= 5.0)
-                {
-                    minOffset = -1000.0;
-                    maxOffset = 1000.0;
-                }
-                else
-                {
-                    minOffset = -100.0;
-                    maxOffset = 100.0;
-                }
-            }
+            Log($"Updating slider range: scale={settings.VerticalScale}V/div, probe={settings.ProbeRatio}×, range={minOffset}V to {maxOffset}V");
 
             isUpdating = true;
             VerticalOffsetSlider.Minimum = minOffset;
             VerticalOffsetSlider.Maximum = maxOffset;
 
+            // Clamp current value to new range
             if (VerticalOffsetSlider.Value < minOffset)
                 VerticalOffsetSlider.Value = minOffset;
             else if (VerticalOffsetSlider.Value > maxOffset)
@@ -274,7 +256,7 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
 
             isUpdating = false;
 
-            Log($"Channel 2 slider range updated: {minOffset}V to {maxOffset}V");
+            Log($"Channel slider range updated: {VerticalOffsetSlider.Minimum}V to {VerticalOffsetSlider.Maximum}V");
         }
 
         /// <summary>

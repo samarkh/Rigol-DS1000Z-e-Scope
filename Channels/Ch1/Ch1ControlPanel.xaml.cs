@@ -104,12 +104,22 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
         }
 
         /// <summary>
-        /// Quick zero button handler
+        /// Quick home button handler - sets to midpoint of current range
         /// </summary>
         private void QuickZero_Click(object sender, RoutedEventArgs e)
         {
-            controller?.SetVerticalOffset(0);
-            LogEvent?.Invoke(this, "Channel 1 offset zeroed");
+            if (controller == null || VerticalOffsetSlider == null) return;
+
+            // Calculate midpoint of current slider range
+            double midpoint = (VerticalOffsetSlider.Minimum + VerticalOffsetSlider.Maximum) / 2.0;
+
+            if (controller.SetVerticalOffset(midpoint))
+            {
+                // Update the slider display immediately for visual feedback
+                UpdateSliderValueDisplay();
+                UpdateRangeDisplays();
+                LogEvent?.Invoke(this, $"Channel 1 offset set to midpoint: {midpoint:F3}V");
+            }
         }
 
         /// <summary>

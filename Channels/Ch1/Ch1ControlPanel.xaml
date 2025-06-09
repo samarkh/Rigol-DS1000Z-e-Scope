@@ -128,8 +128,8 @@
 
             <!-- Quick Zero Button -->
             <Button Grid.Row="4" Grid.Column="3" x:Name="QuickZeroButton" Content="⌂" Width="25" Height="25"
-                    VerticalAlignment="Center" Margin="5" FontSize="14"
-                    ToolTip="Set to Zero" Background="#FFF8DC" BorderBrush="#E6D700"/>
+        VerticalAlignment="Center" Margin="5" FontSize="14"
+        ToolTip="Set to Midpoint" Background="#FFF8DC" BorderBrush="#E6D700"/>
 
             <!-- Units and Settings -->
             <Grid Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="4" Margin="5">

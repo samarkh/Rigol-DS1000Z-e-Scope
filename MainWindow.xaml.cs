@@ -14,10 +14,15 @@ namespace Rigol_DS1000Z_E_Control
         private bool isConnected = false;
         //private Ch1Controller ch1Controller = new Ch1Controller();
 
-
+        //private Ch1Controller ch1Controller; // Remove = new Ch1Controller(); if you had it
 
         public MainWindow()
         {
+            InitializeComponent();
+            ch1Controller = new Ch1Controller(); // Add this line
+            
+       
+
             InitializeComponent();
 
             // Initialize the oscilloscope object
@@ -25,7 +30,7 @@ namespace Rigol_DS1000Z_E_Control
             oscilloscope.LogEvent += Oscilloscope_LogEvent;
 
             // Initialize Channel 1 controller
-            InitializeChannel1Controller();
+
 
             Log("Application started. Ready to connect to Rigol DS1000Z-E.");
         }
@@ -33,23 +38,23 @@ namespace Rigol_DS1000Z_E_Control
         /// <summary>
         /// Initialize the Channel 1 controller and wire up UI controls
         /// </summary>
-        //private void InitializeChannel1Controller()
-        //{
-        //    ch1Controller = new Ch1Controller(oscilloscope);
-        //    ch1Controller.LogEvent += (sender, message) => Log(message);
-        //    ch1Controller.SettingsChanged += (sender, e) => Log("Channel 1 settings changed");
+        private void InitializeChannel1Controller()
+        {
+            ch1Controller = new Ch1Controller(oscilloscope);
+            ch1Controller.LogEvent += (sender, message) => Log(message);
+            ch1Controller.SettingsChanged += (sender, e) => Log("Channel 1 settings changed");
 
-        //    // Wire up UI controls to the controller
-        //    ch1Controller.EnableCheckBox = Channel1EnableCheckBox;
-        //    ch1Controller.ProbeRatioComboBox = ProbeRatioComboBox;
-        //    ch1Controller.VerticalScaleComboBox = VerticalScaleComboBox;
-        //    ch1Controller.VerticalOffsetTextBox = VerticalOffsetTextBox;
-        //    ch1Controller.UnitsComboBox = UnitsComboBox;
-        //    ch1Controller.CurrentSettingsTextBlock = CurrentSettingsText;
+            // Wire up UI controls to the controller
+            ch1Controller.EnableCheckBox = Channel1EnableCheckBox;
+            ch1Controller.ProbeRatioComboBox = ProbeRatioComboBox;
+            ch1Controller.VerticalScaleComboBox = VerticalScaleComboBox;
+            //ch1Controller.VerticalOffsetTextBox = VerticalOffsetTextBox;
+            ch1Controller.UnitsComboBox = UnitsComboBox;
+            ch1Controller.CurrentSettingsTextBlock = CurrentSettingsText;
 
-        //    // Initialize the controller
-        //    ch1Controller.InitializeControls();
-        //}
+            // Initialize the controller
+            ch1Controller.InitializeControls();
+        }
 
         private void ConnectButton_Click(object sender, RoutedEventArgs e)
         {
@@ -98,6 +103,10 @@ namespace Rigol_DS1000Z_E_Control
             }
         }
 
+
+
+
+
         private void UpdateUI(bool connected)
         {
             if (connected)
@@ -137,11 +146,18 @@ namespace Rigol_DS1000Z_E_Control
         //}
 
 
+
         private void VerticalOffsetSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             ch1Controller.HandleVerticalOffsetChanged(e.NewValue);
         }
 
+        private void VerticalScale_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            // Add your vertical scale logic here
+            double scale = e.NewValue;
+            // Apply scale changes to your display
+        }
 
         private void Units_Changed(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {

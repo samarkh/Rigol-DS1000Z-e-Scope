@@ -292,11 +292,11 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
                 }
             }
 
-            // Update vertical offset
-            if (VerticalOffsetTextBox != null)
-            {
-                VerticalOffsetTextBox.Text = settings.VerticalOffset.ToString("F3", CultureInfo.InvariantCulture);
-            }
+            //// Update vertical offset
+            //if (VerticalOffsetTextBox != null)
+            //{
+            //    VerticalOffsetTextBox.Text = settings.VerticalOffset.ToString("F3", CultureInfo.InvariantCulture);
+            //}
 
             // Update units
             if (UnitsComboBox != null)

@@ -1,27 +1,23 @@
 ﻿using System;
-using System.Globalization;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Input;
 using System.Windows.Media;
 using DS1000Z_E_USB_Control.Channels.Ch1;
 using DS1000Z_E_USB_Control.Channels.Ch2;
 
 namespace Rigol_DS1000Z_E_Control
 {
+    /// <summary>
+    /// Simplified MainWindow using Channel UserControls
+    /// Much cleaner and more maintainable architecture
+    /// </summary>
     public partial class MainWindow : Window
     {
-      #region Private Fields
-       
+        #region Private Fields
         private RigolDS1000ZE oscilloscope;
-        private Ch1Controller ch1Controller;
-        private Ch2Controller ch2Controller;
         private bool isConnected = false;
-        // TODO: Add Ch2Controller when implementing Channel 2 functionality
-       
         #endregion
 
-      #region Constructor and Initialization
+        #region Constructor and Initialization
         public MainWindow()
         {
             InitializeComponent();
@@ -30,63 +26,34 @@ namespace Rigol_DS1000Z_E_Control
             oscilloscope = new RigolDS1000ZE();
             oscilloscope.LogEvent += Oscilloscope_LogEvent;
 
-            // Initialize Channel 1 controller
-            InitializeChannel1Controller();
-
-            // Initialize Channel 2 controller
-            InitializeChannel2Controller();
+            // Initialize both channel panels
+            InitializeChannelPanels();
 
             Log("Application started. Ready to connect to Rigol DS1000Z-E.");
         }
 
         /// <summary>
-        /// Initialize the Channel 1 controller and wire up UI controls
+        /// Initialize both channel control panels
         /// </summary>
-        private void InitializeChannel1Controller()
+        private void InitializeChannelPanels()
         {
-            ch1Controller = new Ch1Controller(oscilloscope);
-            ch1Controller.LogEvent += (sender, message) => Log(message);
-            ch1Controller.SettingsChanged += (sender, e) => Log("Channel 1 settings changed");
+            // Initialize Channel 1 panel
+            if (Channel1Panel != null)
+            {
+                Channel1Panel.LogEvent += (sender, message) => Log(message);
+                Channel1Panel.Initialize(oscilloscope);
+            }
 
-            // Wire up UI controls to the controller
-            ch1Controller.EnableCheckBox = Channel1EnableCheckBox;
-            ch1Controller.ProbeRatioComboBox = ProbeRatioComboBox;
-            ch1Controller.VerticalScaleComboBox = VerticalScaleComboBox;
-            ch1Controller.UnitsComboBox = UnitsComboBox;
-            ch1Controller.CurrentSettingsTextBlock = CurrentSettingsText;
-            ch1Controller.VerticalOffsetSlider = VerticalOffsetSlider;
-            ch1Controller.SliderValueText = SliderValueText;
-
-            // Initialize the controller
-            ch1Controller.InitializeControls();
+            // Initialize Channel 2 panel
+            if (Channel2Panel != null)
+            {
+                Channel2Panel.LogEvent += (sender, message) => Log(message);
+                Channel2Panel.Initialize(oscilloscope);
+            }
         }
-
-
-        /// <summary>
-        /// Initialize the Channel 2 controller and wire up UI controls
-        /// </summary>
-        private void InitializeChannel2Controller()
-        {
-            ch2Controller = new Ch2Controller(oscilloscope);
-            ch2Controller.LogEvent += (sender, message) => Log(message);
-            ch2Controller.SettingsChanged += (sender, e) => Log("Channel 2 settings changed");
-
-            // Wire up UI controls to the controller
-            ch2Controller.EnableCheckBox = Channel2EnableCheckBox;
-            ch2Controller.ProbeRatioComboBox = ProbeRatioComboBox2;
-            ch2Controller.VerticalScaleComboBox = VerticalScaleComboBox2;
-            ch2Controller.UnitsComboBox = UnitsComboBox2;
-            ch2Controller.CurrentSettingsTextBlock = CurrentSettingsText2;
-            ch2Controller.VerticalOffsetSlider = VerticalOffsetSlider2;
-            ch2Controller.SliderValueText = SliderValueText2;
-
-            // Initialize the controller
-            ch2Controller.InitializeControls();
-        }
-
         #endregion
 
-      #region Connection Management
+        #region Connection Management
         private void ConnectButton_Click(object sender, RoutedEventArgs e)
         {
             if (!isConnected)
@@ -106,10 +73,11 @@ namespace Rigol_DS1000Z_E_Control
                         Log($"Device ID: {id}");
                     }
 
-                    // Query initial channel settings through the controller
-                    ch1Controller.QueryAndUpdateSettings();
-                    ch2Controller.QueryAndUpdateSettings();
+                    // Query initial channel settings for both channels
+                    Channel1Panel?.QueryAndUpdateSettings();
+                    Channel2Panel?.QueryAndUpdateSettings();
 
+                    Log("Both channels initialized and settings synchronized");
                 }
                 else
                 {
@@ -143,184 +111,151 @@ namespace Rigol_DS1000Z_E_Control
                 StatusText.Text = "Status: Connected";
                 StatusText.Foreground = Brushes.Green;
                 ConnectButton.Content = "Disconnect";
-                Channel1Controls.IsEnabled = true;
-                Channel2Controls.IsEnabled = true;
+
+                // Enable both channel panels
+                Channel1Panel?.SetEnabled(true);
+                Channel2Panel?.SetEnabled(true);
             }
             else
             {
                 StatusText.Text = "Status: Disconnected";
                 StatusText.Foreground = Brushes.Red;
                 ConnectButton.Content = "Connect";
-                Channel1Controls.IsEnabled = false;
-                Channel2Controls.IsEnabled = false;
+
+                // Disable both channel panels
+                Channel1Panel?.SetEnabled(false);
+                Channel2Panel?.SetEnabled(false);
             }
         }
         #endregion
 
-      #region Channel 1 Event Handlers (Delegated to Controller)
-
+        #region Channel Management Methods
         /// <summary>
-        /// All Channel 1 event handlers forward to the Ch1Controller
-        /// These methods are kept for XAML binding compatibility
+        /// Apply preset to Channel 1
         /// </summary>
-        private void Channel1Enable_Changed(object sender, RoutedEventArgs e)
-        {
-            // Ch1Controller handles this through its own event handlers
-        }
-
-        private void ProbeRatio_Changed(object sender, SelectionChangedEventArgs e)
-        {
-            // Ch1Controller handles this through its own event handlers
-        }
-
-        private void VerticalScale_Changed(object sender, SelectionChangedEventArgs e)
-        {
-            // Ch1Controller handles this through its own event handlers
-        }
-
-        private void Units_Changed(object sender, SelectionChangedEventArgs e)
-        {
-            // Ch1Controller handles this through its own event handlers
-        }
-
-        private void VerticalOffsetSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            // Forward to Ch1Controller - all logic is handled there
-            ch1Controller?.HandleVerticalOffsetChanged(e.NewValue);
-        }
-        #endregion
-
-      #region Channel 2 Event Handlers (Now Fully Implemented)
-        /// <summary>
-        /// Channel 2 event handlers - now forwarding to Ch2Controller
-        /// </summary>
-        private void Channel2Enable_Changed(object sender, RoutedEventArgs e)
-        {
-            // Ch2Controller handles this through its own event handlers
-        }
-
-        private void ProbeRatio2_Changed(object sender, SelectionChangedEventArgs e)
-        {
-            // Ch2Controller handles this through its own event handlers
-        }
-
-        private void VerticalScale2_Changed(object sender, SelectionChangedEventArgs e)
-        {
-            // Ch2Controller handles this through its own event handlers
-        }
-
-        private void Units2_Changed(object sender, SelectionChangedEventArgs e)
-        {
-            // Ch2Controller handles this through its own event handlers
-        }
-
-        private void VerticalOffsetSlider2_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            // Forward to Ch2Controller - all logic is handled there
-            ch2Controller?.HandleVerticalOffsetChanged(e.NewValue);
-        }
-        #endregion
-
-      #region Menu Commands and Presets (Extended for Channel 1)
-        /// <summary>
-        /// Apply a preset configuration to Channel 1
-        /// </summary>
-        private void ApplyChannel1Preset(Ch1Settings preset)
+        public void ApplyChannel1Preset(Ch1Settings preset)
         {
             if (isConnected)
             {
-                ch1Controller.SetSettings(preset);
-                Log($"Applied Channel 1 preset: {preset}");
-
+                Channel1Panel?.ApplyPreset(preset);
             }
         }
 
         /// <summary>
-        /// Example: Apply general purpose preset
+        /// Apply preset to Channel 2
         /// </summary>
-        private void ApplyGeneralPurposePreset()
-        {
-            ApplyChannel1Preset(Ch1Settings.Presets.GeneralPurpose);
-        }
-
-        /// <summary>
-        /// Example: Apply small signal preset
-        /// </summary>
-        private void ApplySmallSignalPreset()
-        {
-            ApplyChannel1Preset(Ch1Settings.Presets.SmallSignal);
-        }
-
-        /// <summary>
-        /// Get current Channel 1 settings for debugging
-        /// </summary>
-        private void LogCurrentChannel1Settings()
+        public void ApplyChannel2Preset(Ch2Settings preset)
         {
             if (isConnected)
             {
-                var settings = ch1Controller.GetSettings();
-                Log($"Current Channel 1 settings: {settings}");
-            }
-        }
-        #endregion
-
-      #region Menu Commands and Presets (Extended for Channel 2)
-        /// <summary>
-        /// Apply a preset configuration to Channel 2
-        /// </summary>
-        private void ApplyChannel2Preset(Ch2Settings preset)
-        {
-            if (isConnected)
-            {
-                ch2Controller.SetSettings(preset);
-                Log($"Applied Channel 2 preset: {preset}");
+                Channel2Panel?.ApplyPreset(preset);
             }
         }
 
         /// <summary>
-        /// Example: Apply dual channel preset for differential measurements
+        /// Apply dual channel preset for differential measurements
         /// </summary>
-        private void ApplyDualChannelPreset()
+        public void ApplyDualChannelPreset()
         {
             if (isConnected)
             {
-                // Set both channels to same scale for comparison
                 var ch1Preset = Ch1Settings.Presets.GeneralPurpose;
                 var ch2Preset = Ch2Settings.Presets.GeneralPurpose;
 
-                ch1Controller.SetSettings(ch1Preset);
-                ch2Controller.SetSettings(ch2Preset);
+                Channel1Panel?.ApplyPreset(ch1Preset);
+                Channel2Panel?.ApplyPreset(ch2Preset);
 
                 Log("Applied dual channel preset for differential measurements");
             }
         }
 
         /// <summary>
-        /// Get current Channel 2 settings for debugging
+        /// Apply small signal preset to both channels
         /// </summary>
-        private void LogCurrentChannel2Settings()
+        public void ApplySmallSignalDualPreset()
         {
             if (isConnected)
             {
-                var settings = ch2Controller.GetSettings();
-                Log($"Current Channel 2 settings: {settings}");
+                var ch1Preset = Ch1Settings.Presets.SmallSignal;
+                var ch2Preset = Ch2Settings.Presets.SmallSignal;
+
+                Channel1Panel?.ApplyPreset(ch1Preset);
+                Channel2Panel?.ApplyPreset(ch2Preset);
+
+                Log("Applied small signal preset to both channels");
             }
         }
 
         /// <summary>
-        /// Log settings for both channels
+        /// Get current settings from both channels
         /// </summary>
-        private void LogAllChannelSettings()
+        public void LogAllChannelSettings()
         {
             if (isConnected)
             {
-                LogCurrentChannel1Settings();
-                LogCurrentChannel2Settings();
+                var ch1Settings = Channel1Panel?.GetSettings();
+                var ch2Settings = Channel2Panel?.GetSettings();
+
+                if (ch1Settings != null)
+                    Log($"Channel 1: {ch1Settings}");
+
+                if (ch2Settings != null)
+                    Log($"Channel 2: {ch2Settings}");
+            }
+        }
+
+        /// <summary>
+        /// Synchronize both channels to the same scale settings
+        /// </summary>
+        public void SynchronizeChannels()
+        {
+            if (isConnected)
+            {
+                var ch1Settings = Channel1Panel?.GetSettings();
+                if (ch1Settings != null)
+                {
+                    var ch2Settings = new Ch2Settings
+                    {
+                        IsEnabled = true,
+                        ProbeRatio = ch1Settings.ProbeRatio,
+                        VerticalScale = ch1Settings.VerticalScale,
+                        VerticalOffset = 0, // Keep different offset for visual separation
+                        Units = ch1Settings.Units,
+                        Coupling = ch1Settings.Coupling,
+                        BandwidthLimit = ch1Settings.BandwidthLimit
+                    };
+
+                    Channel2Panel?.SetSettings(ch2Settings);
+                    Log("Synchronized Channel 2 settings to match Channel 1");
+                }
             }
         }
         #endregion
 
-      #region Logging and Events
+        #region Preset Menu Methods (for future menu implementation)
+        /// <summary>
+        /// These methods can be connected to menu items or toolbar buttons
+        /// </summary>
+        public void ApplyGeneralPurposePresets()
+        {
+            ApplyChannel1Preset(Ch1Settings.Presets.GeneralPurpose);
+            ApplyChannel2Preset(Ch2Settings.Presets.GeneralPurpose);
+        }
+
+        public void ApplyPowerMeasurementPresets()
+        {
+            ApplyChannel1Preset(Ch1Settings.Presets.PowerMeasurement);
+            ApplyChannel2Preset(Ch2Settings.Presets.PowerMeasurement);
+        }
+
+        public void ApplyHighFrequencyPresets()
+        {
+            ApplyChannel1Preset(Ch1Settings.Presets.HighFrequency);
+            ApplyChannel2Preset(Ch2Settings.Presets.HighFrequency);
+        }
+        #endregion
+
+        #region Logging and Events
         private void Oscilloscope_LogEvent(object sender, string message)
         {
             Log(message);
@@ -331,7 +266,6 @@ namespace Rigol_DS1000Z_E_Control
             // Add null check to prevent NullReferenceException during initialization
             if (LogTextBox == null)
             {
-                // UI not ready yet, could store messages in a buffer or just return
                 return;
             }
 
@@ -339,7 +273,6 @@ namespace Rigol_DS1000Z_E_Control
             {
                 Dispatcher.Invoke(() =>
                 {
-                    // Double-check in case UI was disposed between the outer check and this invoke
                     if (LogTextBox != null)
                     {
                         string timestamp = DateTime.Now.ToString("HH:mm:ss");
@@ -350,20 +283,19 @@ namespace Rigol_DS1000Z_E_Control
             }
             catch (Exception ex)
             {
-                // If logging fails, we don't want to crash the application
                 System.Diagnostics.Debug.WriteLine($"Logging failed: {ex.Message}");
             }
         }
         #endregion
 
-      #region Cleanup
+        #region Cleanup
         protected override void OnClosed(EventArgs e)
         {
             base.OnClosed(e);
 
-            // Clean up resources
-            ch1Controller?.Dispose();
-            ch2Controller?.Dispose(); // Add this line
+            // Clean up channel panel resources
+            Channel1Panel?.Cleanup();
+            Channel2Panel?.Cleanup();
 
             // Ensure proper cleanup
             if (isConnected)

@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Text;
+using System.Globalization;
+using Rigol_DS1000Z_E_Control;
 using DS1000Z_E_USB_Control.Channels.Ch1;
 using DS1000Z_E_USB_Control.Channels.Ch2;
-using DS1000Z_E_USB_Control.TimeBase;
 using DS1000Z_E_USB_Control.Trigger;
-using Rigol_DS1000Z_E_Control;
+using DS1000Z_E_USB_Control.TimeBase;
 
 namespace DS1000Z_E_USB_Control
 {
@@ -14,37 +15,30 @@ namespace DS1000Z_E_USB_Control
     public class OscilloscopeSettingsManager
     {
         private readonly RigolDS1000ZE oscilloscope;
-
-        // Controllers for each subsystem
-        private readonly Ch1Controller ch1Controller;
-        private readonly Ch2Controller ch2Controller;
-        private readonly TimeBaseController timeBaseController;
-        private readonly TriggerController triggerController;
+        private string deviceId = "Unknown";
+        private string acquisitionInfo = "Unknown";
 
         public event EventHandler<string> LogEvent;
 
-        // Public properties to access current settings
-        public Ch1Settings Channel1Settings => ch1Controller?.GetSettings();
-        public Ch2Settings Channel2Settings => ch2Controller?.GetSettings();
-        public TimeBaseSettings TimeBaseSettings => timeBaseController?.GetSettings();
-        public TriggerSettings TriggerSettings => triggerController?.GetSettings();
+        #region Settings Properties
+        public Ch1Settings Channel1Settings { get; private set; }
+        public Ch2Settings Channel2Settings { get; private set; }
+        public TriggerSettings TriggerSettings { get; private set; }
+        public TimeBaseSettings TimeBaseSettings { get; private set; }
+        #endregion
 
         public OscilloscopeSettingsManager(RigolDS1000ZE oscilloscope)
         {
             this.oscilloscope = oscilloscope;
 
-            // Initialize controllers
-            ch1Controller = new Ch1Controller(oscilloscope);
-            ch2Controller = new Ch2Controller(oscilloscope);
-            timeBaseController = new TimeBaseController(oscilloscope);
-            triggerController = new TriggerController(oscilloscope);
-
-            // Wire up logging events
-            ch1Controller.LogEvent += (sender, message) => LogEvent?.Invoke(this, $"CH1: {message}");
-            ch2Controller.LogEvent += (sender, message) => LogEvent?.Invoke(this, $"CH2: {message}");
-            timeBaseController.LogEvent += (sender, message) => LogEvent?.Invoke(this, $"TIME: {message}");
-            triggerController.LogEvent += (sender, message) => LogEvent?.Invoke(this, $"TRIG: {message}");
+            // Initialize settings objects
+            Channel1Settings = new Ch1Settings();
+            Channel2Settings = new Ch2Settings();
+            TriggerSettings = new TriggerSettings();
+            TimeBaseSettings = new TimeBaseSettings();
         }
+
+        #region Main Settings Operations
 
         /// <summary>
         /// Read all current settings from the oscilloscope
@@ -57,54 +51,53 @@ namespace DS1000Z_E_USB_Control
                 return false;
             }
 
-            bool allSuccessful = true;
+            bool allSuccess = true;
 
             try
             {
                 Log("Reading all oscilloscope settings...");
 
+                // Read device information
+                ReadDeviceInformation();
+
                 // Read Channel 1 settings
-                Log("Reading Channel 1 settings...");
-                if (!ch1Controller.QueryAndUpdateSettings())
+                if (!ReadChannel1Settings())
                 {
                     Log("⚠️ Failed to read some Channel 1 settings");
-                    allSuccessful = false;
+                    allSuccess = false;
                 }
 
                 // Read Channel 2 settings
-                Log("Reading Channel 2 settings...");
-                if (!ch2Controller.QueryAndUpdateSettings())
+                if (!ReadChannel2Settings())
                 {
                     Log("⚠️ Failed to read some Channel 2 settings");
-                    allSuccessful = false;
-                }
-
-                // Read TimeBase settings
-                Log("Reading TimeBase settings...");
-                if (!timeBaseController.QueryAndUpdateSettings())
-                {
-                    Log("⚠️ Failed to read some TimeBase settings");
-                    allSuccessful = false;
+                    allSuccess = false;
                 }
 
                 // Read Trigger settings
-                Log("Reading Trigger settings...");
-                if (!triggerController.QueryAndUpdateSettings())
+                if (!ReadTriggerSettings())
                 {
                     Log("⚠️ Failed to read some Trigger settings");
-                    allSuccessful = false;
+                    allSuccess = false;
                 }
 
-                if (allSuccessful)
+                // Read TimeBase settings
+                if (!ReadTimeBaseSettings())
+                {
+                    Log("⚠️ Failed to read some TimeBase settings");
+                    allSuccess = false;
+                }
+
+                if (allSuccess)
                 {
                     Log("✅ Successfully read all oscilloscope settings");
                 }
                 else
                 {
-                    Log("⚠️ Some settings could not be read completely");
+                    Log("⚠️ Some settings could not be read");
                 }
 
-                return allSuccessful;
+                return allSuccess;
             }
             catch (Exception ex)
             {
@@ -114,318 +107,659 @@ namespace DS1000Z_E_USB_Control
         }
 
         /// <summary>
-        /// Export all current settings to a formatted string
+        /// Export all settings to a formatted string
         /// </summary>
         public string ExportSettingsToString()
         {
-            var export = new StringBuilder();
+            var sb = new StringBuilder();
 
-            export.AppendLine("=== Rigol DS1000Z-E Oscilloscope Settings Export ===");
-            export.AppendLine($"Export Date: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-            export.AppendLine($"Device ID: {GetDeviceID()}");
-            export.AppendLine($"Acquisition Info: {GetAcquisitionInfo()}");
-            export.AppendLine();
+            sb.AppendLine("=== Rigol DS1000Z-E Settings Export ===");
+            sb.AppendLine($"Export Date: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+            sb.AppendLine($"Device: {deviceId}");
+            sb.AppendLine($"Acquisition Info: {acquisitionInfo}");
+            sb.AppendLine();
 
             // Channel 1 Settings
-            export.AppendLine("=== CHANNEL 1 SETTINGS ===");
-            if (Channel1Settings != null)
-            {
-                export.AppendLine($"Enabled: {Channel1Settings.IsEnabled}");
-                export.AppendLine($"Probe Ratio: {Channel1Settings.ProbeRatio}×");
-                export.AppendLine($"Vertical Scale: {Channel1Settings.VerticalScale} V/div");
-                export.AppendLine($"Vertical Offset: {Channel1Settings.VerticalOffset} V");
-                export.AppendLine($"Vertical Range: {Channel1Settings.VerticalRange} V");
-                export.AppendLine($"Input Coupling: {Channel1Settings.Coupling}");
-                export.AppendLine($"Bandwidth Limit: {Channel1Settings.BandwidthLimit}");
-                export.AppendLine($"Units: {Channel1Settings.Units}");
-                export.AppendLine($"Invert Enabled: {Channel1Settings.InvertEnabled}");
-                export.AppendLine($"Vernier Enabled: {Channel1Settings.VernierEnabled}");
-            }
-            else
-            {
-                export.AppendLine("Channel 1 settings not available");
-            }
-            export.AppendLine();
+            sb.AppendLine("=== Channel 1 Settings ===");
+            sb.AppendLine($"Enabled: {Channel1Settings.IsEnabled}");
+            sb.AppendLine($"Probe Ratio: {Channel1Settings.ProbeRatio}×");
+            sb.AppendLine($"Vertical Scale: {Channel1Settings.VerticalScale}V/div");
+            sb.AppendLine($"Vertical Offset: {Channel1Settings.VerticalOffset}V");
+            sb.AppendLine($"Vertical Range: {Channel1Settings.VerticalRange}V");
+            sb.AppendLine($"Coupling: {Channel1Settings.Coupling}");
+            sb.AppendLine($"Bandwidth Limit: {Channel1Settings.BandwidthLimit}");
+            sb.AppendLine($"Units: {Channel1Settings.Units}");
+            sb.AppendLine($"Invert: {Channel1Settings.InvertEnabled}");
+            sb.AppendLine($"Vernier: {Channel1Settings.VernierEnabled}");
+            sb.AppendLine();
 
             // Channel 2 Settings
-            export.AppendLine("=== CHANNEL 2 SETTINGS ===");
-            if (Channel2Settings != null)
-            {
-                export.AppendLine($"Enabled: {Channel2Settings.IsEnabled}");
-                export.AppendLine($"Probe Ratio: {Channel2Settings.ProbeRatio}×");
-                export.AppendLine($"Vertical Scale: {Channel2Settings.VerticalScale} V/div");
-                export.AppendLine($"Vertical Offset: {Channel2Settings.VerticalOffset} V");
-                export.AppendLine($"Vertical Range: {Channel2Settings.VerticalRange} V");
-                export.AppendLine($"Input Coupling: {Channel2Settings.Coupling}");
-                export.AppendLine($"Bandwidth Limit: {Channel2Settings.BandwidthLimit}");
-                export.AppendLine($"Units: {Channel2Settings.Units}");
-                export.AppendLine($"Invert Enabled: {Channel2Settings.InvertEnabled}");
-                export.AppendLine($"Vernier Enabled: {Channel2Settings.VernierEnabled}");
-            }
-            else
-            {
-                export.AppendLine("Channel 2 settings not available");
-            }
-            export.AppendLine();
-
-            // TimeBase Settings
-            export.AppendLine("=== TIMEBASE SETTINGS ===");
-            if (TimeBaseSettings != null)
-            {
-                export.AppendLine($"Mode: {TimeBaseSettings.Mode}");
-                export.AppendLine($"Main Scale: {TimeBaseSettings.MainScale} s/div ({TimeBaseSettings.MainScaleDisplay})");
-                export.AppendLine($"Main Offset: {TimeBaseSettings.MainOffset} s");
-                export.AppendLine($"Time Window: {TimeBaseSettings.TimeWindow} s");
-                export.AppendLine($"Delay Enabled: {TimeBaseSettings.DelayEnabled}");
-                export.AppendLine($"Delay Scale: {TimeBaseSettings.DelayScale} s/div ({TimeBaseSettings.DelayScaleDisplay})");
-                export.AppendLine($"Delay Offset: {TimeBaseSettings.DelayOffset} s");
-            }
-            else
-            {
-                export.AppendLine("TimeBase settings not available");
-            }
-            export.AppendLine();
+            sb.AppendLine("=== Channel 2 Settings ===");
+            sb.AppendLine($"Enabled: {Channel2Settings.IsEnabled}");
+            sb.AppendLine($"Probe Ratio: {Channel2Settings.ProbeRatio}×");
+            sb.AppendLine($"Vertical Scale: {Channel2Settings.VerticalScale}V/div");
+            sb.AppendLine($"Vertical Offset: {Channel2Settings.VerticalOffset}V");
+            sb.AppendLine($"Vertical Range: {Channel2Settings.VerticalRange}V");
+            sb.AppendLine($"Coupling: {Channel2Settings.Coupling}");
+            sb.AppendLine($"Bandwidth Limit: {Channel2Settings.BandwidthLimit}");
+            sb.AppendLine($"Units: {Channel2Settings.Units}");
+            sb.AppendLine($"Invert: {Channel2Settings.InvertEnabled}");
+            sb.AppendLine($"Vernier: {Channel2Settings.VernierEnabled}");
+            sb.AppendLine();
 
             // Trigger Settings
-            export.AppendLine("=== TRIGGER SETTINGS ===");
-            if (TriggerSettings != null)
-            {
-                export.AppendLine($"Mode: {TriggerSettings.Mode}");
-                export.AppendLine($"Coupling: {TriggerSettings.Coupling}");
-                export.AppendLine($"Sweep: {TriggerSettings.Sweep}");
-                export.AppendLine($"Status: {TriggerSettings.Status}");
-                export.AppendLine($"Position: {TriggerSettings.Position}%");
-                export.AppendLine($"Holdoff: {TriggerSettings.Holdoff} s ({TriggerSettings.HoldoffDisplay})");
-                export.AppendLine($"Noise Reject: {TriggerSettings.NoiseReject}");
+            sb.AppendLine("=== Trigger Settings ===");
+            sb.AppendLine($"Mode: {TriggerSettings.Mode}");
+            sb.AppendLine($"Coupling: {TriggerSettings.Coupling}");
+            sb.AppendLine($"Sweep: {TriggerSettings.Sweep}");
+            sb.AppendLine($"Status: {TriggerSettings.Status}");
+            sb.AppendLine($"Edge Source: {TriggerSettings.EdgeSource}");
+            sb.AppendLine($"Edge Slope: {TriggerSettings.EdgeSlope}");
+            sb.AppendLine($"Edge Level: {TriggerSettings.EdgeLevel}V ({TriggerSettings.EdgeLevelDisplay})");
+            sb.AppendLine($"Holdoff: {TriggerSettings.Holdoff}s ({TriggerSettings.HoldoffDisplay})");
+            sb.AppendLine($"Noise Reject: {TriggerSettings.NoiseReject}");
+            sb.AppendLine($"Position: {TriggerSettings.Position}%");
+            sb.AppendLine();
 
-                // Edge trigger specific settings
-                if (TriggerSettings.Mode.ToUpper() == "EDGE")
-                {
-                    export.AppendLine("--- Edge Trigger Settings ---");
-                    export.AppendLine($"Source: {TriggerSettings.EdgeSource}");
-                    export.AppendLine($"Slope: {TriggerSettings.EdgeSlope}");
-                    export.AppendLine($"Level: {TriggerSettings.EdgeLevel} V ({TriggerSettings.EdgeLevelDisplay})");
-                }
-            }
-            else
-            {
-                export.AppendLine("Trigger settings not available");
-            }
-            export.AppendLine();
+            // TimeBase Settings
+            sb.AppendLine("=== TimeBase Settings ===");
+            sb.AppendLine($"Mode: {TimeBaseSettings.Mode}");
+            sb.AppendLine($"Main Scale: {TimeBaseSettings.MainScale}s/div ({TimeBaseSettings.MainScaleDisplay})");
+            sb.AppendLine($"Main Offset: {TimeBaseSettings.MainOffset}s");
+            sb.AppendLine($"Time Window: {TimeBaseSettings.TimeWindow}s");
+            sb.AppendLine($"Delay Enabled: {TimeBaseSettings.DelayEnabled}");
+            sb.AppendLine($"Delay Scale: {TimeBaseSettings.DelayScale}s/div ({TimeBaseSettings.DelayScaleDisplay})");
+            sb.AppendLine($"Delay Offset: {TimeBaseSettings.DelayOffset}s");
+            sb.AppendLine();
 
-            // Add footer
-            export.AppendLine("=== END OF SETTINGS EXPORT ===");
-            export.AppendLine($"Generated by DS1000Z-E USB Control Application");
-            export.AppendLine($"Total Settings Exported: {(Channel1Settings != null ? 1 : 0) + (Channel2Settings != null ? 1 : 0) + (TimeBaseSettings != null ? 1 : 0) + (TriggerSettings != null ? 1 : 0)} subsystems");
+            sb.AppendLine("=== End of Export ===");
 
-            return export.ToString();
-        }
-
-        /// <summary>
-        /// Get device identification string
-        /// </summary>
-        public string GetDeviceID()
-        {
-            if (!oscilloscope.IsConnected)
-                return "Not Connected";
-
-            try
-            {
-                string id = oscilloscope.SendQuery("*IDN?");
-                return string.IsNullOrEmpty(id) ? "Unknown Device" : id.Trim();
-            }
-            catch
-            {
-                return "Query Failed";
-            }
-        }
-
-        /// <summary>
-        /// Get acquisition information
-        /// </summary>
-        public string GetAcquisitionInfo()
-        {
-            if (!oscilloscope.IsConnected)
-                return "Unknown";
-
-            try
-            {
-                // Query sample rate
-                string sampleRate = oscilloscope.SendQuery(":ACQuire:SRATe?");
-                string acqType = oscilloscope.SendQuery(":ACQuire:TYPE?");
-                string memDepth = oscilloscope.SendQuery(":ACQuire:MDEPth?");
-
-                if (!string.IsNullOrEmpty(sampleRate) && !string.IsNullOrEmpty(acqType))
-                {
-                    double sr = double.Parse(sampleRate);
-                    string srFormatted = FormatSampleRate(sr);
-                    return $"Type: {acqType.Trim()}, Rate: {srFormatted}, Depth: {memDepth?.Trim() ?? "Unknown"}";
-                }
-                return "Query Incomplete";
-            }
-            catch
-            {
-                return "Query Failed";
-            }
-        }
-
-        /// <summary>
-        /// Apply settings to all subsystems
-        /// </summary>
-        public bool ApplyAllSettings(Ch1Settings ch1Settings, Ch2Settings ch2Settings,
-                                   TimeBaseSettings timeBaseSettings, TriggerSettings triggerSettings)
-        {
-            if (!oscilloscope.IsConnected)
-            {
-                Log("Cannot apply settings - oscilloscope not connected");
-                return false;
-            }
-
-            bool allSuccessful = true;
-
-            try
-            {
-                Log("Applying all oscilloscope settings...");
-
-                // Apply Channel 1 settings
-                if (ch1Settings != null)
-                {
-                    Log("Applying Channel 1 settings...");
-                    ch1Controller.SetSettings(ch1Settings);
-                }
-
-                // Apply Channel 2 settings
-                if (ch2Settings != null)
-                {
-                    Log("Applying Channel 2 settings...");
-                    ch2Controller.SetSettings(ch2Settings);
-                }
-
-                // Apply TimeBase settings
-                if (timeBaseSettings != null)
-                {
-                    Log("Applying TimeBase settings...");
-                    timeBaseController.SetSettings(timeBaseSettings);
-                }
-
-                // Apply Trigger settings
-                if (triggerSettings != null)
-                {
-                    Log("Applying Trigger settings...");
-                    triggerController.SetSettings(triggerSettings);
-                }
-
-                Log("✅ All settings applied successfully");
-                return allSuccessful;
-            }
-            catch (Exception ex)
-            {
-                Log($"❌ Error applying oscilloscope settings: {ex.Message}");
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// Get individual controller references for UI binding
-        /// </summary>
-        public Ch1Controller GetCh1Controller() => ch1Controller;
-        public Ch2Controller GetCh2Controller() => ch2Controller;
-        public TimeBaseController GetTimeBaseController() => timeBaseController;
-        public TriggerController GetTriggerController() => triggerController;
-
-        #region Helper Methods
-
-        private string FormatSampleRate(double sampleRate)
-        {
-            if (sampleRate >= 1e9)
-                return $"{sampleRate / 1e9:F2} GSa/s";
-            else if (sampleRate >= 1e6)
-                return $"{sampleRate / 1e6:F1} MSa/s";
-            else if (sampleRate >= 1e3)
-                return $"{sampleRate / 1e3:F1} kSa/s";
-            else
-                return $"{sampleRate:F0} Sa/s";
-        }
-
-        private void Log(string message)
-        {
-            LogEvent?.Invoke(this, message);
+            return sb.ToString();
         }
 
         #endregion
 
-        #region Preset Management
+        #region Individual Settings Readers
+
+        /// <summary>
+        /// Read Channel 1 settings from oscilloscope
+        /// </summary>
+        private bool ReadChannel1Settings()
+        {
+            try
+            {
+                // Read all Channel 1 parameters
+                string enabled = oscilloscope.SendQuery(":CHANnel1:DISPlay?");
+                string probe = oscilloscope.SendQuery(":CHANnel1:PROBe?");
+                string scale = oscilloscope.SendQuery(":CHANnel1:SCALe?");
+                string offset = oscilloscope.SendQuery(":CHANnel1:OFFSet?");
+                string coupling = oscilloscope.SendQuery(":CHANnel1:COUPling?");
+                string bwLimit = oscilloscope.SendQuery(":CHANnel1:BWLimit?");
+                string units = oscilloscope.SendQuery(":CHANnel1:UNITs?");
+                string invert = oscilloscope.SendQuery(":CHANnel1:INVert?");
+                string vernier = oscilloscope.SendQuery(":CHANnel1:VERNier?");
+
+                // Parse and update settings
+                if (!string.IsNullOrEmpty(enabled))
+                    Channel1Settings.IsEnabled = enabled.Trim() == "1";
+
+                if (!string.IsNullOrEmpty(probe) && double.TryParse(probe, NumberStyles.Float, CultureInfo.InvariantCulture, out double probeVal))
+                    Channel1Settings.ProbeRatio = probeVal;
+
+                if (!string.IsNullOrEmpty(scale) && double.TryParse(scale, NumberStyles.Float, CultureInfo.InvariantCulture, out double scaleVal))
+                    Channel1Settings.VerticalScale = scaleVal;
+
+                if (!string.IsNullOrEmpty(offset) && double.TryParse(offset, NumberStyles.Float, CultureInfo.InvariantCulture, out double offsetVal))
+                    Channel1Settings.VerticalOffset = offsetVal;
+
+                if (!string.IsNullOrEmpty(coupling))
+                    Channel1Settings.Coupling = coupling.Trim();
+
+                if (!string.IsNullOrEmpty(bwLimit))
+                    Channel1Settings.BandwidthLimit = bwLimit.Trim();
+
+                if (!string.IsNullOrEmpty(units))
+                    Channel1Settings.Units = units.Trim();
+
+                if (!string.IsNullOrEmpty(invert))
+                    Channel1Settings.InvertEnabled = invert.Trim() == "1";
+
+                if (!string.IsNullOrEmpty(vernier))
+                    Channel1Settings.VernierEnabled = vernier.Trim() == "1";
+
+                Log($"✅ Channel 1 settings read: {Channel1Settings}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Error reading Channel 1 settings: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Read Channel 2 settings from oscilloscope
+        /// </summary>
+        private bool ReadChannel2Settings()
+        {
+            try
+            {
+                // Read all Channel 2 parameters
+                string enabled = oscilloscope.SendQuery(":CHANnel2:DISPlay?");
+                string probe = oscilloscope.SendQuery(":CHANnel2:PROBe?");
+                string scale = oscilloscope.SendQuery(":CHANnel2:SCALe?");
+                string offset = oscilloscope.SendQuery(":CHANnel2:OFFSet?");
+                string coupling = oscilloscope.SendQuery(":CHANnel2:COUPling?");
+                string bwLimit = oscilloscope.SendQuery(":CHANnel2:BWLimit?");
+                string units = oscilloscope.SendQuery(":CHANnel2:UNITs?");
+                string invert = oscilloscope.SendQuery(":CHANnel2:INVert?");
+                string vernier = oscilloscope.SendQuery(":CHANnel2:VERNier?");
+
+                // Parse and update settings
+                if (!string.IsNullOrEmpty(enabled))
+                    Channel2Settings.IsEnabled = enabled.Trim() == "1";
+
+                if (!string.IsNullOrEmpty(probe) && double.TryParse(probe, NumberStyles.Float, CultureInfo.InvariantCulture, out double probeVal))
+                    Channel2Settings.ProbeRatio = probeVal;
+
+                if (!string.IsNullOrEmpty(scale) && double.TryParse(scale, NumberStyles.Float, CultureInfo.InvariantCulture, out double scaleVal))
+                    Channel2Settings.VerticalScale = scaleVal;
+
+                if (!string.IsNullOrEmpty(offset) && double.TryParse(offset, NumberStyles.Float, CultureInfo.InvariantCulture, out double offsetVal))
+                    Channel2Settings.VerticalOffset = offsetVal;
+
+                if (!string.IsNullOrEmpty(coupling))
+                    Channel2Settings.Coupling = coupling.Trim();
+
+                if (!string.IsNullOrEmpty(bwLimit))
+                    Channel2Settings.BandwidthLimit = bwLimit.Trim();
+
+                if (!string.IsNullOrEmpty(units))
+                    Channel2Settings.Units = units.Trim();
+
+                if (!string.IsNullOrEmpty(invert))
+                    Channel2Settings.InvertEnabled = invert.Trim() == "1";
+
+                if (!string.IsNullOrEmpty(vernier))
+                    Channel2Settings.VernierEnabled = vernier.Trim() == "1";
+
+                Log($"✅ Channel 2 settings read: {Channel2Settings}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Error reading Channel 2 settings: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Read Trigger settings from oscilloscope
+        /// </summary>
+        private bool ReadTriggerSettings()
+        {
+            try
+            {
+                // Read trigger parameters
+                string mode = oscilloscope.SendQuery(":TRIGger:MODE?");
+                string coupling = oscilloscope.SendQuery(":TRIGger:COUPling?");
+                string sweep = oscilloscope.SendQuery(":TRIGger:SWEep?");
+                string status = oscilloscope.SendQuery(":TRIGger:STATus?");
+                string holdoff = oscilloscope.SendQuery(":TRIGger:HOLDoff?");
+                string noiseReject = oscilloscope.SendQuery(":TRIGger:NREJect?");
+
+                // Parse basic settings
+                if (!string.IsNullOrEmpty(mode))
+                    TriggerSettings.Mode = mode.Trim();
+
+                if (!string.IsNullOrEmpty(coupling))
+                    TriggerSettings.Coupling = coupling.Trim();
+
+                if (!string.IsNullOrEmpty(sweep))
+                    TriggerSettings.Sweep = sweep.Trim();
+
+                if (!string.IsNullOrEmpty(status))
+                    TriggerSettings.Status = status.Trim();
+
+                if (!string.IsNullOrEmpty(holdoff) && double.TryParse(holdoff, NumberStyles.Float, CultureInfo.InvariantCulture, out double holdoffVal))
+                    TriggerSettings.Holdoff = holdoffVal;
+
+                if (!string.IsNullOrEmpty(noiseReject))
+                    TriggerSettings.NoiseReject = noiseReject.Trim() == "1" || noiseReject.Trim().ToUpper() == "ON";
+
+                // For edge trigger, read edge-specific settings
+                if (TriggerSettings.Mode.ToUpper() == "EDGE")
+                {
+                    string edgeSource = oscilloscope.SendQuery(":TRIGger:EDGe:SOURce?");
+                    string edgeSlope = oscilloscope.SendQuery(":TRIGger:EDGe:SLOPe?");
+                    string edgeLevel = oscilloscope.SendQuery(":TRIGger:EDGe:LEVel?");
+
+                    if (!string.IsNullOrEmpty(edgeSource))
+                        TriggerSettings.EdgeSource = edgeSource.Trim();
+
+                    if (!string.IsNullOrEmpty(edgeSlope))
+                        TriggerSettings.EdgeSlope = edgeSlope.Trim();
+
+                    if (!string.IsNullOrEmpty(edgeLevel) && double.TryParse(edgeLevel, NumberStyles.Float, CultureInfo.InvariantCulture, out double levelVal))
+                        TriggerSettings.EdgeLevel = levelVal;
+                }
+
+                Log($"🎯 Trigger settings read: {TriggerSettings}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Error reading Trigger settings: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Read TimeBase settings from oscilloscope
+        /// </summary>
+        private bool ReadTimeBaseSettings()
+        {
+            try
+            {
+                // Read timebase parameters
+                string mode = oscilloscope.SendQuery(":TIMebase:MODE?");
+                string mainScale = oscilloscope.SendQuery(":TIMebase:SCALe?");
+                string mainOffset = oscilloscope.SendQuery(":TIMebase:OFFSet?");
+
+                // Parse settings
+                if (!string.IsNullOrEmpty(mode))
+                    TimeBaseSettings.Mode = mode.Trim();
+
+                if (!string.IsNullOrEmpty(mainScale) && double.TryParse(mainScale, NumberStyles.Float, CultureInfo.InvariantCulture, out double scaleVal))
+                    TimeBaseSettings.MainScale = scaleVal;
+
+                if (!string.IsNullOrEmpty(mainOffset) && double.TryParse(mainOffset, NumberStyles.Float, CultureInfo.InvariantCulture, out double offsetVal))
+                    TimeBaseSettings.MainOffset = offsetVal;
+
+                Log($"📊 TimeBase settings read: {TimeBaseSettings}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Error reading TimeBase settings: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Read device information
+        /// </summary>
+        private void ReadDeviceInformation()
+        {
+            try
+            {
+                // Read device ID
+                string id = oscilloscope.SendQuery("*IDN?");
+                if (!string.IsNullOrEmpty(id))
+                {
+                    deviceId = id.Trim();
+                }
+
+                // Read acquisition information
+                string acqType = oscilloscope.SendQuery(":ACQuire:TYPE?");
+                string sampleRate = oscilloscope.SendQuery(":ACQuire:SRATe?");
+                string memDepth = oscilloscope.SendQuery(":ACQuire:MDEPth?");
+
+                if (!string.IsNullOrEmpty(acqType) && !string.IsNullOrEmpty(sampleRate))
+                {
+                    acquisitionInfo = $"Type: {acqType.Trim()}, Rate: {sampleRate.Trim()}Sa/s";
+                    if (!string.IsNullOrEmpty(memDepth))
+                    {
+                        acquisitionInfo += $", Depth: {memDepth.Trim()}";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"⚠️ Error reading device information: {ex.Message}");
+            }
+        }
+
+        #endregion
+
+        #region Preset Application Methods
 
         /// <summary>
         /// Apply general purpose preset to all subsystems
         /// </summary>
-        public void ApplyGeneralPurposePreset()
+        public bool ApplyGeneralPurposePreset()
         {
-            ApplyAllSettings(
-                Ch1Settings.Presets.GeneralPurpose,
-                Ch2Settings.Presets.GeneralPurpose,
-                TimeBaseSettings.Presets.GeneralPurpose,
-                TriggerSettings.Presets.GeneralPurpose
-            );
-            Log("Applied General Purpose preset to all subsystems");
-        }
+            if (!oscilloscope.IsConnected) return false;
 
-        /// <summary>
-        /// Apply small signal preset to all subsystems
-        /// </summary>
-        public void ApplySmallSignalPreset()
-        {
-            ApplyAllSettings(
-                Ch1Settings.Presets.SmallSignal,
-                Ch2Settings.Presets.SmallSignal,
-                TimeBaseSettings.Presets.LowFrequency,
-                TriggerSettings.Presets.NoisySignal
-            );
-            Log("Applied Small Signal preset to all subsystems");
+            try
+            {
+                Log("Applying general purpose preset to all subsystems...");
+
+                bool allSuccess = true;
+
+                // Apply Channel 1 preset
+                var ch1Preset = Ch1Settings.Presets.GeneralPurpose;
+                if (!ApplyChannel1Settings(ch1Preset))
+                    allSuccess = false;
+
+                // Apply Channel 2 preset
+                var ch2Preset = Ch2Settings.Presets.GeneralPurpose;
+                if (!ApplyChannel2Settings(ch2Preset))
+                    allSuccess = false;
+
+                // Apply Trigger preset
+                var triggerPreset = TriggerSettings.Presets.GeneralPurpose;
+                if (!ApplyTriggerSettings(triggerPreset))
+                    allSuccess = false;
+
+                // Apply TimeBase preset
+                var timebasePreset = TimeBaseSettings.Presets.GeneralPurpose;
+                if (!ApplyTimeBaseSettings(timebasePreset))
+                    allSuccess = false;
+
+                if (allSuccess)
+                {
+                    Log("✅ General purpose preset applied successfully");
+                }
+                else
+                {
+                    Log("⚠️ Some preset settings could not be applied");
+                }
+
+                return allSuccess;
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Error applying general purpose preset: {ex.Message}");
+                return false;
+            }
         }
 
         /// <summary>
         /// Apply power measurement preset to all subsystems
         /// </summary>
-        public void ApplyPowerMeasurementPreset()
+        public bool ApplyPowerMeasurementPreset()
         {
-            ApplyAllSettings(
-                Ch1Settings.Presets.PowerMeasurement,
-                Ch2Settings.Presets.PowerMeasurement,
-                TimeBaseSettings.Presets.PowerMeasurement,
-                TriggerSettings.Presets.PowerMeasurement
-            );
-            Log("Applied Power Measurement preset to all subsystems");
+            if (!oscilloscope.IsConnected) return false;
+
+            try
+            {
+                Log("Applying power measurement preset...");
+
+                bool allSuccess = true;
+
+                var ch1Preset = Ch1Settings.Presets.PowerMeasurement;
+                if (!ApplyChannel1Settings(ch1Preset))
+                    allSuccess = false;
+
+                var ch2Preset = Ch2Settings.Presets.PowerMeasurement;
+                if (!ApplyChannel2Settings(ch2Preset))
+                    allSuccess = false;
+
+                var triggerPreset = TriggerSettings.Presets.PowerMeasurement;
+                if (!ApplyTriggerSettings(triggerPreset))
+                    allSuccess = false;
+
+                var timebasePreset = TimeBaseSettings.Presets.PowerMeasurement;
+                if (!ApplyTimeBaseSettings(timebasePreset))
+                    allSuccess = false;
+
+                return allSuccess;
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Error applying power measurement preset: {ex.Message}");
+                return false;
+            }
         }
 
         /// <summary>
         /// Apply high frequency preset to all subsystems
         /// </summary>
-        public void ApplyHighFrequencyPreset()
+        public bool ApplyHighFrequencyPreset()
         {
-            ApplyAllSettings(
-                Ch1Settings.Presets.HighFrequency,
-                Ch2Settings.Presets.HighFrequency,
-                TimeBaseSettings.Presets.HighFrequency,
-                TriggerSettings.Presets.GeneralPurpose
-            );
-            Log("Applied High Frequency preset to all subsystems");
+            if (!oscilloscope.IsConnected) return false;
+
+            try
+            {
+                Log("Applying high frequency preset...");
+
+                bool allSuccess = true;
+
+                var ch1Preset = Ch1Settings.Presets.HighFrequency;
+                if (!ApplyChannel1Settings(ch1Preset))
+                    allSuccess = false;
+
+                var ch2Preset = Ch2Settings.Presets.HighFrequency;
+                if (!ApplyChannel2Settings(ch2Preset))
+                    allSuccess = false;
+
+                var triggerPreset = TriggerSettings.Presets.GeneralPurpose;
+                if (!ApplyTriggerSettings(triggerPreset))
+                    allSuccess = false;
+
+                var timebasePreset = TimeBaseSettings.Presets.HighFrequency;
+                if (!ApplyTimeBaseSettings(timebasePreset))
+                    allSuccess = false;
+
+                return allSuccess;
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Error applying high frequency preset: {ex.Message}");
+                return false;
+            }
         }
 
         /// <summary>
         /// Apply digital measurement preset to all subsystems
         /// </summary>
-        public void ApplyDigitalPreset()
+        public bool ApplyDigitalPreset()
         {
-            ApplyAllSettings(
-                Ch1Settings.Presets.GeneralPurpose,
-                Ch2Settings.Presets.GeneralPurpose,
-                TimeBaseSettings.Presets.Digital,
-                TriggerSettings.Presets.Digital
-            );
-            Log("Applied Digital Measurement preset to all subsystems");
+            if (!oscilloscope.IsConnected) return false;
+
+            try
+            {
+                Log("Applying digital measurement preset...");
+
+                bool allSuccess = true;
+
+                var ch1Preset = Ch1Settings.Presets.GeneralPurpose;
+                if (!ApplyChannel1Settings(ch1Preset))
+                    allSuccess = false;
+
+                var ch2Preset = Ch2Settings.Presets.GeneralPurpose;
+                if (!ApplyChannel2Settings(ch2Preset))
+                    allSuccess = false;
+
+                var triggerPreset = TriggerSettings.Presets.Digital;
+                if (!ApplyTriggerSettings(triggerPreset))
+                    allSuccess = false;
+
+                var timebasePreset = TimeBaseSettings.Presets.Digital;
+                if (!ApplyTimeBaseSettings(timebasePreset))
+                    allSuccess = false;
+
+                return allSuccess;
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Error applying digital preset: {ex.Message}");
+                return false;
+            }
         }
 
         #endregion
+
+        #region Individual Settings Application
+
+        /// <summary>
+        /// Apply Channel 1 settings to oscilloscope
+        /// </summary>
+        private bool ApplyChannel1Settings(Ch1Settings settings)
+        {
+            try
+            {
+                bool allSuccess = true;
+
+                if (!oscilloscope.SendCommand($":CHANnel1:DISPlay {(settings.IsEnabled ? "ON" : "OFF")}"))
+                    allSuccess = false;
+
+                if (!oscilloscope.SendCommand($":CHANnel1:PROBe {settings.ProbeRatio.ToString(CultureInfo.InvariantCulture)}"))
+                    allSuccess = false;
+
+                if (!oscilloscope.SendCommand($":CHANnel1:SCALe {settings.VerticalScale.ToString(CultureInfo.InvariantCulture)}"))
+                    allSuccess = false;
+
+                if (!oscilloscope.SendCommand($":CHANnel1:OFFSet {settings.VerticalOffset.ToString(CultureInfo.InvariantCulture)}"))
+                    allSuccess = false;
+
+                if (!oscilloscope.SendCommand($":CHANnel1:COUPling {settings.Coupling}"))
+                    allSuccess = false;
+
+                Channel1Settings = settings.Clone();
+                return allSuccess;
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Error applying Channel 1 settings: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Apply Channel 2 settings to oscilloscope
+        /// </summary>
+        private bool ApplyChannel2Settings(Ch2Settings settings)
+        {
+            try
+            {
+                bool allSuccess = true;
+
+                if (!oscilloscope.SendCommand($":CHANnel2:DISPlay {(settings.IsEnabled ? "ON" : "OFF")}"))
+                    allSuccess = false;
+
+                if (!oscilloscope.SendCommand($":CHANnel2:PROBe {settings.ProbeRatio.ToString(CultureInfo.InvariantCulture)}"))
+                    allSuccess = false;
+
+                if (!oscilloscope.SendCommand($":CHANnel2:SCALe {settings.VerticalScale.ToString(CultureInfo.InvariantCulture)}"))
+                    allSuccess = false;
+
+                if (!oscilloscope.SendCommand($":CHANnel2:OFFSet {settings.VerticalOffset.ToString(CultureInfo.InvariantCulture)}"))
+                    allSuccess = false;
+
+                if (!oscilloscope.SendCommand($":CHANnel2:COUPling {settings.Coupling}"))
+                    allSuccess = false;
+
+                Channel2Settings = settings.Clone();
+                return allSuccess;
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Error applying Channel 2 settings: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Apply Trigger settings to oscilloscope
+        /// </summary>
+        private bool ApplyTriggerSettings(TriggerSettings settings)
+        {
+            try
+            {
+                bool allSuccess = true;
+
+                if (!oscilloscope.SendCommand($":TRIGger:MODE {settings.Mode}"))
+                    allSuccess = false;
+
+                if (!oscilloscope.SendCommand($":TRIGger:COUPling {settings.Coupling}"))
+                    allSuccess = false;
+
+                if (!oscilloscope.SendCommand($":TRIGger:SWEep {settings.Sweep}"))
+                    allSuccess = false;
+
+                if (settings.Mode.ToUpper() == "EDGE")
+                {
+                    if (!oscilloscope.SendCommand($":TRIGger:EDGe:SOURce {settings.EdgeSource}"))
+                        allSuccess = false;
+
+                    if (!oscilloscope.SendCommand($":TRIGger:EDGe:SLOPe {settings.EdgeSlope}"))
+                        allSuccess = false;
+
+                    if (!oscilloscope.SendCommand($":TRIGger:EDGe:LEVel {settings.EdgeLevel.ToString(CultureInfo.InvariantCulture)}"))
+                        allSuccess = false;
+                }
+
+                if (!oscilloscope.SendCommand($":TRIGger:HOLDoff {settings.Holdoff.ToString(CultureInfo.InvariantCulture)}"))
+                    allSuccess = false;
+
+                if (!oscilloscope.SendCommand($":TRIGger:NREJect {(settings.NoiseReject ? "ON" : "OFF")}"))
+                    allSuccess = false;
+
+                TriggerSettings = settings.Clone();
+                return allSuccess;
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Error applying Trigger settings: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Apply TimeBase settings to oscilloscope
+        /// </summary>
+        private bool ApplyTimeBaseSettings(TimeBaseSettings settings)
+        {
+            try
+            {
+                bool allSuccess = true;
+
+                if (!oscilloscope.SendCommand($":TIMebase:MODE {settings.Mode}"))
+                    allSuccess = false;
+
+                if (!oscilloscope.SendCommand($":TIMebase:SCALe {settings.MainScale.ToString(CultureInfo.InvariantCulture)}"))
+                    allSuccess = false;
+
+                if (!oscilloscope.SendCommand($":TIMebase:OFFSet {settings.MainOffset.ToString(CultureInfo.InvariantCulture)}"))
+                    allSuccess = false;
+
+                TimeBaseSettings = settings.Clone();
+                return allSuccess;
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Error applying TimeBase settings: {ex.Message}");
+                return false;
+            }
+        }
+
+        #endregion
+
+        #region Public Information Methods
+
+        /// <summary>
+        /// Get device ID string
+        /// </summary>
+        public string GetDeviceID()
+        {
+            return deviceId;
+        }
+
+        /// <summary>
+        /// Get acquisition information string
+        /// </summary>
+        public string GetAcquisitionInfo()
+        {
+            return acquisitionInfo;
+        }
+
+        #endregion
+
+        private void Log(string message)
+        {
+            LogEvent?.Invoke(this, message);
+        }
     }
 }

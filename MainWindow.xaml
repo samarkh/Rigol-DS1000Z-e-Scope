@@ -4,6 +4,7 @@
         xmlns:ch1="clr-namespace:DS1000Z_E_USB_Control.Channels.Ch1"
         xmlns:ch2="clr-namespace:DS1000Z_E_USB_Control.Channels.Ch2"
         xmlns:trigger="clr-namespace:DS1000Z_E_USB_Control.Trigger"
+        xmlns:timebase="clr-namespace:DS1000Z_E_USB_Control.TimeBase"
         Title="Rigol DS1000Z-E USB Control" Height="800" Width="1400">
     <Grid>
         <Grid.RowDefinitions>

@@ -1,19 +1,22 @@
 ﻿using System;
+using System.IO;
 using System.Windows;
 using System.Windows.Media;
 using DS1000Z_E_USB_Control.Channels.Ch1;
 using DS1000Z_E_USB_Control.Channels.Ch2;
+using DS1000Z_E_USB_Control;
+using Microsoft.Win32;
 
 namespace Rigol_DS1000Z_E_Control
 {
     /// <summary>
-    /// Simplified MainWindow using Channel UserControls
-    /// Much cleaner and more maintainable architecture
+    /// Enhanced MainWindow with comprehensive settings management
     /// </summary>
     public partial class MainWindow : Window
     {
         #region Private Fields
         private RigolDS1000ZE oscilloscope;
+        private OscilloscopeSettingsManager settingsManager;
         private bool isConnected = false;
         #endregion
 
@@ -26,10 +29,15 @@ namespace Rigol_DS1000Z_E_Control
             oscilloscope = new RigolDS1000ZE();
             oscilloscope.LogEvent += Oscilloscope_LogEvent;
 
+            // Initialize the settings manager
+            settingsManager = new OscilloscopeSettingsManager(oscilloscope);
+            settingsManager.LogEvent += (sender, message) => Log(message);
+
             // Initialize both channel panels
             InitializeChannelPanels();
 
             Log("Application started. Ready to connect to Rigol DS1000Z-E.");
+            UpdateDeviceInfo();
         }
 
         /// <summary>
@@ -71,13 +79,12 @@ namespace Rigol_DS1000Z_E_Control
                     if (!string.IsNullOrEmpty(id))
                     {
                         Log($"Device ID: {id}");
+                        UpdateDeviceInfo();
                     }
 
-                    // Query initial channel settings for both channels
-                    Channel1Panel?.QueryAndUpdateSettings();
-                    Channel2Panel?.QueryAndUpdateSettings();
-
-                    Log("Both channels initialized and settings synchronized");
+                    // Automatically get current settings after connection
+                    Log("Connection successful! Reading current oscilloscope settings...");
+                    GetCurrentSettings();
                 }
                 else
                 {
@@ -100,6 +107,7 @@ namespace Rigol_DS1000Z_E_Control
                 {
                     isConnected = false;
                     UpdateUI(false);
+                    UpdateDeviceInfo();
                 }
             }
         }
@@ -111,6 +119,13 @@ namespace Rigol_DS1000Z_E_Control
                 StatusText.Text = "Status: Connected";
                 StatusText.Foreground = Brushes.Green;
                 ConnectButton.Content = "Disconnect";
+                ConnectButton.Background = new SolidColorBrush(Color.FromRgb(255, 235, 238));
+                ConnectButton.BorderBrush = Brushes.Red;
+
+                // Enable control buttons
+                GetSettingsButton.IsEnabled = true;
+                ExportSettingsButton.IsEnabled = true;
+                PresetButton.IsEnabled = true;
 
                 // Enable both channel panels
                 Channel1Panel?.SetEnabled(true);
@@ -121,11 +136,230 @@ namespace Rigol_DS1000Z_E_Control
                 StatusText.Text = "Status: Disconnected";
                 StatusText.Foreground = Brushes.Red;
                 ConnectButton.Content = "Connect";
+                ConnectButton.Background = new SolidColorBrush(Color.FromRgb(232, 245, 232));
+                ConnectButton.BorderBrush = new SolidColorBrush(Color.FromRgb(76, 175, 80));
+
+                // Disable control buttons
+                GetSettingsButton.IsEnabled = false;
+                ExportSettingsButton.IsEnabled = false;
+                PresetButton.IsEnabled = false;
 
                 // Disable both channel panels
                 Channel1Panel?.SetEnabled(false);
                 Channel2Panel?.SetEnabled(false);
             }
+        }
+        #endregion
+
+        #region Settings Management
+        /// <summary>
+        /// Get Current Settings button handler
+        /// </summary>
+        private void GetSettingsButton_Click(object sender, RoutedEventArgs e)
+        {
+            GetCurrentSettings();
+        }
+
+        /// <summary>
+        /// Read all current settings from the oscilloscope and update UI
+        /// </summary>
+        private void GetCurrentSettings()
+        {
+            if (!isConnected)
+            {
+                Log("Cannot get settings - oscilloscope not connected");
+                return;
+            }
+
+            Log("Reading all current oscilloscope settings...");
+
+            try
+            {
+                // Read all settings using the settings manager
+                bool success = settingsManager.ReadAllCurrentSettings();
+
+                if (success)
+                {
+                    // Update UI with the new settings
+                    UpdateChannelUIFromSettings();
+                    UpdateDeviceInfo();
+                    UpdateLastUpdateTime();
+
+                    Log("✅ Successfully updated UI with current oscilloscope settings");
+                }
+                else
+                {
+                    Log("⚠️ Some settings could not be read - check oscilloscope connection");
+                    MessageBox.Show("Some settings could not be read from the oscilloscope.\n" +
+                                  "Check the connection and try again.",
+                                  "Settings Read Warning",
+                                  MessageBoxButton.OK,
+                                  MessageBoxImage.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Error reading oscilloscope settings: {ex.Message}");
+                MessageBox.Show($"Error reading oscilloscope settings:\n{ex.Message}",
+                              "Settings Read Error",
+                              MessageBoxButton.OK,
+                              MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Update channel UI controls with settings from oscilloscope
+        /// </summary>
+        private void UpdateChannelUIFromSettings()
+        {
+            try
+            {
+                // Update Channel 1 UI
+                if (Channel1Panel != null && settingsManager.Channel1Settings != null)
+                {
+                    Channel1Panel.SetSettings(settingsManager.Channel1Settings);
+                    Log($"Updated Channel 1 UI: {settingsManager.Channel1Settings}");
+                }
+
+                // Update Channel 2 UI
+                if (Channel2Panel != null && settingsManager.Channel2Settings != null)
+                {
+                    Channel2Panel.SetSettings(settingsManager.Channel2Settings);
+                    Log($"Updated Channel 2 UI: {settingsManager.Channel2Settings}");
+                }
+
+                // Log timebase and trigger info (for future UI implementation)
+                if (settingsManager.TimeBaseSettings != null)
+                {
+                    Log($"TimeBase Settings: {settingsManager.TimeBaseSettings}");
+                }
+
+                if (settingsManager.TriggerSettings != null)
+                {
+                    Log($"Trigger Settings: {settingsManager.TriggerSettings}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"Error updating UI from settings: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Export Settings button handler
+        /// </summary>
+        private void ExportSettingsButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!isConnected)
+            {
+                MessageBox.Show("Please connect to the oscilloscope first.",
+                              "Not Connected",
+                              MessageBoxButton.OK,
+                              MessageBoxImage.Information);
+                return;
+            }
+
+            try
+            {
+                // First, get the latest settings
+                settingsManager.ReadAllCurrentSettings();
+
+                // Create export string
+                string exportData = settingsManager.ExportSettingsToString();
+
+                // Show save file dialog
+                SaveFileDialog saveDialog = new SaveFileDialog
+                {
+                    Filter = "Text files (*.txt)|*.txt|All files (*.*)|*.*",
+                    DefaultExt = "txt",
+                    FileName = $"DS1000ZE_Settings_{DateTime.Now:yyyyMMdd_HHmmss}.txt"
+                };
+
+                if (saveDialog.ShowDialog() == true)
+                {
+                    File.WriteAllText(saveDialog.FileName, exportData);
+                    Log($"Settings exported to: {saveDialog.FileName}");
+
+                    MessageBox.Show($"Settings successfully exported to:\n{saveDialog.FileName}",
+                                  "Export Successful",
+                                  MessageBoxButton.OK,
+                                  MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"Error exporting settings: {ex.Message}");
+                MessageBox.Show($"Error exporting settings:\n{ex.Message}",
+                              "Export Error",
+                              MessageBoxButton.OK,
+                              MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Preset Menu button handler
+        /// </summary>
+        private void PresetButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!isConnected)
+            {
+                MessageBox.Show("Please connect to the oscilloscope first.",
+                              "Not Connected",
+                              MessageBoxButton.OK,
+                              MessageBoxImage.Information);
+                return;
+            }
+
+            // Create a simple preset selection dialog
+            var result = MessageBox.Show("Apply General Purpose preset to both channels?\n\n" +
+                                       "This will set:\n" +
+                                       "• Both channels enabled\n" +
+                                       "• 10× probe ratio\n" +
+                                       "• 500mV/div scale\n" +
+                                       "• DC coupling\n" +
+                                       "• Zero offset",
+                                       "Apply Preset",
+                                       MessageBoxButton.YesNo,
+                                       MessageBoxImage.Question);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                ApplyGeneralPurposePresets();
+            }
+        }
+
+        /// <summary>
+        /// Update device information display
+        /// </summary>
+        private void UpdateDeviceInfo()
+        {
+            if (isConnected)
+            {
+                DeviceInfoText.Text = $"Device: {settingsManager.GetDeviceID()}";
+                AcquisitionInfoText.Text = $"Acquisition: {settingsManager.GetAcquisitionInfo()}";
+            }
+            else
+            {
+                DeviceInfoText.Text = "Device: Not Connected";
+                AcquisitionInfoText.Text = "Acquisition: Unknown";
+            }
+        }
+
+        /// <summary>
+        /// Update the last update timestamp
+        /// </summary>
+        private void UpdateLastUpdateTime()
+        {
+            LastUpdateText.Text = $"Last Settings Update: {DateTime.Now:yyyy-MM-dd HH:mm:ss}";
+        }
+
+        /// <summary>
+        /// Clear Log button handler
+        /// </summary>
+        private void ClearLogButton_Click(object sender, RoutedEventArgs e)
+        {
+            LogTextBox.Clear();
+            Log("Log cleared");
         }
         #endregion
 
@@ -232,14 +466,20 @@ namespace Rigol_DS1000Z_E_Control
         }
         #endregion
 
-        #region Preset Menu Methods (for future menu implementation)
+        #region Preset Menu Methods
         /// <summary>
-        /// These methods can be connected to menu items or toolbar buttons
+        /// Apply general purpose presets to both channels
         /// </summary>
         public void ApplyGeneralPurposePresets()
         {
             ApplyChannel1Preset(Ch1Settings.Presets.GeneralPurpose);
             ApplyChannel2Preset(Ch2Settings.Presets.GeneralPurpose);
+
+            // Wait a moment for settings to apply, then refresh
+            System.Threading.Tasks.Task.Delay(500).ContinueWith(t =>
+            {
+                Dispatcher.Invoke(() => GetCurrentSettings());
+            });
         }
 
         public void ApplyPowerMeasurementPresets()
@@ -275,9 +515,21 @@ namespace Rigol_DS1000Z_E_Control
                 {
                     if (LogTextBox != null)
                     {
-                        string timestamp = DateTime.Now.ToString("HH:mm:ss");
+                        string timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
                         LogTextBox.AppendText($"[{timestamp}] {message}\n");
                         LogTextBox.ScrollToEnd();
+
+                        // Limit log size to prevent memory issues
+                        if (LogTextBox.Text.Length > 50000)
+                        {
+                            string[] lines = LogTextBox.Text.Split('\n');
+                            if (lines.Length > 100)
+                            {
+                                LogTextBox.Text = string.Join("\n", lines, lines.Length - 100, 100);
+                                LogTextBox.AppendText("\n[Log truncated to preserve memory]\n");
+                                LogTextBox.ScrollToEnd();
+                            }
+                        }
                     }
                 });
             }

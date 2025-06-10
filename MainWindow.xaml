@@ -3,9 +3,10 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ch1="clr-namespace:DS1000Z_E_USB_Control.Channels.Ch1"
         xmlns:ch2="clr-namespace:DS1000Z_E_USB_Control.Channels.Ch2"
-        Title="Rigol DS1000Z-E USB Control" Height="680" Width="1100">
+        Title="Rigol DS1000Z-E USB Control" Height="720" Width="1200">
     <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -19,17 +20,86 @@
                    Margin="10" 
                    FontSize="16"/>
 
-        <!-- Connect/Disconnect Button -->
-        <Button x:Name="ConnectButton" Grid.Row="1" 
-                Content="Connect" 
-                Width="150" Height="40" 
-                HorizontalAlignment="Center" 
-                Margin="10"
-                FontSize="14"
-                Click="ConnectButton_Click"/>
+        <!-- Control Buttons Row -->
+        <Grid Grid.Row="1" Margin="10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Connect/Disconnect Button -->
+            <Button x:Name="ConnectButton" Grid.Column="0"
+                    Content="Connect" 
+                    Height="40" 
+                    FontSize="14"
+                    Background="#E8F5E8"
+                    BorderBrush="#4CAF50"
+                    Click="ConnectButton_Click"/>
+
+            <!-- Get Current Settings Button -->
+            <Button x:Name="GetSettingsButton" Grid.Column="2"
+                    Content="📋 Get Current Settings" 
+                    Height="40" 
+                    FontSize="14"
+                    Background="#E3F2FD"
+                    BorderBrush="#2196F3"
+                    IsEnabled="False"
+                    Click="GetSettingsButton_Click"/>
+
+            <!-- Export Settings Button -->
+            <Button x:Name="ExportSettingsButton" Grid.Column="4"
+                    Content="💾 Export Settings" 
+                    Height="40" 
+                    FontSize="14"
+                    Background="#FFF3E0"
+                    BorderBrush="#FF9800"
+                    IsEnabled="False"
+                    Click="ExportSettingsButton_Click"/>
+
+            <!-- Preset Menu Button -->
+            <Button x:Name="PresetButton" Grid.Column="6"
+                    Content="⚙️ Apply Presets" 
+                    Height="40" 
+                    FontSize="14"
+                    Background="#F3E5F5"
+                    BorderBrush="#9C27B0"
+                    IsEnabled="False"
+                    Click="PresetButton_Click"/>
+        </Grid>
+
+        <!-- Device Information Panel -->
+        <GroupBox Grid.Row="2" Header="Device Information" Margin="10" Background="#FAFAFA">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock x:Name="DeviceInfoText" Grid.Row="0" Grid.Column="0" 
+                           Text="Device: Not Connected" 
+                           Margin="5" FontSize="12" FontFamily="Consolas"/>
+
+                <TextBlock x:Name="AcquisitionInfoText" Grid.Row="0" Grid.Column="1" 
+                           Text="Acquisition: Unknown" 
+                           Margin="5" FontSize="12" FontFamily="Consolas"/>
+
+                <TextBlock x:Name="LastUpdateText" Grid.Row="1" Grid.ColumnSpan="2" 
+                           Text="Last Settings Update: Never" 
+                           Margin="5" FontSize="10" Foreground="Gray" FontStyle="Italic"/>
+            </Grid>
+        </GroupBox>
 
         <!-- Both Channels Side by Side using UserControls -->
-        <Grid Grid.Row="2" Margin="10">
+        <Grid Grid.Row="3" Margin="10">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="10"/>
@@ -48,13 +118,38 @@
                                  IsEnabled="False"/>
         </Grid>
 
-        <!-- Log Output -->
-        <ScrollViewer Grid.Row="3" Margin="10">
-            <TextBox x:Name="LogTextBox" 
-                     IsReadOnly="True" 
-                     TextWrapping="Wrap"
-                     VerticalScrollBarVisibility="Auto"
-                     Background="#F0F0F0"/>
-        </ScrollViewer>
+        <!-- Enhanced Log Output with Clear Button -->
+        <Grid Grid.Row="4" Margin="10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Log Header with Clear Button -->
+            <Grid Grid.Row="0" Margin="0,0,0,5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0" Text="Activity Log" FontWeight="Bold" VerticalAlignment="Center"/>
+                <Button Grid.Column="1" x:Name="ClearLogButton" Content="Clear Log" 
+                        Width="80" Height="25" FontSize="10"
+                        Click="ClearLogButton_Click"/>
+            </Grid>
+
+            <!-- Log Text Area -->
+            <ScrollViewer Grid.Row="1" 
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Auto">
+                <TextBox x:Name="LogTextBox" 
+                         IsReadOnly="True" 
+                         TextWrapping="Wrap"
+                         Background="#F8F8F8"
+                         FontFamily="Consolas"
+                         FontSize="10"
+                         Padding="5"/>
+            </ScrollViewer>
+        </Grid>
     </Grid>
 </Window>

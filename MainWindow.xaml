@@ -3,7 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ch1="clr-namespace:DS1000Z_E_USB_Control.Channels.Ch1"
         xmlns:ch2="clr-namespace:DS1000Z_E_USB_Control.Channels.Ch2"
-        Title="Rigol DS1000Z-E USB Control" Height="720" Width="1200">
+        xmlns:trigger="clr-namespace:DS1000Z_E_USB_Control.Trigger"
+        Title="Rigol DS1000Z-E USB Control" Height="800" Width="1400">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -23,6 +24,8 @@
         <!-- Control Buttons Row -->
         <Grid Grid.Row="1" Margin="10">
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="10"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="10"/>
                 <ColumnDefinition Width="*"/>
@@ -70,6 +73,16 @@
                     BorderBrush="#9C27B0"
                     IsEnabled="False"
                     Click="PresetButton_Click"/>
+
+            <!-- Trigger Control Button -->
+            <Button x:Name="TriggerControlButton" Grid.Column="8"
+                    Content="🎯 Query Trigger" 
+                    Height="40" 
+                    FontSize="14"
+                    Background="#E8F5E8"
+                    BorderBrush="#32CD32"
+                    IsEnabled="False"
+                    Click="TriggerControlButton_Click"/>
         </Grid>
 
         <!-- Device Information Panel -->
@@ -98,12 +111,15 @@
             </Grid>
         </GroupBox>
 
-        <!-- Both Channels Side by Side using UserControls -->
+        <!-- All Control Panels in Grid Layout -->
         <Grid Grid.Row="3" Margin="10">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="10"/>
-                <!-- Spacing between channels -->
+                <!-- Spacing between panels -->
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="10"/>
+                <!-- Spacing between panels -->
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
@@ -116,6 +132,11 @@
             <ch2:Ch2ControlPanel x:Name="Channel2Panel" 
                                  Grid.Column="2" 
                                  IsEnabled="False"/>
+
+            <!-- Trigger Control Panel -->
+            <trigger:TriggerControlPanel x:Name="TriggerPanel" 
+                                         Grid.Column="4" 
+                                         IsEnabled="False"/>
         </Grid>
 
         <!-- Enhanced Log Output with Clear Button -->

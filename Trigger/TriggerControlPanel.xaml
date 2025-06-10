@@ -1,0 +1,205 @@
+﻿<UserControl x:Class="DS1000Z_E_USB_Control.Trigger.TriggerControlPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="400" d:DesignWidth="500">
+
+    <!-- Trigger Controls (Light Green Background) -->
+    <GroupBox Header="Trigger Controls" 
+              Background="#F0FFF0"
+              BorderBrush="#32CD32"
+              BorderThickness="2">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Trigger Mode -->
+            <Label Grid.Row="0" Grid.Column="0" Content="Trigger Mode:" VerticalAlignment="Center" Margin="5"/>
+            <ComboBox x:Name="TriggerModeComboBox" Grid.Row="0" Grid.Column="1" Margin="5">
+                <ComboBoxItem Content="Edge" Tag="EDGe" IsSelected="True"/>
+                <ComboBoxItem Content="Pulse" Tag="PULSe"/>
+                <ComboBoxItem Content="Slope" Tag="SLOPe"/>
+                <ComboBoxItem Content="Video" Tag="VIDeo"/>
+                <ComboBoxItem Content="Pattern" Tag="PATTern"/>
+                <ComboBoxItem Content="Duration" Tag="DURATion"/>
+                <ComboBoxItem Content="Timeout" Tag="TIMeout"/>
+                <ComboBoxItem Content="Runt" Tag="RUNT"/>
+                <ComboBoxItem Content="Windows" Tag="WINDows"/>
+                <ComboBoxItem Content="Delay" Tag="DELay"/>
+                <ComboBoxItem Content="Setup/Hold" Tag="SHOLd"/>
+                <ComboBoxItem Content="Nth Edge" Tag="NEDGe"/>
+                <ComboBoxItem Content="RS232" Tag="RS232"/>
+                <ComboBoxItem Content="I2C" Tag="IIC"/>
+                <ComboBoxItem Content="SPI" Tag="SPI"/>
+            </ComboBox>
+
+            <!-- Trigger Sweep -->
+            <Label Grid.Row="1" Grid.Column="0" Content="Trigger Sweep:" VerticalAlignment="Center" Margin="5"/>
+            <ComboBox x:Name="TriggerSweepComboBox" Grid.Row="1" Grid.Column="1" Margin="5">
+                <ComboBoxItem Content="Auto" Tag="AUTO" IsSelected="True"/>
+                <ComboBoxItem Content="Normal" Tag="NORMal"/>
+                <ComboBoxItem Content="Single" Tag="SINGle"/>
+            </ComboBox>
+
+            <!-- Force Trigger Button -->
+            <Button Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="2" x:Name="ForceTriggerButton" 
+                    Content="⚡ Force Trigger" Width="120" Height="30"
+                    VerticalAlignment="Center" Margin="10,5,5,5" FontSize="12"
+                    Background="#FFE4B5" BorderBrush="#FF8C00"/>
+
+            <!-- Edge Trigger Settings Group -->
+            <GroupBox Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="4" Header="Edge Trigger Settings" 
+                      Margin="5" Background="#FAFFF0" BorderBrush="#90EE90">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Edge Source -->
+                    <Label Grid.Row="0" Grid.Column="0" Content="Source:" VerticalAlignment="Center" Margin="5"/>
+                    <ComboBox x:Name="EdgeSourceComboBox" Grid.Row="0" Grid.Column="1" Margin="5">
+                        <ComboBoxItem Content="Channel 1" Tag="CHANnel1" IsSelected="True"/>
+                        <ComboBoxItem Content="Channel 2" Tag="CHANnel2"/>
+                        <ComboBoxItem Content="External" Tag="EXT"/>
+                        <ComboBoxItem Content="AC Line" Tag="ACLine"/>
+                    </ComboBox>
+
+                    <!-- Edge Slope -->
+                    <Label Grid.Row="0" Grid.Column="2" Content="Slope:" VerticalAlignment="Center" Margin="5"/>
+                    <ComboBox x:Name="EdgeSlopeComboBox" Grid.Row="0" Grid.Column="3" Margin="5">
+                        <ComboBoxItem Content="Rising Edge" Tag="POSitive" IsSelected="True"/>
+                        <ComboBoxItem Content="Falling Edge" Tag="NEGative"/>
+                    </ComboBox>
+
+                    <!-- Edge Level -->
+                    <Label Grid.Row="1" Grid.Column="0" Content="Level:" VerticalAlignment="Center" Margin="5"/>
+                    <Grid Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Max Level Display -->
+                        <TextBlock Grid.Row="0" x:Name="MaxLevelDisplay" Text="+5.0V" FontSize="8" Foreground="Gray" 
+                                   HorizontalAlignment="Center"/>
+
+                        <!-- Level Slider -->
+                        <Slider x:Name="TriggerLevelSlider" Grid.Row="1"
+                                Orientation="Vertical" 
+                                Minimum="-10" Maximum="10" 
+                                Value="0"
+                                TickFrequency="1"
+                                TickPlacement="Both"
+                                IsSnapToTickEnabled="False"
+                                Height="80"
+                                Width="40"
+                                HorizontalAlignment="Center">
+                            <Slider.Resources>
+                                <Style TargetType="Slider">
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="Slider">
+                                                <Grid>
+                                                    <Border Background="LightGray" Width="2" HorizontalAlignment="Center"/>
+                                                    <Track Name="PART_Track">
+                                                        <Track.Thumb>
+                                                            <Thumb Background="#32CD32" Width="12" Height="20" BorderBrush="#228B22" BorderThickness="1"/>
+                                                        </Track.Thumb>
+                                                    </Track>
+                                                </Grid>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </Slider.Resources>
+                        </Slider>
+
+                        <!-- Min Level Display -->
+                        <TextBlock Grid.Row="2" x:Name="MinLevelDisplay" Text="-5.0V" FontSize="8" Foreground="Gray" 
+                                   HorizontalAlignment="Center"/>
+                    </Grid>
+
+                    <!-- Current Level Display -->
+                    <StackPanel Grid.Row="1" Grid.Column="2" VerticalAlignment="Center" Margin="5">
+                        <TextBlock x:Name="LevelValueText" 
+                                   Text="0.000 V" FontSize="11" FontWeight="Bold"
+                                   Foreground="#32CD32" HorizontalAlignment="Center"/>
+                    </StackPanel>
+
+                    <!-- Quick Zero Level Button -->
+                    <Button Grid.Row="1" Grid.Column="3" x:Name="QuickZeroLevelButton" Content="⌂" Width="25" Height="25"
+                            VerticalAlignment="Center" Margin="5" FontSize="14"
+                            ToolTip="Set Level to Zero" Background="#F0FFF0" BorderBrush="#32CD32"/>
+
+                    <!-- Level Range Display -->
+                    <Label Grid.Row="2" Grid.Column="0" Content="Level Range:" VerticalAlignment="Center" Margin="5"/>
+                    <TextBlock x:Name="LevelRangeText" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3"
+                               Text="Range: ±10V" FontSize="10" Foreground="Gray" 
+                               VerticalAlignment="Center" Margin="5"/>
+                </Grid>
+            </GroupBox>
+
+            <!-- Trigger Coupling -->
+            <Label Grid.Row="3" Grid.Column="0" Content="Coupling:" VerticalAlignment="Center" Margin="5"/>
+            <ComboBox x:Name="TriggerCouplingComboBox" Grid.Row="3" Grid.Column="1" Margin="5">
+                <ComboBoxItem Content="DC" Tag="DC" IsSelected="True"/>
+                <ComboBoxItem Content="AC" Tag="AC"/>
+                <ComboBoxItem Content="LF Reject" Tag="LFREject"/>
+                <ComboBoxItem Content="HF Reject" Tag="HFREject"/>
+            </ComboBox>
+
+            <!-- Holdoff Time -->
+            <Label Grid.Row="4" Grid.Column="0" Content="Holdoff Time:" VerticalAlignment="Center" Margin="5"/>
+            <TextBox x:Name="HoldoffTextBox" Grid.Row="4" Grid.Column="1" Margin="5" 
+                     Text="16e-9" VerticalAlignment="Center" Height="25"/>
+            <Label Grid.Row="4" Grid.Column="2" Content="seconds" VerticalAlignment="Center" Margin="5"/>
+            <TextBlock x:Name="HoldoffDisplayText" Grid.Row="4" Grid.Column="3"
+                       Text="(16 ns)" FontSize="10" Foreground="Gray"
+                       VerticalAlignment="Center" Margin="5"/>
+
+            <!-- Noise Reject -->
+            <CheckBox x:Name="NoiseRejectCheckBox" Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2"
+                      Content="Enable Noise Reject" 
+                      Margin="5"
+                      FontWeight="Bold"
+                      Foreground="#228B22"/>
+
+            <!-- Trigger Status Display -->
+            <Label Grid.Row="6" Grid.Column="0" Content="Trigger Status:" VerticalAlignment="Center" Margin="5"/>
+            <TextBlock x:Name="TriggerStatusText" Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="3"
+                       Text="Status: AUTO" FontSize="12" FontWeight="Bold"
+                       Foreground="#FF6600" VerticalAlignment="Center" Margin="5"/>
+
+            <!-- Current Settings Display -->
+            <TextBlock x:Name="CurrentTriggerSettingsText" Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="4"
+                       Margin="5" VerticalAlignment="Center"
+                       Text="Current: Mode=Edge, Source=CH1, Slope=Rising, Level=0V, Sweep=Auto, Coupling=DC"
+                       FontSize="10" Foreground="#32CD32" TextWrapping="Wrap"/>
+        </Grid>
+    </GroupBox>
+</UserControl>

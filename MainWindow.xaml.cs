@@ -4,13 +4,14 @@ using System.Windows;
 using System.Windows.Media;
 using DS1000Z_E_USB_Control.Channels.Ch1;
 using DS1000Z_E_USB_Control.Channels.Ch2;
+using DS1000Z_E_USB_Control.Trigger;
 using DS1000Z_E_USB_Control;
 using Microsoft.Win32;
 
 namespace Rigol_DS1000Z_E_Control
 {
     /// <summary>
-    /// Enhanced MainWindow with comprehensive settings management
+    /// Enhanced MainWindow with comprehensive settings management including trigger control
     /// </summary>
     public partial class MainWindow : Window
     {
@@ -33,17 +34,17 @@ namespace Rigol_DS1000Z_E_Control
             settingsManager = new OscilloscopeSettingsManager(oscilloscope);
             settingsManager.LogEvent += (sender, message) => Log(message);
 
-            // Initialize both channel panels
-            InitializeChannelPanels();
+            // Initialize all control panels
+            InitializeControlPanels();
 
             Log("Application started. Ready to connect to Rigol DS1000Z-E.");
             UpdateDeviceInfo();
         }
 
         /// <summary>
-        /// Initialize both channel control panels
+        /// Initialize all control panels (channels and trigger)
         /// </summary>
-        private void InitializeChannelPanels()
+        private void InitializeControlPanels()
         {
             // Initialize Channel 1 panel
             if (Channel1Panel != null)
@@ -57,6 +58,13 @@ namespace Rigol_DS1000Z_E_Control
             {
                 Channel2Panel.LogEvent += (sender, message) => Log(message);
                 Channel2Panel.Initialize(oscilloscope);
+            }
+
+            // Initialize Trigger panel
+            if (TriggerPanel != null)
+            {
+                TriggerPanel.LogEvent += (sender, message) => Log(message);
+                TriggerPanel.Initialize(oscilloscope);
             }
         }
         #endregion
@@ -126,10 +134,12 @@ namespace Rigol_DS1000Z_E_Control
                 GetSettingsButton.IsEnabled = true;
                 ExportSettingsButton.IsEnabled = true;
                 PresetButton.IsEnabled = true;
+                TriggerControlButton.IsEnabled = true;
 
-                // Enable both channel panels
+                // Enable all control panels
                 Channel1Panel?.SetEnabled(true);
                 Channel2Panel?.SetEnabled(true);
+                TriggerPanel?.SetEnabled(true);
             }
             else
             {
@@ -143,10 +153,12 @@ namespace Rigol_DS1000Z_E_Control
                 GetSettingsButton.IsEnabled = false;
                 ExportSettingsButton.IsEnabled = false;
                 PresetButton.IsEnabled = false;
+                TriggerControlButton.IsEnabled = false;
 
-                // Disable both channel panels
+                // Disable all control panels
                 Channel1Panel?.SetEnabled(false);
                 Channel2Panel?.SetEnabled(false);
+                TriggerPanel?.SetEnabled(false);
             }
         }
         #endregion
@@ -181,7 +193,7 @@ namespace Rigol_DS1000Z_E_Control
                 if (success)
                 {
                     // Update UI with the new settings
-                    UpdateChannelUIFromSettings();
+                    UpdateAllPanelsFromSettings();
                     UpdateDeviceInfo();
                     UpdateLastUpdateTime();
 
@@ -208,35 +220,37 @@ namespace Rigol_DS1000Z_E_Control
         }
 
         /// <summary>
-        /// Update channel UI controls with settings from oscilloscope
+        /// Update all control panel UIs with settings from oscilloscope
         /// </summary>
-        private void UpdateChannelUIFromSettings()
+        private void UpdateAllPanelsFromSettings()
         {
             try
             {
-                // Update Channel 1 UI - Use UpdateFromSettings to avoid sending commands back to oscilloscope
+                // Update Channel 1 UI
                 if (Channel1Panel != null && settingsManager.Channel1Settings != null)
                 {
                     Channel1Panel.UpdateFromSettings(settingsManager.Channel1Settings);
                     Log($"✅ Updated Channel 1 UI: {settingsManager.Channel1Settings}");
                 }
 
-                // Update Channel 2 UI - Use UpdateFromSettings to avoid sending commands back to oscilloscope
+                // Update Channel 2 UI
                 if (Channel2Panel != null && settingsManager.Channel2Settings != null)
                 {
                     Channel2Panel.UpdateFromSettings(settingsManager.Channel2Settings);
                     Log($"✅ Updated Channel 2 UI: {settingsManager.Channel2Settings}");
                 }
 
-                // Log timebase and trigger info (for future UI implementation)
+                // Update Trigger UI
+                if (TriggerPanel != null && settingsManager.TriggerSettings != null)
+                {
+                    TriggerPanel.UpdateFromSettings(settingsManager.TriggerSettings);
+                    Log($"🎯 Updated Trigger UI: {settingsManager.TriggerSettings}");
+                }
+
+                // Log timebase info (for future UI implementation)
                 if (settingsManager.TimeBaseSettings != null)
                 {
                     Log($"📊 TimeBase Settings: {settingsManager.TimeBaseSettings}");
-                }
-
-                if (settingsManager.TriggerSettings != null)
-                {
-                    Log($"🎯 Trigger Settings: {settingsManager.TriggerSettings}");
                 }
             }
             catch (Exception ex)
@@ -310,22 +324,41 @@ namespace Rigol_DS1000Z_E_Control
                 return;
             }
 
-            // Create a simple preset selection dialog
-            var result = MessageBox.Show("Apply General Purpose preset to both channels?\n\n" +
+            // Create enhanced preset selection dialog
+            var result = MessageBox.Show("Apply General Purpose preset to all subsystems?\n\n" +
                                        "This will set:\n" +
-                                       "• Both channels enabled\n" +
-                                       "• 10× probe ratio\n" +
-                                       "• 500mV/div scale\n" +
-                                       "• DC coupling\n" +
-                                       "• Zero offset",
-                                       "Apply Preset",
+                                       "• Both channels enabled with 10× probe\n" +
+                                       "• 500mV/div scale, DC coupling\n" +
+                                       "• 1ms/div timebase\n" +
+                                       "• Edge trigger on CH1, auto sweep\n" +
+                                       "• Zero offsets and levels",
+                                       "Apply Comprehensive Preset",
                                        MessageBoxButton.YesNo,
                                        MessageBoxImage.Question);
 
             if (result == MessageBoxResult.Yes)
             {
-                ApplyGeneralPurposePresets();
+                ApplyComprehensivePresets();
             }
+        }
+
+        /// <summary>
+        /// Trigger Control button handler
+        /// </summary>
+        private void TriggerControlButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!isConnected)
+            {
+                MessageBox.Show("Please connect to the oscilloscope first.",
+                              "Not Connected",
+                              MessageBoxButton.OK,
+                              MessageBoxImage.Information);
+                return;
+            }
+
+            // Query and update trigger settings specifically
+            Log("Querying trigger settings...");
+            TriggerPanel?.QueryAndUpdateSettings();
         }
 
         /// <summary>
@@ -387,6 +420,17 @@ namespace Rigol_DS1000Z_E_Control
         }
 
         /// <summary>
+        /// Apply preset to Trigger
+        /// </summary>
+        public void ApplyTriggerPreset(TriggerSettings preset)
+        {
+            if (isConnected)
+            {
+                TriggerPanel?.ApplyPreset(preset);
+            }
+        }
+
+        /// <summary>
         /// Apply dual channel preset for differential measurements
         /// </summary>
         public void ApplyDualChannelPreset()
@@ -412,29 +456,35 @@ namespace Rigol_DS1000Z_E_Control
             {
                 var ch1Preset = Ch1Settings.Presets.SmallSignal;
                 var ch2Preset = Ch2Settings.Presets.SmallSignal;
+                var triggerPreset = TriggerSettings.Presets.NoisySignal;
 
                 Channel1Panel?.ApplyPreset(ch1Preset);
                 Channel2Panel?.ApplyPreset(ch2Preset);
+                TriggerPanel?.ApplyPreset(triggerPreset);
 
-                Log("Applied small signal preset to both channels");
+                Log("Applied small signal preset to both channels and trigger");
             }
         }
 
         /// <summary>
-        /// Get current settings from both channels
+        /// Get current settings from all panels
         /// </summary>
-        public void LogAllChannelSettings()
+        public void LogAllPanelSettings()
         {
             if (isConnected)
             {
                 var ch1Settings = Channel1Panel?.GetSettings();
                 var ch2Settings = Channel2Panel?.GetSettings();
+                var triggerSettings = TriggerPanel?.GetSettings();
 
                 if (ch1Settings != null)
                     Log($"Channel 1: {ch1Settings}");
 
                 if (ch2Settings != null)
                     Log($"Channel 2: {ch2Settings}");
+
+                if (triggerSettings != null)
+                    Log($"Trigger: {triggerSettings}");
             }
         }
 
@@ -466,32 +516,132 @@ namespace Rigol_DS1000Z_E_Control
         }
         #endregion
 
-        #region Preset Menu Methods
+        #region Enhanced Preset Methods
         /// <summary>
-        /// Apply general purpose presets to both channels
+        /// Apply comprehensive presets to all subsystems including trigger
         /// </summary>
-        public void ApplyGeneralPurposePresets()
+        public void ApplyComprehensivePresets()
         {
-            ApplyChannel1Preset(Ch1Settings.Presets.GeneralPurpose);
-            ApplyChannel2Preset(Ch2Settings.Presets.GeneralPurpose);
+            if (!isConnected) return;
 
-            // Wait a moment for settings to apply, then refresh
-            System.Threading.Tasks.Task.Delay(500).ContinueWith(t =>
+            try
             {
-                Dispatcher.Invoke(() => GetCurrentSettings());
-            });
+                // Apply to all subsystems using the settings manager
+                settingsManager.ApplyGeneralPurposePreset();
+
+                // Wait a moment for settings to apply, then refresh
+                System.Threading.Tasks.Task.Delay(1000).ContinueWith(t =>
+                {
+                    Dispatcher.Invoke(() => GetCurrentSettings());
+                });
+
+                Log("Applied comprehensive presets to all subsystems");
+            }
+            catch (Exception ex)
+            {
+                Log($"Error applying comprehensive presets: {ex.Message}");
+            }
         }
 
+        /// <summary>
+        /// Apply power measurement presets to all subsystems
+        /// </summary>
         public void ApplyPowerMeasurementPresets()
         {
-            ApplyChannel1Preset(Ch1Settings.Presets.PowerMeasurement);
-            ApplyChannel2Preset(Ch2Settings.Presets.PowerMeasurement);
+            if (!isConnected) return;
+
+            try
+            {
+                settingsManager.ApplyPowerMeasurementPreset();
+                Log("Applied power measurement presets to all subsystems");
+            }
+            catch (Exception ex)
+            {
+                Log($"Error applying power measurement presets: {ex.Message}");
+            }
         }
 
+        /// <summary>
+        /// Apply high frequency presets to all subsystems
+        /// </summary>
         public void ApplyHighFrequencyPresets()
         {
-            ApplyChannel1Preset(Ch1Settings.Presets.HighFrequency);
-            ApplyChannel2Preset(Ch2Settings.Presets.HighFrequency);
+            if (!isConnected) return;
+
+            try
+            {
+                settingsManager.ApplyHighFrequencyPreset();
+                Log("Applied high frequency presets to all subsystems");
+            }
+            catch (Exception ex)
+            {
+                Log($"Error applying high frequency presets: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Apply digital measurement presets to all subsystems
+        /// </summary>
+        public void ApplyDigitalPresets()
+        {
+            if (!isConnected) return;
+
+            try
+            {
+                settingsManager.ApplyDigitalPreset();
+                Log("Applied digital measurement presets to all subsystems");
+            }
+            catch (Exception ex)
+            {
+                Log($"Error applying digital presets: {ex.Message}");
+            }
+        }
+        #endregion
+
+        #region Trigger-Specific Methods
+        /// <summary>
+        /// Force a trigger event
+        /// </summary>
+        public void ForceTrigger()
+        {
+            if (isConnected)
+            {
+                bool success = oscilloscope.SendCommand(":TFORce");
+                if (success)
+                {
+                    Log("🎯 Trigger forced manually");
+                }
+                else
+                {
+                    Log("❌ Failed to force trigger");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Set trigger to single shot mode
+        /// </summary>
+        public void SetSingleShotTrigger()
+        {
+            if (isConnected)
+            {
+                var singleShotPreset = TriggerSettings.Presets.SingleShot;
+                TriggerPanel?.ApplyPreset(singleShotPreset);
+                Log("🎯 Set trigger to single shot mode");
+            }
+        }
+
+        /// <summary>
+        /// Reset trigger to auto mode
+        /// </summary>
+        public void ResetTriggerToAuto()
+        {
+            if (isConnected)
+            {
+                var autoPreset = TriggerSettings.Presets.GeneralPurpose;
+                TriggerPanel?.ApplyPreset(autoPreset);
+                Log("🎯 Reset trigger to auto mode");
+            }
         }
         #endregion
 
@@ -545,9 +695,10 @@ namespace Rigol_DS1000Z_E_Control
         {
             base.OnClosed(e);
 
-            // Clean up channel panel resources
+            // Clean up all panel resources
             Channel1Panel?.Cleanup();
             Channel2Panel?.Cleanup();
+            TriggerPanel?.Cleanup();
 
             // Ensure proper cleanup
             if (isConnected)

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using Rigol_DS1000Z_E_Control;
@@ -7,12 +8,13 @@ namespace DS1000Z_E_USB_Control.TimeBase
 {
     /// <summary>
     /// Interaction logic for TimeBaseControlPanel.xaml
-    /// TimeBase UI UserControl for Rigol DS1000Z-E
+    /// TimeBase control UI UserControl
     /// </summary>
     public partial class TimeBaseControlPanel : UserControl
     {
         private TimeBaseController controller;
         private bool isInitialized = false;
+        private bool isUpdating = false;
 
         public event EventHandler<string> LogEvent;
 
@@ -31,70 +33,35 @@ namespace DS1000Z_E_USB_Control.TimeBase
             // Create the controller
             controller = new TimeBaseController(oscilloscope);
             controller.LogEvent += (sender, message) => LogEvent?.Invoke(this, message);
-            controller.SettingsChanged += (sender, e) => LogEvent?.Invoke(this, "TimeBase settings changed");
+            controller.SettingsChanged += (sender, e) =>
+            {
+                LogEvent?.Invoke(this, "TimeBase settings changed");
+                UpdateDisplays();
+            };
 
             // Wire up UI controls to the controller
-            controller.HorizontalScaleComboBox = HorizontalScaleComboBox;
-            controller.DelayedScaleComboBox = DelayedScaleComboBox;
-            controller.DelayEnabledCheckBox = DelayEnabledCheckBox;
-            controller.MainModeRadioButton = MainModeRadioButton;
-            controller.DelayedModeRadioButton = DelayedModeRadioButton;
-            controller.HorizontalOffsetSlider = HorizontalOffsetSlider;
-            controller.DelayedOffsetTextBox = DelayedOffsetTextBox;
-            controller.CurrentTimeBaseSettingsText = CurrentTimeBaseSettingsText;
-            controller.CurrentScaleText = CurrentScaleText;
-            controller.CurrentDelayedScaleText = CurrentDelayedScaleText;
-            controller.OffsetValueText = OffsetValueText;
-            controller.TimeWindowText = TimeWindowText;
-            controller.SampleRateText = SampleRateText;
+            WireUpControls();
 
-            // Wire up enhanced UI controls
-            controller.MaxOffsetDisplay = MaxOffsetDisplay;
-            controller.MinOffsetDisplay = MinOffsetDisplay;
-            controller.OffsetRangeText = OffsetRangeText;
-            controller.DelayedOffsetDisplayText = DelayedOffsetDisplayText;
-            controller.DelayedStatusText = DelayedStatusText;
-            controller.AutoScaleButton = AutoScaleButton;
-            controller.ResetTimeBaseButton = ResetTimeBaseButton;
-            controller.CenterTimeBaseButton = CenterTimeBaseButton;
-            controller.QuickZeroOffsetButton = QuickZeroOffsetButton;
-
-            // Wire up additional controls not handled by the base controller
-            WireUpAdditionalControls();
-
-            // Initialize the controller
-            controller.InitializeControls();
-
-            // Set up additional UI elements
-            SetupEnhancedUI();
+            // Initialize the controller and UI
+            InitializeUI();
 
             isInitialized = true;
             LogEvent?.Invoke(this, "TimeBase control panel initialized");
         }
 
         /// <summary>
-        /// Wire up additional controls not handled by the base controller
+        /// Wire up UI controls to event handlers
         /// </summary>
-        private void WireUpAdditionalControls()
+        private void WireUpControls()
         {
-            if (AutoScaleButton != null)
+            if (TimeBaseModeComboBox != null)
             {
-                AutoScaleButton.Click += AutoScale_Click;
+                TimeBaseModeComboBox.SelectionChanged += TimeBaseMode_SelectionChanged;
             }
 
-            if (ResetTimeBaseButton != null)
+            if (HorizontalScaleComboBox != null)
             {
-                ResetTimeBaseButton.Click += ResetTimeBase_Click;
-            }
-
-            if (CenterTimeBaseButton != null)
-            {
-                CenterTimeBaseButton.Click += CenterTimeBase_Click;
-            }
-
-            if (QuickZeroOffsetButton != null)
-            {
-                QuickZeroOffsetButton.Click += QuickZeroOffset_Click;
+                HorizontalScaleComboBox.SelectionChanged += HorizontalScale_SelectionChanged;
             }
 
             if (HorizontalOffsetSlider != null)
@@ -102,100 +69,120 @@ namespace DS1000Z_E_USB_Control.TimeBase
                 HorizontalOffsetSlider.ValueChanged += HorizontalOffsetSlider_ValueChanged;
             }
 
-            if (DelayedOffsetTextBox != null)
+            if (QuickZeroOffsetButton != null)
             {
-                DelayedOffsetTextBox.TextChanged += DelayedOffsetTextBox_TextChanged;
-                DelayedOffsetTextBox.LostFocus += DelayedOffsetTextBox_LostFocus;
-            }
-
-            // Subscribe to settings changes to update displays
-            if (controller != null)
-            {
-                controller.SettingsChanged += (sender, e) => UpdateDisplays();
+                QuickZeroOffsetButton.Click += QuickZeroOffset_Click;
             }
         }
 
         /// <summary>
-        /// Set up enhanced UI elements
+        /// Initialize the UI elements
         /// </summary>
-        private void SetupEnhancedUI()
+        private void InitializeUI()
         {
+            PopulateHorizontalScaleOptions();
+            UpdateOffsetSliderRange();
             UpdateDisplays();
         }
 
         /// <summary>
-        /// Handle horizontal offset slider changes
+        /// Populate horizontal scale options
         /// </summary>
-        private void HorizontalOffsetSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        private void PopulateHorizontalScaleOptions()
+        {
+            if (HorizontalScaleComboBox == null) return;
+
+            var scaleOptions = TimeBaseSettings.GetHorizontalScaleOptions();
+
+            HorizontalScaleComboBox.Items.Clear();
+            foreach (var option in scaleOptions)
+            {
+                var item = new ComboBoxItem
+                {
+                    Content = option.display,
+                    Tag = option.value.ToString(CultureInfo.InvariantCulture)
+                };
+                HorizontalScaleComboBox.Items.Add(item);
+
+                // Select 1ms/div as default
+                if (Math.Abs(option.value - 1e-3) < 1e-9)
+                {
+                    HorizontalScaleComboBox.SelectedItem = item;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Update the horizontal offset slider range based on current scale
+        /// </summary>
+        private void UpdateOffsetSliderRange()
+        {
+            if (HorizontalOffsetSlider == null || controller == null) return;
+
+            var settings = controller.GetSettings();
+            var (minOffset, maxOffset) = settings.GetOffsetRange();
+
+            isUpdating = true;
+
+            // Set the range
+            HorizontalOffsetSlider.Minimum = minOffset;
+            HorizontalOffsetSlider.Maximum = maxOffset;
+
+            // Calculate smart tick frequency based on range
+            double range = maxOffset - minOffset;
+            double tickFreq;
+
+            if (range <= 1e-6) tickFreq = 100e-9;      // For ns ranges
+            else if (range <= 1e-3) tickFreq = 100e-6; // For µs ranges
+            else if (range <= 1.0) tickFreq = 100e-3;  // For ms ranges
+            else tickFreq = 1.0;                       // For s ranges
+
+            HorizontalOffsetSlider.TickFrequency = tickFreq;
+
+            // Clamp current value to new range
+            if (HorizontalOffsetSlider.Value < minOffset)
+                HorizontalOffsetSlider.Value = minOffset;
+            else if (HorizontalOffsetSlider.Value > maxOffset)
+                HorizontalOffsetSlider.Value = maxOffset;
+
+            isUpdating = false;
+
+            // Update range displays
+            if (MinOffsetDisplay != null)
+                MinOffsetDisplay.Text = FormatTime(minOffset);
+            if (MaxOffsetDisplay != null)
+                MaxOffsetDisplay.Text = FormatTime(maxOffset);
+            if (OffsetRangeText != null)
+                OffsetRangeText.Text = $"Range: ±{FormatTime(Math.Abs(maxOffset))}";
+
+            LogEvent?.Invoke(this, $"TimeBase offset range updated: {FormatTime(minOffset)} to {FormatTime(maxOffset)}");
+        }
+
+        /// <summary>
+        /// Update all display elements
+        /// </summary>
+        private void UpdateDisplays()
         {
             if (controller == null) return;
 
+            var settings = controller.GetSettings();
+
+            // Update time window
+            if (TimeWindowText != null)
+            {
+                TimeWindowText.Text = FormatTime(settings.TimeWindow);
+            }
+
+            // Update offset value and percentage
             UpdateOffsetValueDisplay();
-            controller.HandleHorizontalOffsetChanged(e.NewValue);
-        }
 
-        /// <summary>
-        /// Handle delayed offset text box changes
-        /// </summary>
-        private void DelayedOffsetTextBox_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            UpdateDelayedOffsetDisplay();
-        }
-
-        /// <summary>
-        /// Handle delayed offset text box lost focus (commit the value)
-        /// </summary>
-        private void DelayedOffsetTextBox_LostFocus(object sender, RoutedEventArgs e)
-        {
-            if (controller == null || DelayedOffsetTextBox == null) return;
-
-            if (double.TryParse(DelayedOffsetTextBox.Text, out double offset))
+            // Update current settings display
+            if (CurrentTimeBaseSettingsText != null)
             {
-                controller.SetDelayedOffset(offset);
+                CurrentTimeBaseSettingsText.Text =
+                    $"Current: Mode={settings.Mode}, Scale={settings.MainScaleDisplay}, " +
+                    $"Offset={FormatTime(settings.MainOffset)}, Window={FormatTime(settings.TimeWindow)}";
             }
-            else
-            {
-                // Reset to last known good value
-                var settings = controller.GetSettings();
-                DelayedOffsetTextBox.Text = settings.DelayOffset.ToString("F6");
-                LogEvent?.Invoke(this, "Invalid delayed offset value - reset to previous value");
-            }
-        }
-
-        /// <summary>
-        /// Auto scale button handler
-        /// </summary>
-        private void AutoScale_Click(object sender, RoutedEventArgs e)
-        {
-            controller?.AutoScale();
-            LogEvent?.Invoke(this, "TimeBase auto scale executed");
-        }
-
-        /// <summary>
-        /// Reset timebase button handler
-        /// </summary>
-        private void ResetTimeBase_Click(object sender, RoutedEventArgs e)
-        {
-            controller?.ResetToDefaults();
-            LogEvent?.Invoke(this, "TimeBase reset to defaults");
-        }
-
-        /// <summary>
-        /// Center timebase button handler
-        /// </summary>
-        private void CenterTimeBase_Click(object sender, RoutedEventArgs e)
-        {
-            controller?.SetMainOffset(0);
-            LogEvent?.Invoke(this, "TimeBase centered");
-        }
-
-        /// <summary>
-        /// Quick zero offset button handler
-        /// </summary>
-        private void QuickZeroOffset_Click(object sender, RoutedEventArgs e)
-        {
-            controller?.SetMainOffset(0);
-            LogEvent?.Invoke(this, "TimeBase offset zeroed");
         }
 
         /// <summary>
@@ -206,99 +193,85 @@ namespace DS1000Z_E_USB_Control.TimeBase
             if (OffsetValueText == null || HorizontalOffsetSlider == null) return;
 
             double value = HorizontalOffsetSlider.Value;
-            OffsetValueText.Text = FormatTimeValue(value);
+            OffsetValueText.Text = FormatTime(value);
+
+            // Update percentage display
+            if (OffsetPercentageDisplay != null && controller != null)
+            {
+                var settings = controller.GetSettings();
+                var (minOffset, maxOffset) = settings.GetOffsetRange();
+                double range = maxOffset - minOffset;
+                double percentage = range > 0 ? (value / (range / 2.0)) * 100 : 0;
+                OffsetPercentageDisplay.Text = $"({percentage:F0}%)";
+            }
         }
 
+        #region Event Handlers
+
         /// <summary>
-        /// Update the delayed offset display text
+        /// Handle timebase mode changes
         /// </summary>
-        private void UpdateDelayedOffsetDisplay()
+        private void TimeBaseMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (DelayedOffsetDisplayText == null || DelayedOffsetTextBox == null) return;
+            if (isUpdating || controller == null) return;
 
-            if (double.TryParse(DelayedOffsetTextBox.Text, out double offset))
+            var selectedItem = TimeBaseModeComboBox?.SelectedItem as ComboBoxItem;
+            if (selectedItem != null)
             {
-                DelayedOffsetDisplayText.Text = $"({FormatTimeValue(offset)})";
-            }
-            else
-            {
-                DelayedOffsetDisplayText.Text = "(Invalid)";
+                string mode = selectedItem.Tag.ToString();
+                controller.SetMode(mode);
             }
         }
 
         /// <summary>
-        /// Update all display elements
+        /// Handle horizontal scale changes
         /// </summary>
-        public void UpdateDisplays()
+        private void HorizontalScale_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (isUpdating || controller == null) return;
+
+            var selectedItem = HorizontalScaleComboBox?.SelectedItem as ComboBoxItem;
+            if (selectedItem != null && double.TryParse(selectedItem.Tag.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out double scale))
+            {
+                controller.SetHorizontalScale(scale);
+                UpdateOffsetSliderRange(); // Update range when scale changes
+            }
+        }
+
+        /// <summary>
+        /// Handle horizontal offset slider changes
+        /// </summary>
+        private void HorizontalOffsetSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (isUpdating || controller == null) return;
+
+            UpdateOffsetValueDisplay();
+            controller.SetHorizontalOffset(e.NewValue);
+        }
+
+        /// <summary>
+        /// Quick zero offset button handler
+        /// </summary>
+        private void QuickZeroOffset_Click(object sender, RoutedEventArgs e)
         {
             if (controller == null) return;
 
-            var settings = controller.GetSettings();
+            controller.SetHorizontalOffset(0);
 
-            // Update offset range displays
-            var (minOffset, maxOffset) = settings.GetOffsetRange();
-
-            if (MaxOffsetDisplay != null)
+            if (HorizontalOffsetSlider != null)
             {
-                MaxOffsetDisplay.Text = FormatTimeValue(maxOffset);
+                isUpdating = true;
+                HorizontalOffsetSlider.Value = 0;
+                isUpdating = false;
+                UpdateOffsetValueDisplay();
             }
 
-            if (MinOffsetDisplay != null)
-            {
-                MinOffsetDisplay.Text = FormatTimeValue(minOffset);
-            }
-
-            if (OffsetRangeText != null)
-            {
-                string rangeText;
-                if (Math.Abs(minOffset) == Math.Abs(maxOffset))
-                {
-                    rangeText = $"Range: ±{FormatTimeValue(maxOffset).Replace("+", "")}";
-                }
-                else
-                {
-                    rangeText = $"Range: {FormatTimeValue(minOffset)} to {FormatTimeValue(maxOffset)}";
-                }
-                OffsetRangeText.Text = rangeText;
-            }
-
-            // Update time window display
-            if (TimeWindowText != null)
-            {
-                double timeWindow = settings.TimeWindow;
-                TimeWindowText.Text = $"Total Window: {FormatTimeValue(timeWindow)} (12 divisions × {settings.MainScaleDisplay})";
-            }
-
-            // Update delayed status
-            if (DelayedStatusText != null)
-            {
-                DelayedStatusText.Text = settings.DelayEnabled ?
-                    $"Status: Enabled ({settings.DelayScaleDisplay})" :
-                    "Status: Disabled";
-            }
+            LogEvent?.Invoke(this, "TimeBase offset zeroed");
         }
 
-        /// <summary>
-        /// Smart time value formatting
-        /// </summary>
-        private string FormatTimeValue(double time)
-        {
-            if (time == 0) return "0 s";
+        #endregion
 
-            double absTime = Math.Abs(time);
-            string sign = time < 0 ? "-" : "";
-
-            if (absTime >= 1.0)
-                return $"{sign}{absTime:F3} s";
-            else if (absTime >= 1e-3)
-                return $"{sign}{(absTime * 1000):F3} ms";
-            else if (absTime >= 1e-6)
-                return $"{sign}{(absTime * 1000000):F3} μs";
-            else if (absTime >= 1e-9)
-                return $"{sign}{(absTime * 1000000000):F3} ns";
-            else
-                return $"{sign}{absTime:E3} s";
-        }
+        #region Public API
 
         /// <summary>
         /// Enable or disable the control panel
@@ -313,10 +286,71 @@ namespace DS1000Z_E_USB_Control.TimeBase
         /// </summary>
         public void QueryAndUpdateSettings()
         {
-            controller?.QueryAndUpdateSettings();
-            UpdateDisplays();
-            UpdateOffsetValueDisplay();
-            UpdateDelayedOffsetDisplay();
+            if (controller == null) return;
+
+            controller.QueryAndUpdateSettings();
+            UpdateFromCurrentSettings();
+        }
+
+        /// <summary>
+        /// Update UI from current controller settings
+        /// </summary>
+        private void UpdateFromCurrentSettings()
+        {
+            if (controller == null) return;
+
+            try
+            {
+                isUpdating = true;
+
+                var settings = controller.GetSettings();
+
+                // Update mode
+                if (TimeBaseModeComboBox != null)
+                {
+                    foreach (ComboBoxItem item in TimeBaseModeComboBox.Items)
+                    {
+                        if (item.Tag.ToString().Equals(settings.Mode, StringComparison.OrdinalIgnoreCase))
+                        {
+                            TimeBaseModeComboBox.SelectedItem = item;
+                            break;
+                        }
+                    }
+                }
+
+                // Update horizontal scale
+                if (HorizontalScaleComboBox != null)
+                {
+                    foreach (ComboBoxItem item in HorizontalScaleComboBox.Items)
+                    {
+                        if (double.TryParse(item.Tag.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out double itemScale) &&
+                            Math.Abs(itemScale - settings.MainScale) < settings.MainScale * 0.01)
+                        {
+                            HorizontalScaleComboBox.SelectedItem = item;
+                            break;
+                        }
+                    }
+                }
+
+                // Update horizontal offset
+                UpdateOffsetSliderRange();
+                if (HorizontalOffsetSlider != null)
+                {
+                    HorizontalOffsetSlider.Value = settings.MainOffset;
+                }
+
+                UpdateDisplays();
+
+                LogEvent?.Invoke(this, $"Updated TimeBase UI: {settings}");
+            }
+            catch (Exception ex)
+            {
+                LogEvent?.Invoke(this, $"Error updating TimeBase UI: {ex.Message}");
+            }
+            finally
+            {
+                isUpdating = false;
+            }
         }
 
         /// <summary>
@@ -332,10 +366,10 @@ namespace DS1000Z_E_USB_Control.TimeBase
         /// </summary>
         public void SetSettings(TimeBaseSettings settings)
         {
-            controller?.SetSettings(settings);
-            UpdateDisplays();
-            UpdateOffsetValueDisplay();
-            UpdateDelayedOffsetDisplay();
+            if (controller == null || settings == null) return;
+
+            controller.SetSettings(settings);
+            UpdateFromCurrentSettings();
         }
 
         /// <summary>
@@ -343,10 +377,11 @@ namespace DS1000Z_E_USB_Control.TimeBase
         /// </summary>
         public void UpdateFromSettings(TimeBaseSettings settings)
         {
-            controller?.UpdateFromSettings(settings);
-            UpdateDisplays();
-            UpdateOffsetValueDisplay();
-            UpdateDelayedOffsetDisplay();
+            if (settings == null) return;
+
+            // This would update the controller's internal settings and then refresh the UI
+            // For now, we'll just update the UI directly
+            UpdateFromCurrentSettings();
         }
 
         /// <summary>
@@ -355,7 +390,7 @@ namespace DS1000Z_E_USB_Control.TimeBase
         public void ApplyPreset(TimeBaseSettings preset)
         {
             SetSettings(preset);
-            LogEvent?.Invoke(this, $"Applied timebase preset: {preset}");
+            LogEvent?.Invoke(this, $"Applied TimeBase preset: {preset}");
         }
 
         /// <summary>
@@ -363,8 +398,51 @@ namespace DS1000Z_E_USB_Control.TimeBase
         /// </summary>
         public void Cleanup()
         {
-            controller?.Dispose();
+            // Remove event handlers
+            if (TimeBaseModeComboBox != null)
+                TimeBaseModeComboBox.SelectionChanged -= TimeBaseMode_SelectionChanged;
+            if (HorizontalScaleComboBox != null)
+                HorizontalScaleComboBox.SelectionChanged -= HorizontalScale_SelectionChanged;
+            if (HorizontalOffsetSlider != null)
+                HorizontalOffsetSlider.ValueChanged -= HorizontalOffsetSlider_ValueChanged;
+            if (QuickZeroOffsetButton != null)
+                QuickZeroOffsetButton.Click -= QuickZeroOffset_Click;
+
             controller = null;
         }
+
+        #endregion
+
+        #region Utility Methods
+
+        /// <summary>
+        /// Smart time formatting
+        /// </summary>
+        private string FormatTime(double time)
+        {
+            if (Math.Abs(time) >= 1.0)
+                return $"{time:F3} s";
+            else if (Math.Abs(time) >= 1e-3)
+                return $"{time * 1000:F1} ms";
+            else if (Math.Abs(time) >= 1e-6)
+                return $"{time * 1000000:F1} µs";
+            else
+                return $"{time * 1000000000:F1} ns";
+        }
+
+        /// <summary>
+        /// Update additional displays with acquisition information
+        /// </summary>
+        public void UpdateAcquisitionInfo(string sampleRate, string memoryDepth, string acquisitionType)
+        {
+            if (SampleRateText != null)
+                SampleRateText.Text = sampleRate;
+            if (MemoryDepthText != null)
+                MemoryDepthText.Text = memoryDepth;
+            if (AcquisitionTypeText != null)
+                AcquisitionTypeText.Text = acquisitionType;
+        }
+
+        #endregion
     }
 }

@@ -4,17 +4,15 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="500">
+             d:DesignHeight="300" d:DesignWidth="800">
 
     <!-- TimeBase Controls (Light Purple Background) -->
     <GroupBox Header="TimeBase Controls" 
-              Background="#F8F5FF"
-              BorderBrush="#9C27B0"
+              Background="#F8F0FF"
+              BorderBrush="#9370DB"
               BorderThickness="2">
         <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -26,213 +24,125 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="150"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Main TimeBase Section -->
-            <GroupBox Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="4" Header="Main TimeBase" 
-                      Margin="5" Background="#FAFBFF" BorderBrush="#E1BEE7">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="150"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
+            <!-- TimeBase Mode -->
+            <Label Grid.Row="0" Grid.Column="0" Content="TimeBase Mode:" VerticalAlignment="Center" Margin="5"/>
+            <ComboBox x:Name="TimeBaseModeComboBox" Grid.Row="0" Grid.Column="1" Margin="5">
+                <ComboBoxItem Content="Main" Tag="MAIN" IsSelected="True"/>
+                <ComboBoxItem Content="XY" Tag="XY"/>
+                <ComboBoxItem Content="Roll" Tag="ROLL"/>
+            </ComboBox>
 
-                    <!-- Horizontal Scale -->
-                    <Label Grid.Row="0" Grid.Column="0" Content="Time Scale:" VerticalAlignment="Center" Margin="5"/>
-                    <ComboBox x:Name="HorizontalScaleComboBox" Grid.Row="0" Grid.Column="1" Margin="5">
-                        <!-- Values will be populated in code-behind -->
-                    </ComboBox>
-                    <Label Grid.Row="0" Grid.Column="2" Content="s/div" VerticalAlignment="Center" Margin="5"/>
+            <!-- Current Time Window Display -->
+            <Label Grid.Row="0" Grid.Column="2" Content="Time Window:" VerticalAlignment="Center" Margin="5"/>
+            <TextBlock x:Name="TimeWindowText" Grid.Row="0" Grid.Column="3" 
+                       Text="12.0 ms" FontSize="12" FontWeight="Bold"
+                       Foreground="#9370DB" VerticalAlignment="Center" Margin="5"/>
 
-                    <!-- Current Scale Display -->
-                    <TextBlock x:Name="CurrentScaleText" Grid.Row="0" Grid.Column="3"
-                               Text="Current: 1 ms/div" FontSize="10" Foreground="#9C27B0"
-                               VerticalAlignment="Center" Margin="5"/>
+            <!-- Horizontal Scale -->
+            <Label Grid.Row="1" Grid.Column="0" Content="Horizontal Scale:" VerticalAlignment="Center" Margin="5"/>
+            <ComboBox x:Name="HorizontalScaleComboBox" Grid.Row="1" Grid.Column="1" Margin="5">
+                <!-- Values will be populated programmatically -->
+            </ComboBox>
+            <Label Grid.Row="1" Grid.Column="2" Content="s/div" VerticalAlignment="Center" Margin="5"/>
 
-                    <!-- Horizontal Offset Control -->
-                    <Label Grid.Row="1" Grid.Column="0" Content="Horizontal Position:" VerticalAlignment="Center" Margin="5"/>
-                    <Grid Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
+            <!-- Sample Rate Display -->
+            <Label Grid.Row="1" Grid.Column="3" Content="Sample Rate:" VerticalAlignment="Center" Margin="5"/>
+            <TextBlock x:Name="SampleRateText" Grid.Row="1" Grid.Column="4" Grid.ColumnSpan="2"
+                       Text="1.00 GSa/s" FontSize="10" Foreground="Gray"
+                       VerticalAlignment="Center" Margin="5"/>
 
-                        <!-- Max Offset Display -->
-                        <TextBlock Grid.Row="0" x:Name="MaxOffsetDisplay" Text="+6.0ms" FontSize="8" Foreground="Gray" 
-                                   HorizontalAlignment="Center"/>
+            <!-- Horizontal Offset Range Display -->
+            <Label Grid.Row="2" Grid.Column="0" Content="Offset Range:" VerticalAlignment="Center" Margin="5"/>
+            <TextBlock x:Name="OffsetRangeText" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2"
+                       Text="Range: ±50ms" FontSize="10" Foreground="Gray" 
+                       VerticalAlignment="Center" Margin="5"/>
 
-                        <!-- Offset Slider -->
-                        <Slider x:Name="HorizontalOffsetSlider" Grid.Row="1"
-                                Orientation="Vertical" 
-                                Minimum="-6" Maximum="6" 
-                                Value="0"
-                                TickFrequency="1"
-                                TickPlacement="Both"
-                                IsSnapToTickEnabled="False"
-                                Height="80"
-                                Width="40"
-                                HorizontalAlignment="Center">
-                            <Slider.Resources>
-                                <Style TargetType="Slider">
-                                    <Setter Property="Template">
-                                        <Setter.Value>
-                                            <ControlTemplate TargetType="Slider">
-                                                <Grid>
-                                                    <Border Background="LightGray" Width="2" HorizontalAlignment="Center"/>
-                                                    <Track Name="PART_Track">
-                                                        <Track.Thumb>
-                                                            <Thumb Background="#9C27B0" Width="12" Height="20" BorderBrush="#7B1FA2" BorderThickness="1"/>
-                                                        </Track.Thumb>
-                                                    </Track>
-                                                </Grid>
-                                            </ControlTemplate>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Style>
-                            </Slider.Resources>
-                        </Slider>
+            <!-- Enhanced Horizontal Offset Control -->
+            <Label Grid.Row="3" Grid.Column="0" Content="Horizontal Offset:" VerticalAlignment="Center" Margin="5"/>
+            <Grid Grid.Row="3" Grid.Column="1" HorizontalAlignment="Center">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
 
-                        <!-- Min Offset Display -->
-                        <TextBlock Grid.Row="2" x:Name="MinOffsetDisplay" Text="-6.0ms" FontSize="8" Foreground="Gray" 
-                                   HorizontalAlignment="Center"/>
-                    </Grid>
+                <!-- Min Value Display -->
+                <TextBlock Grid.Column="0" x:Name="MinOffsetDisplay" Text="-50ms" FontSize="8" Foreground="Gray" 
+                           VerticalAlignment="Center" HorizontalAlignment="Center"/>
 
-                    <!-- Current Offset Value Display -->
-                    <StackPanel Grid.Row="1" Grid.Column="2" VerticalAlignment="Center" Margin="5">
-                        <TextBlock x:Name="OffsetValueText" 
-                                   Text="0.000 s" FontSize="11" FontWeight="Bold"
-                                   Foreground="#9C27B0" HorizontalAlignment="Center"/>
-                    </StackPanel>
+                <!-- Enhanced Horizontal Slider -->
+                <Slider x:Name="HorizontalOffsetSlider" Grid.Column="1"
+                        Orientation="Horizontal" 
+                        Minimum="-50e-3" Maximum="50e-3" 
+                        Value="0"
+                        TickFrequency="10e-3"
+                        TickPlacement="BottomRight"
+                        IsSnapToTickEnabled="False"
+                        Width="120"
+                        Height="30"
+                        VerticalAlignment="Center"
+                        Margin="5">
+                    <Slider.Resources>
+                        <Style TargetType="Slider">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="Slider">
+                                        <Grid>
+                                            <Border Background="LightGray" Height="2" VerticalAlignment="Center"/>
+                                            <Track Name="PART_Track">
+                                                <Track.Thumb>
+                                                    <Thumb Background="#9370DB" Width="20" Height="12" BorderBrush="#663399" BorderThickness="1"/>
+                                                </Track.Thumb>
+                                            </Track>
+                                        </Grid>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </Slider.Resources>
+                </Slider>
 
-                    <!-- Quick Zero Offset Button -->
-                    <Button Grid.Row="1" Grid.Column="3" x:Name="QuickZeroOffsetButton" Content="⌂" Width="25" Height="25"
-                            VerticalAlignment="Center" Margin="5" FontSize="14"
-                            ToolTip="Reset Position to Zero" Background="#F8F5FF" BorderBrush="#9C27B0"/>
+                <!-- Max Value Display -->
+                <TextBlock Grid.Column="2" x:Name="MaxOffsetDisplay" Text="+50ms" FontSize="8" Foreground="Gray" 
+                           VerticalAlignment="Center" HorizontalAlignment="Center"/>
+            </Grid>
 
-                    <!-- Offset Range Display -->
-                    <Label Grid.Row="2" Grid.Column="0" Content="Position Range:" VerticalAlignment="Center" Margin="5"/>
-                    <TextBlock x:Name="OffsetRangeText" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3"
-                               Text="Range: ±6.0ms" FontSize="10" Foreground="Gray" 
-                               VerticalAlignment="Center" Margin="5"/>
-                </Grid>
-            </GroupBox>
-
-            <!-- Delayed TimeBase Section -->
-            <GroupBox Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="4" Header="Delayed TimeBase" 
-                      Margin="5" Background="#FAFBFF" BorderBrush="#E1BEE7">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="150"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-
-                    <!-- Enable Delayed TimeBase -->
-                    <CheckBox x:Name="DelayEnabledCheckBox" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2"
-                              Content="Enable Delayed TimeBase" 
-                              Margin="5"
-                              FontWeight="Bold"
-                              Foreground="#7B1FA2"/>
-
-                    <!-- Delayed Scale -->
-                    <Label Grid.Row="1" Grid.Column="0" Content="Delayed Scale:" VerticalAlignment="Center" Margin="5"/>
-                    <ComboBox x:Name="DelayedScaleComboBox" Grid.Row="1" Grid.Column="1" Margin="5">
-                        <!-- Values will be populated in code-behind -->
-                    </ComboBox>
-                    <Label Grid.Row="1" Grid.Column="2" Content="s/div" VerticalAlignment="Center" Margin="5"/>
-
-                    <!-- Current Delayed Scale Display -->
-                    <TextBlock x:Name="CurrentDelayedScaleText" Grid.Row="1" Grid.Column="3"
-                               Text="Current: 1 μs/div" FontSize="10" Foreground="#9C27B0"
-                               VerticalAlignment="Center" Margin="5"/>
-
-                    <!-- Delayed Offset -->
-                    <Label Grid.Row="2" Grid.Column="0" Content="Delayed Position:" VerticalAlignment="Center" Margin="5"/>
-                    <TextBox x:Name="DelayedOffsetTextBox" Grid.Row="2" Grid.Column="1" Margin="5" 
-                             Text="0" VerticalAlignment="Center" Height="25"/>
-                    <Label Grid.Row="2" Grid.Column="2" Content="seconds" VerticalAlignment="Center" Margin="5"/>
-
-                    <!-- Delayed Offset Display -->
-                    <TextBlock x:Name="DelayedOffsetDisplayText" Grid.Row="2" Grid.Column="3"
-                               Text="(0 s)" FontSize="10" Foreground="Gray"
-                               VerticalAlignment="Center" Margin="5"/>
-
-                    <!-- Status Display -->
-                    <TextBlock x:Name="DelayedStatusText" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="4"
-                               Text="Status: Disabled" FontSize="10" FontStyle="Italic"
-                               Foreground="Gray" VerticalAlignment="Center" Margin="5"/>
-                </Grid>
-            </GroupBox>
-
-            <!-- TimeBase Mode Selection -->
-            <Label Grid.Row="2" Grid.Column="0" Content="TimeBase Mode:" VerticalAlignment="Center" Margin="5"/>
-            <StackPanel Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3" Orientation="Horizontal" Margin="5">
-                <RadioButton x:Name="MainModeRadioButton" Content="Main" 
-                             GroupName="TimeBaseMode" IsChecked="True" Margin="0,0,15,0"/>
-                <RadioButton x:Name="DelayedModeRadioButton" Content="Delayed" 
-                             GroupName="TimeBaseMode" Margin="0,0,15,0"/>
+            <!-- Current Offset Value Display with Percentage -->
+            <StackPanel Grid.Row="3" Grid.Column="2" VerticalAlignment="Center" Margin="5">
+                <TextBlock x:Name="OffsetValueText" 
+                           Text="0.000 s" FontSize="11" FontWeight="Bold"
+                           Foreground="#9370DB" HorizontalAlignment="Center"/>
+                <TextBlock x:Name="OffsetPercentageDisplay" Text="(0%)" FontSize="8" Foreground="Gray" 
+                           HorizontalAlignment="Center"/>
             </StackPanel>
 
-            <!-- Quick Controls -->
-            <Label Grid.Row="3" Grid.Column="0" Content="Quick Controls:" VerticalAlignment="Center" Margin="5"/>
-            <StackPanel Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3" Orientation="Horizontal" Margin="5">
-                <Button x:Name="AutoScaleButton" Content="🔍 Auto Scale" Width="90" Height="30"
-                        Margin="0,0,10,0" FontSize="10"
-                        Background="#E8F5E8" BorderBrush="#4CAF50"/>
-                <Button x:Name="ResetTimeBaseButton" Content="🔄 Reset" Width="70" Height="30"
-                        Margin="0,0,10,0" FontSize="10"
-                        Background="#FFF3E0" BorderBrush="#FF9800"/>
-                <Button x:Name="CenterTimeBaseButton" Content="📍 Center" Width="80" Height="30"
-                        Margin="0,0,10,0" FontSize="10"
-                        Background="#F3E5F5" BorderBrush="#9C27B0"/>
-            </StackPanel>
+            <!-- Quick Zero Offset Button -->
+            <Button Grid.Row="3" Grid.Column="3" x:Name="QuickZeroOffsetButton" Content="⌂" Width="25" Height="25"
+                    VerticalAlignment="Center" Margin="5" FontSize="14"
+                    ToolTip="Set Offset to Zero" Background="#F8F0FF" BorderBrush="#9370DB"/>
 
-            <!-- Time Window Info -->
-            <Label Grid.Row="4" Grid.Column="0" Content="Time Window:" VerticalAlignment="Center" Margin="5"/>
-            <TextBlock x:Name="TimeWindowText" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="3"
-                       Text="Total Window: 12.0 ms (12 divisions × 1 ms/div)" FontSize="10" 
-                       Foreground="#9C27B0" VerticalAlignment="Center" Margin="5"/>
+            <!-- Memory Depth Display -->
+            <Label Grid.Row="4" Grid.Column="0" Content="Memory Depth:" VerticalAlignment="Center" Margin="5"/>
+            <TextBlock x:Name="MemoryDepthText" Grid.Row="4" Grid.Column="1"
+                       Text="AUTO (12M pts)" FontSize="10" Foreground="Gray"
+                       VerticalAlignment="Center" Margin="5"/>
 
-            <!-- Sample Rate Info -->
-            <Label Grid.Row="5" Grid.Column="0" Content="Sample Rate:" VerticalAlignment="Center" Margin="5"/>
-            <TextBlock x:Name="SampleRateText" Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="3"
-                       Text="Sample Rate: 2.00 GSa/s" FontSize="10" 
-                       Foreground="Gray" VerticalAlignment="Center" Margin="5"/>
+            <!-- Acquisition Type Display -->
+            <Label Grid.Row="4" Grid.Column="2" Content="Acquisition:" VerticalAlignment="Center" Margin="5"/>
+            <TextBlock x:Name="AcquisitionTypeText" Grid.Row="4" Grid.Column="3"
+                       Text="Normal" FontSize="10" Foreground="Gray"
+                       VerticalAlignment="Center" Margin="5"/>
 
             <!-- Current Settings Display -->
-            <TextBlock x:Name="CurrentTimeBaseSettingsText" Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="4"
+            <TextBlock x:Name="CurrentTimeBaseSettingsText" Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="6"
                        Margin="5" VerticalAlignment="Center"
-                       Text="Current: Scale=1ms/div, Offset=0s, Mode=Main, Window=12ms, Delayed=Disabled"
-                       FontSize="10" Foreground="#9C27B0" TextWrapping="Wrap"/>
-
-            <!-- SCPI Commands Info -->
-            <Expander Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="4" Header="SCPI Commands" 
-                      Margin="5" FontSize="10">
-                <StackPanel>
-                    <TextBlock Text=":TIMebase:MAIN:SCALe - Main timebase scale" FontSize="9" Margin="2"/>
-                    <TextBlock Text=":TIMebase:MAIN:OFFSet - Main timebase offset" FontSize="9" Margin="2"/>
-                    <TextBlock Text=":TIMebase:DELay:ENABle - Enable delayed timebase" FontSize="9" Margin="2"/>
-                    <TextBlock Text=":TIMebase:DELay:SCALe - Delayed timebase scale" FontSize="9" Margin="2"/>
-                    <TextBlock Text=":TIMebase:DELay:OFFSet - Delayed timebase offset" FontSize="9" Margin="2"/>
-                    <TextBlock Text=":TIMebase:MODE - TimeBase mode selection" FontSize="9" Margin="2"/>
-                </StackPanel>
-            </Expander>
+                       Text="Current: Mode=Main, Scale=1ms/div, Offset=0s, Window=12ms, Sample Rate=1GSa/s"
+                       FontSize="10" Foreground="#9370DB" TextWrapping="Wrap"/>
         </Grid>
     </GroupBox>
 </UserControl>

@@ -335,6 +335,113 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
             }
         }
 
+        /// <summary>
+        /// Update UI controls from current settings WITHOUT sending commands to oscilloscope
+        /// </summary>
+        public void UpdateUIFromSettings()
+        {
+            if (isUpdating) return;
+
+            try
+            {
+                isUpdating = true;
+                DisableEventHandlers();
+
+                // Update enable checkbox
+                if (EnableCheckBox != null)
+                {
+                    EnableCheckBox.IsChecked = settings.IsEnabled;
+                }
+
+                // Update probe ratio
+                if (ProbeRatioComboBox != null)
+                {
+                    foreach (ComboBoxItem item in ProbeRatioComboBox.Items)
+                    {
+                        if (double.TryParse(item.Tag.ToString(), out double itemProbe) &&
+                            Math.Abs(itemProbe - settings.ProbeRatio) < 0.001)
+                        {
+                            ProbeRatioComboBox.SelectedItem = item;
+                            break;
+                        }
+                    }
+                }
+
+                // Update vertical scale options and selection
+                UpdateVerticalScaleOptions();
+                if (VerticalScaleComboBox != null)
+                {
+                    foreach (ComboBoxItem item in VerticalScaleComboBox.Items)
+                    {
+                        if (double.TryParse(item.Tag.ToString(), out double itemScale) &&
+                            Math.Abs(itemScale - settings.VerticalScale) < 0.0001)
+                        {
+                            VerticalScaleComboBox.SelectedItem = item;
+                            break;
+                        }
+                    }
+                }
+
+                // Update vertical offset slider
+                UpdateSliderRange();
+                if (VerticalOffsetSlider != null)
+                {
+                    VerticalOffsetSlider.Value = settings.VerticalOffset;
+                    UpdateSliderValueDisplay();
+                }
+
+                // Update coupling
+                if (CouplingComboBox != null)
+                {
+                    string couplingUpper = settings.Coupling.ToUpper();
+                    foreach (ComboBoxItem item in CouplingComboBox.Items)
+                    {
+                        if (item.Tag.ToString().ToUpper() == couplingUpper)
+                        {
+                            CouplingComboBox.SelectedItem = item;
+                            break;
+                        }
+                    }
+                }
+
+                // Update current settings display
+                UpdateCurrentSettingsDisplay();
+
+                Log($"Updated Channel 2 UI from settings: {settings}");
+            }
+            catch (Exception ex)
+            {
+                Log($"Error updating Channel 2 UI: {ex.Message}");
+            }
+            finally
+            {
+                EnableEventHandlers();
+                isUpdating = false;
+            }
+        }
+
+        /// <summary>
+        /// Update settings object from provided settings and then update UI
+        /// </summary>
+        public void UpdateFromSettings(Ch2Settings newSettings)
+        {
+            if (newSettings == null) return;
+
+            // Update internal settings object
+            settings.IsEnabled = newSettings.IsEnabled;
+            settings.ProbeRatio = newSettings.ProbeRatio;
+            settings.VerticalScale = newSettings.VerticalScale;
+            settings.VerticalOffset = newSettings.VerticalOffset;
+            settings.Coupling = newSettings.Coupling;
+            settings.BandwidthLimit = newSettings.BandwidthLimit;
+            settings.Units = newSettings.Units;
+            settings.InvertEnabled = newSettings.InvertEnabled;
+            settings.VernierEnabled = newSettings.VernierEnabled;
+
+            // Update UI to reflect these settings
+            UpdateUIFromSettings();
+        }
+
         #region Private Helper Methods
 
         private void UpdateSliderFromSettings()
@@ -354,62 +461,6 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
             {
                 SliderValueText.Text = $"{VerticalOffsetSlider.Value:F3} V";
             }
-        }
-
-        private void UpdateUIFromSettings()
-        {
-            if (EnableCheckBox != null)
-            {
-                EnableCheckBox.IsChecked = settings.IsEnabled;
-            }
-
-            if (ProbeRatioComboBox != null)
-            {
-                foreach (ComboBoxItem item in ProbeRatioComboBox.Items)
-                {
-                    if (double.TryParse(item.Tag.ToString(), out double itemProbe) &&
-                        Math.Abs(itemProbe - settings.ProbeRatio) < 0.001)
-                    {
-                        ProbeRatioComboBox.SelectedItem = item;
-                        break;
-                    }
-                }
-            }
-
-            UpdateVerticalScaleOptions();
-            if (VerticalScaleComboBox != null)
-            {
-                foreach (ComboBoxItem item in VerticalScaleComboBox.Items)
-                {
-                    if (double.TryParse(item.Tag.ToString(), out double itemScale) &&
-                        Math.Abs(itemScale - settings.VerticalScale) < 0.0001)
-                    {
-                        VerticalScaleComboBox.SelectedItem = item;
-                        break;
-                    }
-                }
-            }
-
-            if (VerticalOffsetSlider != null)
-            {
-                VerticalOffsetSlider.Value = settings.VerticalOffset;
-                UpdateSliderValueDisplay();
-            }
-
-            if (CouplingComboBox != null)  // Changed from UnitsComboBox
-            {
-                string couplingUpper = settings.Coupling.ToUpper();
-                foreach (ComboBoxItem item in CouplingComboBox.Items)
-                {
-                    if (item.Tag.ToString().ToUpper() == couplingUpper)
-                    {
-                        CouplingComboBox.SelectedItem = item;
-                        break;
-                    }
-                }
-            }
-
-            UpdateCurrentSettingsDisplay();
         }
 
         public void UpdateVerticalScaleOptions()

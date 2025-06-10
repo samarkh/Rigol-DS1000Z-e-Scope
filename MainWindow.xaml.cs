@@ -214,34 +214,34 @@ namespace Rigol_DS1000Z_E_Control
         {
             try
             {
-                // Update Channel 1 UI
+                // Update Channel 1 UI - Use UpdateFromSettings to avoid sending commands back to oscilloscope
                 if (Channel1Panel != null && settingsManager.Channel1Settings != null)
                 {
-                    Channel1Panel.SetSettings(settingsManager.Channel1Settings);
-                    Log($"Updated Channel 1 UI: {settingsManager.Channel1Settings}");
+                    Channel1Panel.UpdateFromSettings(settingsManager.Channel1Settings);
+                    Log($"✅ Updated Channel 1 UI: {settingsManager.Channel1Settings}");
                 }
 
-                // Update Channel 2 UI
+                // Update Channel 2 UI - Use UpdateFromSettings to avoid sending commands back to oscilloscope
                 if (Channel2Panel != null && settingsManager.Channel2Settings != null)
                 {
-                    Channel2Panel.SetSettings(settingsManager.Channel2Settings);
-                    Log($"Updated Channel 2 UI: {settingsManager.Channel2Settings}");
+                    Channel2Panel.UpdateFromSettings(settingsManager.Channel2Settings);
+                    Log($"✅ Updated Channel 2 UI: {settingsManager.Channel2Settings}");
                 }
 
                 // Log timebase and trigger info (for future UI implementation)
                 if (settingsManager.TimeBaseSettings != null)
                 {
-                    Log($"TimeBase Settings: {settingsManager.TimeBaseSettings}");
+                    Log($"📊 TimeBase Settings: {settingsManager.TimeBaseSettings}");
                 }
 
                 if (settingsManager.TriggerSettings != null)
                 {
-                    Log($"Trigger Settings: {settingsManager.TriggerSettings}");
+                    Log($"🎯 Trigger Settings: {settingsManager.TriggerSettings}");
                 }
             }
             catch (Exception ex)
             {
-                Log($"Error updating UI from settings: {ex.Message}");
+                Log($"❌ Error updating UI from settings: {ex.Message}");
             }
         }
 

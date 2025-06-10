@@ -203,11 +203,21 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
         }
 
         /// <summary>
-        /// Set channel settings
+        /// Set channel settings (sends commands to oscilloscope)
         /// </summary>
         public void SetSettings(Ch2Settings settings)
         {
             controller?.SetSettings(settings);
+            UpdateRangeDisplays();
+            UpdateSliderValueDisplay();
+        }
+
+        /// <summary>
+        /// Update UI from settings (does NOT send commands to oscilloscope)
+        /// </summary>
+        public void UpdateFromSettings(Ch2Settings settings)
+        {
+            controller?.UpdateFromSettings(settings);
             UpdateRangeDisplays();
             UpdateSliderValueDisplay();
         }

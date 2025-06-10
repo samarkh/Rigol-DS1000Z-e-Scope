@@ -371,68 +371,110 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
         }
 
         /// <summary>
-        /// Update UI controls from current settings
+        /// Update UI controls from current settings WITHOUT sending commands to oscilloscope
         /// </summary>
-        private void UpdateUIFromSettings()
+        public void UpdateUIFromSettings()
         {
-            // Update enable checkbox
-            if (EnableCheckBox != null)
-            {
-                EnableCheckBox.IsChecked = settings.IsEnabled;
-            }
+            if (isUpdating) return;
 
-            // Update probe ratio
-            if (ProbeRatioComboBox != null)
+            try
             {
-                foreach (ComboBoxItem item in ProbeRatioComboBox.Items)
+                isUpdating = true;
+                DisableEventHandlers();
+
+                // Update enable checkbox
+                if (EnableCheckBox != null)
                 {
-                    if (double.TryParse(item.Tag.ToString(), out double itemProbe) &&
-                        Math.Abs(itemProbe - settings.ProbeRatio) < 0.001)
+                    EnableCheckBox.IsChecked = settings.IsEnabled;
+                }
+
+                // Update probe ratio
+                if (ProbeRatioComboBox != null)
+                {
+                    foreach (ComboBoxItem item in ProbeRatioComboBox.Items)
                     {
-                        ProbeRatioComboBox.SelectedItem = item;
-                        break;
+                        if (double.TryParse(item.Tag.ToString(), out double itemProbe) &&
+                            Math.Abs(itemProbe - settings.ProbeRatio) < 0.001)
+                        {
+                            ProbeRatioComboBox.SelectedItem = item;
+                            break;
+                        }
                     }
                 }
-            }
 
-            // Update vertical scale options and selection
-            UpdateVerticalScaleOptions();
-            if (VerticalScaleComboBox != null)
-            {
-                foreach (ComboBoxItem item in VerticalScaleComboBox.Items)
+                // Update vertical scale options and selection
+                UpdateVerticalScaleOptions();
+                if (VerticalScaleComboBox != null)
                 {
-                    if (double.TryParse(item.Tag.ToString(), out double itemScale) &&
-                        Math.Abs(itemScale - settings.VerticalScale) < 0.0001)
+                    foreach (ComboBoxItem item in VerticalScaleComboBox.Items)
                     {
-                        VerticalScaleComboBox.SelectedItem = item;
-                        break;
+                        if (double.TryParse(item.Tag.ToString(), out double itemScale) &&
+                            Math.Abs(itemScale - settings.VerticalScale) < 0.0001)
+                        {
+                            VerticalScaleComboBox.SelectedItem = item;
+                            break;
+                        }
                     }
                 }
-            }
 
-            // Update vertical offset slider
-            if (VerticalOffsetSlider != null)
-            {
-                VerticalOffsetSlider.Value = settings.VerticalOffset;
-                UpdateSliderValueDisplay();
-            }
-
-            // Update coupling
-            if (CouplingComboBox != null)
-            {
-                string couplingUpper = settings.Coupling.ToUpper();
-                foreach (ComboBoxItem item in CouplingComboBox.Items)
+                // Update vertical offset slider
+                UpdateSliderRange();
+                if (VerticalOffsetSlider != null)
                 {
-                    if (item.Tag.ToString().ToUpper() == couplingUpper)
+                    VerticalOffsetSlider.Value = settings.VerticalOffset;
+                    UpdateSliderValueDisplay();
+                }
+
+                // Update coupling
+                if (CouplingComboBox != null)
+                {
+                    string couplingUpper = settings.Coupling.ToUpper();
+                    foreach (ComboBoxItem item in CouplingComboBox.Items)
                     {
-                        CouplingComboBox.SelectedItem = item;
-                        break;
+                        if (item.Tag.ToString().ToUpper() == couplingUpper)
+                        {
+                            CouplingComboBox.SelectedItem = item;
+                            break;
+                        }
                     }
                 }
-            }
 
-            // Update current settings display
-            UpdateCurrentSettingsDisplay();
+                // Update current settings display
+                UpdateCurrentSettingsDisplay();
+
+                Log($"Updated Channel 1 UI from settings: {settings}");
+            }
+            catch (Exception ex)
+            {
+                Log($"Error updating Channel 1 UI: {ex.Message}");
+            }
+            finally
+            {
+                EnableEventHandlers();
+                isUpdating = false;
+            }
+        }
+
+        /// <summary>
+        /// Update settings object from provided settings and then update UI
+        /// </summary>
+        public void UpdateFromSettings(Ch1Settings newSettings)
+        {
+            if (newSettings == null) return;
+
+            // Update internal settings object
+            settings.IsEnabled = newSettings.IsEnabled;
+            settings.ProbeRatio = newSettings.ProbeRatio;
+            settings.VerticalScale = newSettings.VerticalScale;
+            settings.VerticalOffset = newSettings.VerticalOffset;
+            settings.Coupling = newSettings.Coupling;
+            settings.BandwidthLimit = newSettings.BandwidthLimit;
+            settings.Units = newSettings.Units;
+            settings.InvertEnabled = newSettings.InvertEnabled;
+            settings.VernierEnabled = newSettings.VernierEnabled;
+
+            // Update UI to reflect these settings
+            UpdateUIFromSettings();
         }
 
         /// <summary>
@@ -686,7 +728,7 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
         }
 
         /// <summary>
-        /// Set Channel 1 settings
+        /// Set Channel 1 settings (sends commands to oscilloscope)
         /// </summary>
         public void SetSettings(Ch1Settings newSettings)
         {

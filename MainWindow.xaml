@@ -12,6 +12,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
@@ -22,7 +23,7 @@
                    Margin="10" 
                    FontSize="16"/>
 
-        <!-- Control Buttons Row -->
+        <!-- Main Control Buttons Row -->
         <Grid Grid.Row="1" Margin="10">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
@@ -85,11 +86,74 @@
                     IsEnabled="False"
                     Click="TriggerControlButton_Click"/>
         </Grid>
-        
 
+        <!-- Oscilloscope Control Buttons Row (MISSING FROM ORIGINAL) -->
+        <Grid Grid.Row="2" Margin="10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Run Button -->
+            <Button x:Name="RunButton" Grid.Column="0"
+                    Content="▶️ Run" 
+                    Height="35" 
+                    FontSize="12"
+                    Background="#E8F5E8"
+                    BorderBrush="#4CAF50"
+                    IsEnabled="False"
+                    Click="RunButton_Click"/>
+
+            <!-- Stop Button -->
+            <Button x:Name="StopButton" Grid.Column="2"
+                    Content="⏹️ Stop" 
+                    Height="35" 
+                    FontSize="12"
+                    Background="#FFEBEE"
+                    BorderBrush="#F44336"
+                    IsEnabled="False"
+                    Click="StopButton_Click"/>
+
+            <!-- Single Button -->
+            <Button x:Name="SingleButton" Grid.Column="4"
+                    Content="⏯️ Single" 
+                    Height="35" 
+                    FontSize="12"
+                    Background="#FFF3E0"
+                    BorderBrush="#FF9800"
+                    IsEnabled="False"
+                    Click="SingleButton_Click"/>
+
+            <!-- Clear Button -->
+            <Button x:Name="ClearButton" Grid.Column="6"
+                    Content="🧹 Clear" 
+                    Height="35" 
+                    FontSize="12"
+                    Background="#F3E5F5"
+                    BorderBrush="#9C27B0"
+                    IsEnabled="False"
+                    Click="ClearButton_Click"/>
+
+            <!-- Auto Scale Button -->
+            <Button x:Name="AutoScaleButton" Grid.Column="8"
+                    Content="📏 Auto Scale" 
+                    Height="35" 
+                    FontSize="12"
+                    Background="#E1F5FE"
+                    BorderBrush="#03A9F4"
+                    IsEnabled="False"
+                    Click="AutoScaleButton_Click"/>
+        </Grid>
 
         <!-- Device Information Panel -->
-        <GroupBox Grid.Row="2" Header="Device Information" Margin="10" Background="#FAFAFA">
+        <GroupBox Grid.Row="3" Header="Device Information" Margin="10" Background="#FAFAFA">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -115,7 +179,7 @@
         </GroupBox>
 
         <!-- All Control Panels in Grid Layout -->
-        <Grid Grid.Row="3" Margin="10">
+        <Grid Grid.Row="4" Margin="10">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="10"/>
@@ -154,25 +218,8 @@
                                    IsEnabled="False"/>
         </Grid>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         <!-- Enhanced Log Output with Clear Button -->
-        <Grid Grid.Row="4" Margin="10">
+        <Grid Grid.Row="5" Margin="10">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>

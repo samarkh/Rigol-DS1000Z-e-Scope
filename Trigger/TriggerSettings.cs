@@ -1,4 +1,6 @@
-﻿using System;
+﻿using DS1000Z_E_USB_Control.Channels.Ch1;
+using DS1000Z_E_USB_Control.Channels.Ch2;
+using System;
 using System.Collections.Generic;
 
 namespace DS1000Z_E_USB_Control.Trigger
@@ -199,14 +201,46 @@ namespace DS1000Z_E_USB_Control.Trigger
         }
 
         /// <summary>
-        /// Get trigger level range based on source channel
+        /// Get trigger level range based on source channel (original method for backward compatibility)
         /// </summary>
         public (double min, double max) GetTriggerLevelRange()
         {
-            // For channel sources, range is typically ±8 x channel scale
-            // For now, use a generic range
-            return (-100.0, 100.0);
+            // Default range when channel info not available
+            return (-8.0, 8.0);
         }
+
+
+        /// <summary>
+        /// Get trigger level range based on source channel with graticule calculation
+        /// </summary>
+        public (double min, double max) GetTriggerLevelRange(Ch1Settings ch1Settings, Ch2Settings ch2Settings)
+        {
+            // Determine which channel is the trigger source
+            double verticalScale, verticalOffset;
+
+            if (EdgeSource.ToUpper().Contains("CHANNEL1") || EdgeSource.ToUpper().Contains("CHAN1"))
+            {
+                verticalScale = ch1Settings.VerticalScale;
+                verticalOffset = ch1Settings.VerticalOffset;
+            }
+            else if (EdgeSource.ToUpper().Contains("CHANNEL2") || EdgeSource.ToUpper().Contains("CHAN2"))
+            {
+                verticalScale = ch2Settings.VerticalScale;
+                verticalOffset = ch2Settings.VerticalOffset;
+            }
+            else
+            {
+                // External trigger or other sources - use reasonable default
+                return (-8.0, 8.0);
+            }
+
+            // Rigol formula: (-4 × VerticalScale - VerticalOffset) to (+4 × VerticalScale - VerticalOffset)
+            double min = -4.0 * verticalScale - verticalOffset;
+            double max = +4.0 * verticalScale - verticalOffset;
+
+            return (min, max);
+        }
+
 
         /// <summary>
         /// Get holdoff range

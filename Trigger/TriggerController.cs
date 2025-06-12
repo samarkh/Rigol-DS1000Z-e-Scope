@@ -43,6 +43,7 @@ namespace DS1000Z_E_USB_Control.Trigger
         public TriggerController(RigolDS1000ZE oscilloscope)
         {
             this.oscilloscope = oscilloscope;
+            this.settingsManager = settingsManager;
             this.settings = new TriggerSettings();
         }
 
@@ -260,11 +261,14 @@ namespace DS1000Z_E_USB_Control.Trigger
         /// <summary>
         /// Update the slider range based on trigger source
         /// </summary>
+        /// <summary>
+        /// Update the slider range based on trigger source
+        /// </summary>
         public void UpdateSliderRange()
         {
             if (TriggerLevelSlider == null) return;
 
-            var (minLevel, maxLevel) = settings.GetTriggerLevelRange();
+            var (minLevel, maxLevel) = GetEnhancedTriggerRange();
 
             isUpdating = true;
             TriggerLevelSlider.Minimum = minLevel;
@@ -278,8 +282,23 @@ namespace DS1000Z_E_USB_Control.Trigger
 
             isUpdating = false;
 
-            Log($"Trigger level slider range updated: {minLevel}V to {maxLevel}V");
+            Log($"Trigger level slider range updated: {minLevel:F3}V to {maxLevel:F3}V");
         }
+
+        /// <summary>
+        /// Get enhanced trigger range using channel settings
+        /// </summary>
+        private (double min, double max) GetEnhancedTriggerRange()
+        {
+            if (settingsManager?.Channel1Settings != null && settingsManager?.Channel2Settings != null)
+            {
+                return settings.GetTriggerLevelRange(settingsManager.Channel1Settings, settingsManager.Channel2Settings);
+            }
+
+            // Fallback to default range
+            return settings.GetTriggerLevelRange();
+        }
+
 
         /// <summary>
         /// Update the slider value display text

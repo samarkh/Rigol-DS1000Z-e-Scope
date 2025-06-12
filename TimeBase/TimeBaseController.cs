@@ -122,7 +122,7 @@ namespace DS1000Z_E_USB_Control.TimeBase
         /// <summary>
         /// Set the main horizontal scale (:TIMebase[:MAIN]:SCALe)
         /// </summary>
-        public bool SetMainScale(double scale)
+        public bool SetHorizontalScale(double scale)
         {
             if (!oscilloscope.IsConnected) return false;
 
@@ -148,7 +148,7 @@ namespace DS1000Z_E_USB_Control.TimeBase
         /// <summary>
         /// Set the main horizontal offset (:TIMebase[:MAIN]:OFFSet)
         /// </summary>
-        public bool SetMainOffset(double offset)
+        public bool SetHorizontalOffset(double offset)
         {
             if (!oscilloscope.IsConnected) return false;
 
@@ -610,7 +610,7 @@ namespace DS1000Z_E_USB_Control.TimeBase
             var selectedItem = HorizontalScaleComboBox?.SelectedItem as ComboBoxItem;
             if (selectedItem != null && double.TryParse(selectedItem.Tag.ToString(), out double scale))
             {
-                SetMainScale(scale);
+                SetHorizontalOffset(scale);
             }
         }
 
@@ -729,8 +729,8 @@ namespace DS1000Z_E_USB_Control.TimeBase
         {
             if (newSettings == null) return;
 
-            SetMainScale(newSettings.MainScale);
-            SetMainOffset(newSettings.MainOffset);
+            SetHorizontalScale(newSettings.MainScale);     // Changed from SetMainScale
+            SetHorizontalOffset(newSettings.MainOffset);   // Changed from SetMainOffset
             SetDelayEnabled(newSettings.DelayEnabled);
             SetDelayScale(newSettings.DelayScale);
             SetDelayedOffset(newSettings.DelayOffset);

@@ -21,7 +21,7 @@ namespace Rigol_DS1000Z_E_Control
         private bool isConnected = false;
         #endregion
 
-        #region Constructor and Initialization
+      #region Constructor and Initialization
         public MainWindow()
         {
             InitializeComponent();
@@ -42,7 +42,7 @@ namespace Rigol_DS1000Z_E_Control
         }
 
         /// <summary>
-        /// Initialize all control panels (channels and trigger)
+        /// Initialize all control panels (channels, trigger, and timebase)
         /// </summary>
         private void InitializeControlPanels()
         {
@@ -66,10 +66,19 @@ namespace Rigol_DS1000Z_E_Control
                 TriggerPanel.LogEvent += (sender, message) => Log(message);
                 TriggerPanel.Initialize(oscilloscope);
             }
+
+            // Initialize TimeBase panel
+            if (TimeBasePanel != null)
+            {
+                TimeBasePanel.LogEvent += (sender, message) => Log(message);
+                TimeBasePanel.Initialize(oscilloscope);
+            }
         }
+
+
         #endregion
 
-        #region Connection Management
+      #region Connection Management
         private void ConnectButton_Click(object sender, RoutedEventArgs e)
         {
             if (!isConnected)
@@ -130,16 +139,24 @@ namespace Rigol_DS1000Z_E_Control
                 ConnectButton.Background = new SolidColorBrush(Color.FromRgb(255, 235, 238));
                 ConnectButton.BorderBrush = Brushes.Red;
 
-                // Enable control buttons
+                // Enable existing control buttons
                 GetSettingsButton.IsEnabled = true;
                 ExportSettingsButton.IsEnabled = true;
                 PresetButton.IsEnabled = true;
                 TriggerControlButton.IsEnabled = true;
 
+                // Enable NEW oscilloscope control buttons (if you add them)
+                RunButton.IsEnabled = true;
+                StopButton.IsEnabled = true;
+                SingleButton.IsEnabled = true;
+                ClearButton.IsEnabled = true;
+                AutoScaleButton.IsEnabled = true;
+
                 // Enable all control panels
                 Channel1Panel?.SetEnabled(true);
                 Channel2Panel?.SetEnabled(true);
                 TriggerPanel?.SetEnabled(true);
+                TimeBasePanel.IsEnabled = true;
             }
             else
             {
@@ -149,21 +166,31 @@ namespace Rigol_DS1000Z_E_Control
                 ConnectButton.Background = new SolidColorBrush(Color.FromRgb(232, 245, 232));
                 ConnectButton.BorderBrush = new SolidColorBrush(Color.FromRgb(76, 175, 80));
 
-                // Disable control buttons
+                // Disable existing control buttons
                 GetSettingsButton.IsEnabled = false;
                 ExportSettingsButton.IsEnabled = false;
                 PresetButton.IsEnabled = false;
                 TriggerControlButton.IsEnabled = false;
 
+                // Disable NEW oscilloscope control buttons (if you add them)
+                RunButton.IsEnabled = false;
+                StopButton.IsEnabled = false;
+                SingleButton.IsEnabled = false;
+                ClearButton.IsEnabled = false;
+                AutoScaleButton.IsEnabled = false;
+
                 // Disable all control panels
                 Channel1Panel?.SetEnabled(false);
                 Channel2Panel?.SetEnabled(false);
                 TriggerPanel?.SetEnabled(false);
+                TimeBasePanel.IsEnabled = false;
             }
         }
+
+
         #endregion
 
-        #region Settings Management
+      #region Settings Management
         /// <summary>
         /// Get Current Settings button handler
         /// </summary>
@@ -396,7 +423,100 @@ namespace Rigol_DS1000Z_E_Control
         }
         #endregion
 
-        #region Channel Management Methods
+      #region Oscilloscope Control Button Handlers
+
+        /// <summary>
+        /// Run button - Start oscilloscope acquisition
+        /// </summary>
+        private void RunButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!isConnected) return;
+
+            if (oscilloscope.SendCommand(":RUN"))
+            {
+                Log("▶️ Oscilloscope started (RUN mode)");
+            }
+            else
+            {
+                Log("❌ Failed to start oscilloscope");
+            }
+        }
+
+        /// <summary>
+        /// Stop button - Stop oscilloscope acquisition
+        /// </summary>
+        private void StopButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!isConnected) return;
+
+            if (oscilloscope.SendCommand(":STOP"))
+            {
+                Log("⏹️ Oscilloscope stopped");
+            }
+            else
+            {
+                Log("❌ Failed to stop oscilloscope");
+            }
+        }
+
+        /// <summary>
+        /// Single trigger button - Set to single trigger mode
+        /// </summary>
+        private void SingleButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!isConnected) return;
+
+            if (oscilloscope.SendCommand(":SINGle"))
+            {
+                Log("🎯 Single trigger mode activated");
+            }
+            else
+            {
+                Log("❌ Failed to set single trigger mode");
+            }
+        }
+
+        /// <summary>
+        /// Auto Scale button - Automatically adjust display
+        /// </summary>
+        private void AutoScaleButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!isConnected) return;
+
+            Log("📏 Running auto scale...");
+            if (oscilloscope.SendCommand(":AUToscale"))
+            {
+                Log("✅ Auto scale completed");
+                // Refresh settings after auto scale
+                GetCurrentSettings();
+            }
+            else
+            {
+                Log("❌ Auto scale failed");
+            }
+        }
+
+        /// <summary>
+        /// Clear button - Clear the display
+        /// </summary>
+        private void ClearButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!isConnected) return;
+
+            if (oscilloscope.SendCommand(":CLEar"))
+            {
+                Log("🗑️ Display cleared");
+            }
+            else
+            {
+                Log("❌ Failed to clear display");
+            }
+        }
+
+        #endregion
+
+
+      #region Channel Management Methods
         /// <summary>
         /// Apply preset to Channel 1
         /// </summary>
@@ -516,7 +636,7 @@ namespace Rigol_DS1000Z_E_Control
         }
         #endregion
 
-        #region Enhanced Preset Methods
+      #region Enhanced Preset Methods
         /// <summary>
         /// Apply comprehensive presets to all subsystems including trigger
         /// </summary>
@@ -598,7 +718,7 @@ namespace Rigol_DS1000Z_E_Control
         }
         #endregion
 
-        #region Trigger-Specific Methods
+      #region Trigger-Specific Methods
         /// <summary>
         /// Force a trigger event
         /// </summary>
@@ -645,7 +765,15 @@ namespace Rigol_DS1000Z_E_Control
         }
         #endregion
 
-        #region Logging and Events
+      #region TimeBase Methods
+
+
+
+        #endregion
+
+
+
+      #region Logging and Events
         private void Oscilloscope_LogEvent(object sender, string message)
         {
             Log(message);
@@ -690,7 +818,7 @@ namespace Rigol_DS1000Z_E_Control
         }
         #endregion
 
-        #region Cleanup
+      #region Cleanup
         protected override void OnClosed(EventArgs e)
         {
             base.OnClosed(e);
@@ -699,6 +827,7 @@ namespace Rigol_DS1000Z_E_Control
             Channel1Panel?.Cleanup();
             Channel2Panel?.Cleanup();
             TriggerPanel?.Cleanup();
+            TimeBasePanel?.Cleanup();  // Add this line
 
             // Ensure proper cleanup
             if (isConnected)

@@ -5,7 +5,7 @@
         xmlns:ch2="clr-namespace:DS1000Z_E_USB_Control.Channels.Ch2"
         xmlns:trigger="clr-namespace:DS1000Z_E_USB_Control.Trigger"
         xmlns:timebase="clr-namespace:DS1000Z_E_USB_Control.TimeBase"
-        Title="Rigol DS1000Z-E USB Control" Height="800" Width="1400">
+        Title="Rigol DS1000Z-E USB Control" Height="1200" Width="1400">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -85,6 +85,8 @@
                     IsEnabled="False"
                     Click="TriggerControlButton_Click"/>
         </Grid>
+        
+
 
         <!-- Device Information Panel -->
         <GroupBox Grid.Row="2" Header="Device Information" Margin="10" Background="#FAFAFA">
@@ -114,6 +116,12 @@
 
         <!-- All Control Panels in Grid Layout -->
         <Grid Grid.Row="3" Margin="10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="10"/>
+                <!-- Spacing between rows -->
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="10"/>
@@ -124,21 +132,44 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
+            <!-- First Row: Channel and Trigger Panels -->
             <!-- Channel 1 Control Panel -->
             <ch1:Ch1ControlPanel x:Name="Channel1Panel" 
-                                 Grid.Column="0" 
-                                 IsEnabled="False"/>
+                         Grid.Row="0" Grid.Column="0" 
+                         IsEnabled="False"/>
 
             <!-- Channel 2 Control Panel -->
             <ch2:Ch2ControlPanel x:Name="Channel2Panel" 
-                                 Grid.Column="2" 
-                                 IsEnabled="False"/>
+                         Grid.Row="0" Grid.Column="2" 
+                         IsEnabled="False"/>
 
             <!-- Trigger Control Panel -->
             <trigger:TriggerControlPanel x:Name="TriggerPanel" 
-                                         Grid.Column="4" 
-                                         IsEnabled="False"/>
+                                 Grid.Row="0" Grid.Column="4" 
+                                 IsEnabled="False"/>
+
+            <!-- Second Row: TimeBase Panel (spans all columns) -->
+            <timebase:TimeBaseControlPanel x:Name="TimeBasePanel" 
+                                   Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="5"
+                                   IsEnabled="False"/>
         </Grid>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         <!-- Enhanced Log Output with Clear Button -->
         <Grid Grid.Row="4" Margin="10">

@@ -245,7 +245,19 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
             }
             return false;
         }
+        /// <summary>
+        /// Get channel vertical offset range based on vertical scale
+        /// Using the same 4.0 factor as trigger level calculation
+        /// </summary>
+        public (double min, double max) GetVerticalOffsetRange()
+        {
+            // Use same factor as trigger level range: 4.0 × VerticalScale
+            double range = 4.0 * VerticalScale;
+            double min = -range;
+            double max = +range;
 
+            return (min, max);
+        }
         /// <summary>
         /// Get the maximum offset range for current scale and probe ratio
         /// </summary>

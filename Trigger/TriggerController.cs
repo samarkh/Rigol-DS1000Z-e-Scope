@@ -16,6 +16,7 @@ namespace DS1000Z_E_USB_Control.Trigger
 
         public event EventHandler<string> LogEvent;
         public event EventHandler SettingsChanged;
+        private OscilloscopeSettingsManager settingsManager;
 
         #region UI Control References
         // Main UI controls
@@ -46,6 +47,22 @@ namespace DS1000Z_E_USB_Control.Trigger
             this.settingsManager = settingsManager;
             this.settings = new TriggerSettings();
         }
+
+        /// <summary>
+        /// Get enhanced trigger range using channel settings
+        /// </summary>
+        private (double min, double max) GetEnhancedTriggerRange()
+        {
+            if (settingsManager?.Channel1Settings != null && settingsManager?.Channel2Settings != null)
+            {
+                return settings.GetTriggerLevelRange(settingsManager.Channel1Settings, settingsManager.Channel2Settings);
+            }
+
+            // Fallback to default range
+            return settings.GetTriggerLevelRange();
+        }
+
+
 
         #region UI Initialization and Management
 
@@ -261,9 +278,6 @@ namespace DS1000Z_E_USB_Control.Trigger
         /// <summary>
         /// Update the slider range based on trigger source
         /// </summary>
-        /// <summary>
-        /// Update the slider range based on trigger source
-        /// </summary>
         public void UpdateSliderRange()
         {
             if (TriggerLevelSlider == null) return;
@@ -286,16 +300,13 @@ namespace DS1000Z_E_USB_Control.Trigger
         }
 
         /// <summary>
-        /// Get enhanced trigger range using channel settings
+        /// Get enhanced trigger range using channel settings if available
         /// </summary>
         private (double min, double max) GetEnhancedTriggerRange()
         {
-            if (settingsManager?.Channel1Settings != null && settingsManager?.Channel2Settings != null)
-            {
-                return settings.GetTriggerLevelRange(settingsManager.Channel1Settings, settingsManager.Channel2Settings);
-            }
-
-            // Fallback to default range
+            // Try to get channel settings from the main window or settings manager
+            // You'll need to add a reference to access the channel settings
+            // For now, use the default method
             return settings.GetTriggerLevelRange();
         }
 

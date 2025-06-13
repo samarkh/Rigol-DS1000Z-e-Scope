@@ -299,16 +299,7 @@ namespace DS1000Z_E_USB_Control.Trigger
             Log($"Trigger level slider range updated: {minLevel:F3}V to {maxLevel:F3}V");
         }
 
-        /// <summary>
-        /// Get enhanced trigger range using channel settings if available
-        /// </summary>
-        private (double min, double max) GetEnhancedTriggerRange()
-        {
-            // Try to get channel settings from the main window or settings manager
-            // You'll need to add a reference to access the channel settings
-            // For now, use the default method
-            return settings.GetTriggerLevelRange();
-        }
+
 
 
         /// <summary>

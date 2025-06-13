@@ -206,7 +206,7 @@ namespace DS1000Z_E_USB_Control.Trigger
         public (double min, double max) GetTriggerLevelRange()
         {
             // Default range when channel info not available
-            return (-8.0, 8.0);
+            return (-4.0, 4.0);
         }
 
 
@@ -231,7 +231,7 @@ namespace DS1000Z_E_USB_Control.Trigger
             else
             {
                 // External trigger or other sources - use reasonable default
-                return (-8.0, 8.0);
+                return (-4.0, 4.0);
             }
 
             // Rigol formula: (-4 × VerticalScale - VerticalOffset) to (+4 × VerticalScale - VerticalOffset)

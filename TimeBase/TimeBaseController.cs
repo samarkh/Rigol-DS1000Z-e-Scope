@@ -392,6 +392,27 @@ namespace DS1000Z_E_USB_Control.TimeBase
             }
         }
 
+
+
+        // Add these properties to your TimeBaseController class (in the UI Control references section)
+
+        /// <summary>
+        /// ComboBox for selecting time base mode (Main/Delayed)
+        /// </summary>
+        public ComboBox TimeBaseModeComboBox { get; set; }
+
+        /// <summary>
+        /// TextBlock for displaying current memory depth
+        /// </summary>
+        public TextBlock MemoryDepthText { get; set; }
+
+        /// <summary>
+        /// TextBlock for displaying acquisition type information
+        /// </summary>
+        public TextBlock AcquisitionTypeText { get; set; }
+
+
+
         /// <summary>
         /// Update UI controls from current settings WITHOUT sending commands to oscilloscope
         /// </summary>

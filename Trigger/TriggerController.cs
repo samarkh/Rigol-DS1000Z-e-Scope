@@ -41,10 +41,10 @@ namespace DS1000Z_E_USB_Control.Trigger
         public Button QuickZeroLevelButton { get; set; }
         #endregion
 
-        public TriggerController(RigolDS1000ZE oscilloscope)
+        public TriggerController(RigolDS1000ZE oscilloscope, OscilloscopeSettingsManager settingsManager)
         {
             this.oscilloscope = oscilloscope;
-            this.settingsManager = settingsManager;
+            this.settingsManager = settingsManager; // Corrected assignment
             this.settings = new TriggerSettings();
         }
 

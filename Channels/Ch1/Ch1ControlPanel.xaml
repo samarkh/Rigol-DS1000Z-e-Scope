@@ -2,7 +2,8 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:DS1000Z_E_USB_Control.Controls"
              mc:Ignorable="d" 
              d:DesignHeight="350" d:DesignWidth="400">
 
@@ -68,63 +69,27 @@
                        Text="Range: ±100V" FontSize="10" Foreground="Gray" 
                        VerticalAlignment="Center" Margin="5"/>
 
-            <!-- Enhanced Vertical Offset Control -->
+            <!-- REPLACED: Enhanced Vertical Offset Control with Arrow Control -->
             <Label Grid.Row="4" Grid.Column="0" Content="Vertical Offset:" VerticalAlignment="Center" Margin="5"/>
             <Grid Grid.Row="4" Grid.Column="1" HorizontalAlignment="Center">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-
-                <!-- Max Value Display -->
-                <TextBlock Grid.Row="0" x:Name="MaxValueDisplay" Text="+100V" FontSize="8" Foreground="Gray" 
-                           HorizontalAlignment="Center"/>
-
-                <!-- Enhanced Slider -->
-                <Slider x:Name="VerticalOffsetSlider" Grid.Row="1"
-                        Orientation="Vertical" 
-                        Minimum="-20" Maximum="20" 
-                        Value="0"
-                        TickFrequency="5"
-                        TickPlacement="Both"
-                        IsSnapToTickEnabled="False"
-                        Height="120"
-                        Width="50"
-                        HorizontalAlignment="Center">
-                    <Slider.Resources>
-                        <Style TargetType="Slider">
-                            <Setter Property="Template">
-                                <Setter.Value>
-                                    <ControlTemplate TargetType="Slider">
-                                        <Grid>
-                                            <Border Background="LightGray" Width="2" HorizontalAlignment="Center"/>
-                                            <Track Name="PART_Track">
-                                                <Track.Thumb>
-                                                    <Thumb Background="#CC6600" Width="12" Height="20" BorderBrush="#996600" BorderThickness="1"/>
-                                                </Track.Thumb>
-                                            </Track>
-                                        </Grid>
-                                    </ControlTemplate>
-                                </Setter.Value>
-                            </Setter>
-                        </Style>
-                    </Slider.Resources>
-                </Slider>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
 
                 <!-- Min Value Display -->
-                <TextBlock Grid.Row="2" x:Name="MinValueDisplay" Text="-100V" FontSize="8" Foreground="Gray" 
-                           HorizontalAlignment="Center"/>
-            </Grid>
+                <TextBlock Grid.Column="0" x:Name="MinValueDisplay" Text="-100V" FontSize="8" Foreground="Gray" 
+                           VerticalAlignment="Center" HorizontalAlignment="Center" Margin="2"/>
 
-            <!-- Current Value Display with Percentage -->
-            <StackPanel Grid.Row="4" Grid.Column="2" VerticalAlignment="Center" Margin="5">
-                <TextBlock x:Name="SliderValueText" 
-                           Text="0.000 V" FontSize="11" FontWeight="Bold"
-                           Foreground="#CC6600" HorizontalAlignment="Center"/>
-                <TextBlock x:Name="PercentageDisplay" Text="(0%)" FontSize="8" Foreground="Gray" 
-                           HorizontalAlignment="Center"/>
-            </StackPanel>
+                <!-- Arrow Control -->
+                <local:GraticuleArrowControl Grid.Column="1" x:Name="VerticalOffsetArrows"
+                                           HorizontalAlignment="Center" />
+
+                <!-- Max Value Display -->
+                <TextBlock Grid.Column="2" x:Name="MaxValueDisplay" Text="+100V" FontSize="8" Foreground="Gray" 
+                           VerticalAlignment="Center" HorizontalAlignment="Center" Margin="2"/>
+            </Grid>
 
             <!-- Quick Zero Button -->
             <Button Grid.Row="4" Grid.Column="3" x:Name="QuickZeroButton" Content="⌂" Width="25" Height="25"

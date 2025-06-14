@@ -3,18 +3,19 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using Rigol_DS1000Z_E_Control;
+using DS1000Z_E_USB_Control.Controls;
 
 namespace DS1000Z_E_USB_Control.TimeBase
 {
     /// <summary>
     /// Interaction logic for TimeBaseControlPanel.xaml
-    /// TimeBase control UI UserControl
+    /// TimeBase UI UserControl with Arrow Control for Offset
     /// </summary>
     public partial class TimeBaseControlPanel : UserControl
     {
         private TimeBaseController controller;
-        private bool isInitialized = false;
         private bool isUpdating = false;
+        private bool isInitialized = false;
 
         public event EventHandler<string> LogEvent;
 
@@ -33,26 +34,45 @@ namespace DS1000Z_E_USB_Control.TimeBase
             // Create the controller
             controller = new TimeBaseController(oscilloscope);
             controller.LogEvent += (sender, message) => LogEvent?.Invoke(this, message);
-            controller.SettingsChanged += (sender, e) =>
-            {
-                LogEvent?.Invoke(this, "TimeBase settings changed");
-                UpdateDisplays();
-            };
+            controller.SettingsChanged += (sender, e) => LogEvent?.Invoke(this, "TimeBase settings changed");
 
             // Wire up UI controls to the controller
-            WireUpControls();
+            controller.TimeBaseModeComboBox = TimeBaseModeComboBox;
+            controller.HorizontalScaleComboBox = HorizontalScaleComboBox;
 
-            // Initialize the controller and UI
+            // REMOVED: Slider assignments (now using arrow control)
+            // controller.HorizontalOffsetSlider = HorizontalOffsetSlider;
+            // controller.OffsetValueText = OffsetValueText;
+            // controller.OffsetPercentageDisplay = OffsetPercentageDisplay;
+
+            // Wire up display controls
+            controller.TimeWindowText = TimeWindowText;
+            controller.SampleRateText = SampleRateText;
+            controller.MemoryDepthText = MemoryDepthText;
+            controller.AcquisitionTypeText = AcquisitionTypeText;
+            controller.CurrentTimeBaseSettingsText = CurrentTimeBaseSettingsText;
+            controller.OffsetRangeText = OffsetRangeText;
+            controller.MinOffsetDisplay = MinOffsetDisplay;
+            controller.MaxOffsetDisplay = MaxOffsetDisplay;
+            controller.QuickZeroOffsetButton = QuickZeroOffsetButton;
+
+            // Wire up additional UI elements
+            WireUpAdditionalControls();
+
+            // Initialize the controller
+            controller.InitializeControls();
+
+            // Initialize UI elements
             InitializeUI();
 
             isInitialized = true;
-            LogEvent?.Invoke(this, "TimeBase control panel initialized");
+            LogEvent?.Invoke(this, "TimeBase control panel initialized with arrow controls");
         }
 
         /// <summary>
-        /// Wire up UI controls to event handlers
+        /// Wire up additional controls not handled by the base controller
         /// </summary>
-        private void WireUpControls()
+        private void WireUpAdditionalControls()
         {
             if (TimeBaseModeComboBox != null)
             {
@@ -64,14 +84,21 @@ namespace DS1000Z_E_USB_Control.TimeBase
                 HorizontalScaleComboBox.SelectionChanged += HorizontalScale_SelectionChanged;
             }
 
-            if (HorizontalOffsetSlider != null)
+            // REPLACED: Slider event handler with arrow control handler
+            if (HorizontalOffsetArrows != null)
             {
-                HorizontalOffsetSlider.ValueChanged += HorizontalOffsetSlider_ValueChanged;
+                HorizontalOffsetArrows.GraticuleMovement += HorizontalOffsetArrows_GraticuleMovement;
             }
 
             if (QuickZeroOffsetButton != null)
             {
                 QuickZeroOffsetButton.Click += QuickZeroOffset_Click;
+            }
+
+            // Subscribe to settings changes to update arrow control
+            if (controller != null)
+            {
+                controller.SettingsChanged += (sender, e) => UpdateHorizontalOffsetArrowControl();
             }
         }
 
@@ -81,7 +108,7 @@ namespace DS1000Z_E_USB_Control.TimeBase
         private void InitializeUI()
         {
             PopulateHorizontalScaleOptions();
-            UpdateOffsetSliderRange();
+            UpdateHorizontalOffsetArrowControl();
             UpdateDisplays();
         }
 
@@ -113,39 +140,31 @@ namespace DS1000Z_E_USB_Control.TimeBase
         }
 
         /// <summary>
-        /// Update the horizontal offset slider range based on current scale
+        /// NEW: Handle graticule arrow movement for horizontal offset
         /// </summary>
-        private void UpdateOffsetSliderRange()
+        private void HorizontalOffsetArrows_GraticuleMovement(object sender, GraticuleMovementEventArgs e)
         {
-            if (HorizontalOffsetSlider == null || controller == null) return;
+            if (controller == null) return;
+
+            controller.HandleHorizontalOffsetChanged(e.NewValue);
+            LogEvent?.Invoke(this, $"Horizontal offset moved {e.GraticuleMultiplier:F1} graticule to {FormatTime(e.NewValue)}");
+        }
+
+        /// <summary>
+        /// NEW: Update the horizontal offset arrow control
+        /// </summary>
+        public void UpdateHorizontalOffsetArrowControl()
+        {
+            if (HorizontalOffsetArrows == null || controller == null) return;
 
             var settings = controller.GetSettings();
             var (minOffset, maxOffset) = settings.GetOffsetRange();
 
-            isUpdating = true;
-
-            // Set the range
-            HorizontalOffsetSlider.Minimum = minOffset;
-            HorizontalOffsetSlider.Maximum = maxOffset;
-
-            // Calculate smart tick frequency based on range
-            double range = maxOffset - minOffset;
-            double tickFreq;
-
-            if (range <= 1e-6) tickFreq = 100e-9;      // For ns ranges
-            else if (range <= 1e-3) tickFreq = 100e-6; // For µs ranges
-            else if (range <= 1.0) tickFreq = 100e-3;  // For ms ranges
-            else tickFreq = 1.0;                       // For s ranges
-
-            HorizontalOffsetSlider.TickFrequency = tickFreq;
-
-            // Clamp current value to new range
-            if (HorizontalOffsetSlider.Value < minOffset)
-                HorizontalOffsetSlider.Value = minOffset;
-            else if (HorizontalOffsetSlider.Value > maxOffset)
-                HorizontalOffsetSlider.Value = maxOffset;
-
-            isUpdating = false;
+            // Update arrow control properties
+            HorizontalOffsetArrows.GraticuleSize = settings.MainScale; // 1 graticule = 1 time scale
+            HorizontalOffsetArrows.Units = "s";
+            HorizontalOffsetArrows.UpdateRange(minOffset, maxOffset);
+            HorizontalOffsetArrows.SetValue(settings.MainOffset);
 
             // Update range displays
             if (MinOffsetDisplay != null)
@@ -153,7 +172,31 @@ namespace DS1000Z_E_USB_Control.TimeBase
             if (MaxOffsetDisplay != null)
                 MaxOffsetDisplay.Text = FormatTime(maxOffset);
             if (OffsetRangeText != null)
-                OffsetRangeText.Text = $"Range: ±{FormatTime(Math.Abs(maxOffset))}";
+            {
+                string rangeText;
+                if (Math.Abs(minOffset) == Math.Abs(maxOffset))
+                {
+                    rangeText = $"Range: ±{FormatTime(Math.Abs(maxOffset))}";
+                }
+                else
+                {
+                    rangeText = $"Range: {FormatTime(minOffset)} to {FormatTime(maxOffset)}";
+                }
+                OffsetRangeText.Text = rangeText;
+            }
+            if (OffsetRangeDisplay != null)
+            {
+                string rangeText;
+                if (Math.Abs(minOffset) == Math.Abs(maxOffset))
+                {
+                    rangeText = $"Range: ±{FormatTime(Math.Abs(maxOffset))}";
+                }
+                else
+                {
+                    rangeText = $"Range: {FormatTime(minOffset)} to {FormatTime(maxOffset)}";
+                }
+                OffsetRangeDisplay.Text = rangeText;
+            }
 
             LogEvent?.Invoke(this, $"TimeBase offset range updated: {FormatTime(minOffset)} to {FormatTime(maxOffset)}");
         }
@@ -173,36 +216,12 @@ namespace DS1000Z_E_USB_Control.TimeBase
                 TimeWindowText.Text = FormatTime(settings.TimeWindow);
             }
 
-            // Update offset value and percentage
-            UpdateOffsetValueDisplay();
-
             // Update current settings display
             if (CurrentTimeBaseSettingsText != null)
             {
                 CurrentTimeBaseSettingsText.Text =
                     $"Current: Mode={settings.Mode}, Scale={settings.MainScaleDisplay}, " +
                     $"Offset={FormatTime(settings.MainOffset)}, Window={FormatTime(settings.TimeWindow)}";
-            }
-        }
-
-        /// <summary>
-        /// Update the offset value display
-        /// </summary>
-        private void UpdateOffsetValueDisplay()
-        {
-            if (OffsetValueText == null || HorizontalOffsetSlider == null) return;
-
-            double value = HorizontalOffsetSlider.Value;
-            OffsetValueText.Text = FormatTime(value);
-
-            // Update percentage display
-            if (OffsetPercentageDisplay != null && controller != null)
-            {
-                var settings = controller.GetSettings();
-                var (minOffset, maxOffset) = settings.GetOffsetRange();
-                double range = maxOffset - minOffset;
-                double percentage = range > 0 ? (value / (range / 2.0)) * 100 : 0;
-                OffsetPercentageDisplay.Text = $"({percentage:F0}%)";
             }
         }
 
@@ -234,19 +253,8 @@ namespace DS1000Z_E_USB_Control.TimeBase
             if (selectedItem != null && double.TryParse(selectedItem.Tag.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out double scale))
             {
                 controller.SetHorizontalScale(scale);
-                UpdateOffsetSliderRange(); // Update range when scale changes
+                UpdateHorizontalOffsetArrowControl(); // Update range when scale changes
             }
-        }
-
-        /// <summary>
-        /// Handle horizontal offset slider changes
-        /// </summary>
-        private void HorizontalOffsetSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            if (isUpdating || controller == null) return;
-
-            UpdateOffsetValueDisplay();
-            controller.SetHorizontalOffset(e.NewValue);
         }
 
         /// <summary>
@@ -257,15 +265,6 @@ namespace DS1000Z_E_USB_Control.TimeBase
             if (controller == null) return;
 
             controller.SetHorizontalOffset(0);
-
-            if (HorizontalOffsetSlider != null)
-            {
-                isUpdating = true;
-                HorizontalOffsetSlider.Value = 0;
-                isUpdating = false;
-                UpdateOffsetValueDisplay();
-            }
-
             LogEvent?.Invoke(this, "TimeBase offset zeroed");
         }
 
@@ -332,12 +331,8 @@ namespace DS1000Z_E_USB_Control.TimeBase
                     }
                 }
 
-                // Update horizontal offset
-                UpdateOffsetSliderRange();
-                if (HorizontalOffsetSlider != null)
-                {
-                    HorizontalOffsetSlider.Value = settings.MainOffset;
-                }
+                // Update horizontal offset arrow control
+                UpdateHorizontalOffsetArrowControl();
 
                 UpdateDisplays();
 
@@ -380,7 +375,6 @@ namespace DS1000Z_E_USB_Control.TimeBase
             if (settings == null) return;
 
             // This would update the controller's internal settings and then refresh the UI
-            // For now, we'll just update the UI directly
             UpdateFromCurrentSettings();
         }
 
@@ -403,12 +397,40 @@ namespace DS1000Z_E_USB_Control.TimeBase
                 TimeBaseModeComboBox.SelectionChanged -= TimeBaseMode_SelectionChanged;
             if (HorizontalScaleComboBox != null)
                 HorizontalScaleComboBox.SelectionChanged -= HorizontalScale_SelectionChanged;
-            if (HorizontalOffsetSlider != null)
-                HorizontalOffsetSlider.ValueChanged -= HorizontalOffsetSlider_ValueChanged;
+            if (HorizontalOffsetArrows != null)
+                HorizontalOffsetArrows.GraticuleMovement -= HorizontalOffsetArrows_GraticuleMovement;
             if (QuickZeroOffsetButton != null)
                 QuickZeroOffsetButton.Click -= QuickZeroOffset_Click;
 
+            if (controller != null)
+            {
+                controller.SettingsChanged -= (sender, e) => UpdateHorizontalOffsetArrowControl();
+            }
+
             controller = null;
+            isInitialized = false;
+        }
+
+        /// <summary>
+        /// Force update of all displays
+        /// </summary>
+        public void RefreshDisplays()
+        {
+            UpdateHorizontalOffsetArrowControl();
+            UpdateDisplays();
+        }
+
+        /// <summary>
+        /// Check if the panel is properly initialized
+        /// </summary>
+        public bool IsInitialized => isInitialized;
+
+        /// <summary>
+        /// Get the current controller (for external access)
+        /// </summary>
+        public TimeBaseController GetController()
+        {
+            return controller;
         }
 
         #endregion
@@ -420,14 +442,19 @@ namespace DS1000Z_E_USB_Control.TimeBase
         /// </summary>
         private string FormatTime(double time)
         {
-            if (Math.Abs(time) >= 1.0)
-                return $"{time:F3} s";
-            else if (Math.Abs(time) >= 1e-3)
-                return $"{time * 1000:F1} ms";
-            else if (Math.Abs(time) >= 1e-6)
-                return $"{time * 1000000:F1} µs";
+            if (time == 0) return "0s";
+
+            double absTime = Math.Abs(time);
+            if (absTime >= 1.0)
+                return $"{time:F3}s";
+            else if (absTime >= 1e-3)
+                return $"{time * 1000:F3}ms";
+            else if (absTime >= 1e-6)
+                return $"{time * 1000000:F3}μs";
+            else if (absTime >= 1e-9)
+                return $"{time * 1000000000:F3}ns";
             else
-                return $"{time * 1000000000:F1} ns";
+                return $"{time:E2}s";
         }
 
         /// <summary>

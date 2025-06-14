@@ -2,7 +2,8 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:DS1000Z_E_USB_Control.Controls"
              mc:Ignorable="d" 
              d:DesignHeight="300" d:DesignWidth="800">
 
@@ -62,63 +63,23 @@
                        Text="Range: ±50ms" FontSize="10" Foreground="Gray" 
                        VerticalAlignment="Center" Margin="5"/>
 
-            <!-- Enhanced Horizontal Offset Control -->
+            <!-- NEW: Media Control Style Horizontal Offset Control -->
             <Label Grid.Row="3" Grid.Column="0" Content="Horizontal Offset:" VerticalAlignment="Center" Margin="5"/>
-            <Grid Grid.Row="3" Grid.Column="1" HorizontalAlignment="Center">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
+            <StackPanel Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Orientation="Vertical" HorizontalAlignment="Center">
+                <!-- Range Display -->
+                <TextBlock x:Name="OffsetRangeDisplay" Text="Range: ±50ms" FontSize="8" Foreground="Gray" 
+                           HorizontalAlignment="Center" Margin="2"/>
 
-                <!-- Min Value Display -->
-                <TextBlock Grid.Column="0" x:Name="MinOffsetDisplay" Text="-50ms" FontSize="8" Foreground="Gray" 
-                           VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                <!-- Media Control Style Horizontal Arrow Control -->
+                <local:HorizontalGraticuleArrowControl x:Name="HorizontalOffsetArrows"
+                                                     HorizontalAlignment="Center" />
 
-                <!-- Enhanced Horizontal Slider -->
-                <Slider x:Name="HorizontalOffsetSlider" Grid.Column="1"
-                        Orientation="Horizontal" 
-                        Minimum="-50e-3" Maximum="50e-3" 
-                        Value="0"
-                        TickFrequency="10e-3"
-                        TickPlacement="BottomRight"
-                        IsSnapToTickEnabled="False"
-                        Width="120"
-                        Height="30"
-                        VerticalAlignment="Center"
-                        Margin="5">
-                    <Slider.Resources>
-                        <Style TargetType="Slider">
-                            <Setter Property="Template">
-                                <Setter.Value>
-                                    <ControlTemplate TargetType="Slider">
-                                        <Grid>
-                                            <Border Background="LightGray" Height="2" VerticalAlignment="Center"/>
-                                            <Track Name="PART_Track">
-                                                <Track.Thumb>
-                                                    <Thumb Background="#9370DB" Width="20" Height="12" BorderBrush="#663399" BorderThickness="1"/>
-                                                </Track.Thumb>
-                                            </Track>
-                                        </Grid>
-                                    </ControlTemplate>
-                                </Setter.Value>
-                            </Setter>
-                        </Style>
-                    </Slider.Resources>
-                </Slider>
-
-                <!-- Max Value Display -->
-                <TextBlock Grid.Column="2" x:Name="MaxOffsetDisplay" Text="+50ms" FontSize="8" Foreground="Gray" 
-                           VerticalAlignment="Center" HorizontalAlignment="Center"/>
-            </Grid>
-
-            <!-- Current Offset Value Display with Percentage -->
-            <StackPanel Grid.Row="3" Grid.Column="2" VerticalAlignment="Center" Margin="5">
-                <TextBlock x:Name="OffsetValueText" 
-                           Text="0.000 s" FontSize="11" FontWeight="Bold"
-                           Foreground="#9370DB" HorizontalAlignment="Center"/>
-                <TextBlock x:Name="OffsetPercentageDisplay" Text="(0%)" FontSize="8" Foreground="Gray" 
-                           HorizontalAlignment="Center"/>
+                <!-- Min/Max Value Displays -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="2">
+                    <TextBlock x:Name="MinOffsetDisplay" Text="-50ms" FontSize="8" Foreground="Gray" Margin="0,0,10,0"/>
+                    <TextBlock Text="to" FontSize="8" Foreground="Gray" Margin="0,0,10,0"/>
+                    <TextBlock x:Name="MaxOffsetDisplay" Text="+50ms" FontSize="8" Foreground="Gray"/>
+                </StackPanel>
             </StackPanel>
 
             <!-- Quick Zero Offset Button -->

@@ -2,12 +2,13 @@
 using System.Windows;
 using System.Windows.Controls;
 using Rigol_DS1000Z_E_Control;
+using DS1000Z_E_USB_Control.Controls;
 
 namespace DS1000Z_E_USB_Control.Channels.Ch1
 {
     /// <summary>
     /// Interaction logic for Ch1ControlPanel.xaml
-    /// Channel 1 UI UserControl
+    /// Channel 1 UI UserControl with Arrow Control for Offset
     /// </summary>
     public partial class Ch1ControlPanel : UserControl
     {
@@ -37,16 +38,18 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
             controller.EnableCheckBox = EnableCheckBox;
             controller.ProbeRatioComboBox = ProbeRatioComboBox;
             controller.VerticalScaleComboBox = VerticalScaleComboBox;
-            controller.CouplingComboBox = CouplingComboBox;  // Changed from UnitsComboBox
+            controller.CouplingComboBox = CouplingComboBox;
             controller.CurrentSettingsTextBlock = CurrentSettingsText;
-            controller.VerticalOffsetSlider = VerticalOffsetSlider;
-            controller.SliderValueText = SliderValueText;
+
+            // REMOVED: Slider assignments (now using arrow control)
+            // controller.VerticalOffsetSlider = VerticalOffsetSlider;
+            // controller.SliderValueText = SliderValueText;
 
             // Wire up enhanced UI controls to the controller
             controller.MaxValueDisplay = MaxValueDisplay;
             controller.MinValueDisplay = MinValueDisplay;
             controller.OffsetRangeText = OffsetRangeText;
-            controller.PercentageDisplay = PercentageDisplay;
+            // REMOVED: controller.PercentageDisplay = PercentageDisplay;
             controller.QuickZeroButton = QuickZeroButton;
 
             // Wire up additional UI elements specific to this UserControl
@@ -59,7 +62,7 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
             SetupEnhancedUI();
 
             isInitialized = true;
-            LogEvent?.Invoke(this, "Channel 1 control panel initialized");
+            LogEvent?.Invoke(this, "Channel 1 control panel initialized with arrow controls");
         }
 
         /// <summary>
@@ -72,15 +75,16 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
                 QuickZeroButton.Click += QuickZero_Click;
             }
 
-            if (VerticalOffsetSlider != null)
+            // REPLACED: Slider event handler with arrow control handler
+            if (VerticalOffsetArrows != null)
             {
-                VerticalOffsetSlider.ValueChanged += VerticalOffsetSlider_ValueChanged;
+                VerticalOffsetArrows.GraticuleMovement += VerticalOffsetArrows_GraticuleMovement;
             }
 
-            // Subscribe to settings changes to update range displays
+            // Subscribe to settings changes to update arrow control
             if (controller != null)
             {
-                controller.SettingsChanged += (sender, e) => UpdateRangeDisplays();
+                controller.SettingsChanged += (sender, e) => UpdateOffsetArrowControl();
             }
         }
 
@@ -89,18 +93,18 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
         /// </summary>
         private void SetupEnhancedUI()
         {
-            UpdateRangeDisplays();
+            UpdateOffsetArrowControl();
         }
 
         /// <summary>
-        /// Handle vertical offset slider changes
+        /// NEW: Handle graticule arrow movement
         /// </summary>
-        private void VerticalOffsetSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        private void VerticalOffsetArrows_GraticuleMovement(object sender, GraticuleMovementEventArgs e)
         {
             if (controller == null) return;
 
-            UpdateSliderValueDisplay();
             controller.HandleVerticalOffsetChanged(e.NewValue);
+            LogEvent?.Invoke(this, $"Channel 1 offset moved {e.GraticuleMultiplier:F1} graticule to {e.NewValue:F3}V");
         }
 
         /// <summary>
@@ -113,46 +117,26 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
         }
 
         /// <summary>
-        /// Update the enhanced slider value display
+        /// NEW: Update the arrow control instead of slider
         /// </summary>
-        private void UpdateSliderValueDisplay()
+        public void UpdateOffsetArrowControl()
         {
-            if (SliderValueText == null || VerticalOffsetSlider == null) return;
-
-            double value = VerticalOffsetSlider.Value;
-            SliderValueText.Text = FormatVoltage(value);
-
-            // Update percentage display
-            if (PercentageDisplay != null && controller != null)
-            {
-                var settings = controller.GetSettings();
-                var (minOffset, maxOffset) = settings.GetOffsetRange();
-                double range = maxOffset - minOffset;
-                double percentage = range > 0 ? (value / (range / 2.0)) * 100 : 0;
-                PercentageDisplay.Text = $"({percentage:F0}%)";
-            }
-        }
-
-        /// <summary>
-        /// Update the min/max range displays
-        /// </summary>
-        public void UpdateRangeDisplays()
-        {
-            if (controller == null) return;
+            if (VerticalOffsetArrows == null || controller == null) return;
 
             var settings = controller.GetSettings();
             var (minOffset, maxOffset) = settings.GetOffsetRange();
 
-            if (MaxValueDisplay != null)
-            {
-                MaxValueDisplay.Text = FormatVoltage(maxOffset);
-            }
+            // Update arrow control properties
+            VerticalOffsetArrows.GraticuleSize = settings.VerticalScale; // 1 graticule = 1 vertical scale
+            VerticalOffsetArrows.Units = "V";
+            VerticalOffsetArrows.UpdateRange(minOffset, maxOffset);
+            VerticalOffsetArrows.SetValue(settings.VerticalOffset);
 
+            // Update range displays
             if (MinValueDisplay != null)
-            {
                 MinValueDisplay.Text = FormatVoltage(minOffset);
-            }
-
+            if (MaxValueDisplay != null)
+                MaxValueDisplay.Text = FormatVoltage(maxOffset);
             if (OffsetRangeText != null)
             {
                 string rangeText;
@@ -169,82 +153,60 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
         }
 
         /// <summary>
-        /// Smart voltage formatting
+        /// Helper method to format voltage values
         /// </summary>
         private string FormatVoltage(double voltage)
         {
-            if (Math.Abs(voltage) >= 1000)
-                return $"{voltage / 1000:F1}kV";
-            else if (Math.Abs(voltage) >= 1)
-                return $"{voltage:F1}V";
+            if (Math.Abs(voltage) >= 1.0)
+                return $"{voltage:F3}V";
             else if (Math.Abs(voltage) >= 0.001)
-                return $"{voltage * 1000:F0}mV";
+                return $"{voltage * 1000:F1}mV";
             else
-                return $"{voltage * 1000000:F0}µV";
+                return $"{voltage * 1000000:F1}μV";
         }
 
         /// <summary>
-        /// Enable or disable the control panel
+        /// Get the current controller (for external access)
         /// </summary>
-        public void SetEnabled(bool enabled)
+        public Ch1Controller GetController()
         {
-            this.IsEnabled = enabled;
+            return controller;
         }
 
         /// <summary>
-        /// Query and update settings from oscilloscope
-        /// </summary>
-        public void QueryAndUpdateSettings()
-        {
-            controller?.QueryAndUpdateSettings();
-            UpdateRangeDisplays();
-            UpdateSliderValueDisplay();
-        }
-
-        /// <summary>
-        /// Get current channel settings
-        /// </summary>
-        public Ch1Settings GetSettings()
-        {
-            return controller?.GetSettings();
-        }
-
-        /// <summary>
-        /// Set channel settings (sends commands to oscilloscope)
-        /// </summary>
-        public void SetSettings(Ch1Settings settings)
-        {
-            controller?.SetSettings(settings);
-            UpdateRangeDisplays();
-            UpdateSliderValueDisplay();
-        }
-
-        /// <summary>
-        /// Update UI from settings (does NOT send commands to oscilloscope)
-        /// </summary>
-        public void UpdateFromSettings(Ch1Settings settings)
-        {
-            controller?.UpdateFromSettings(settings);
-            UpdateRangeDisplays();
-            UpdateSliderValueDisplay();
-        }
-
-        /// <summary>
-        /// Apply a preset configuration
-        /// </summary>
-        public void ApplyPreset(Ch1Settings preset)
-        {
-            SetSettings(preset);
-            LogEvent?.Invoke(this, $"Applied Channel 1 preset: {preset}");
-        }
-
-        /// <summary>
-        /// Clean up resources
+        /// Cleanup method
         /// </summary>
         public void Cleanup()
         {
-            controller?.Dispose();
-            controller = null;
+            if (VerticalOffsetArrows != null)
+            {
+                VerticalOffsetArrows.GraticuleMovement -= VerticalOffsetArrows_GraticuleMovement;
+            }
+
+            if (QuickZeroButton != null)
+            {
+                QuickZeroButton.Click -= QuickZero_Click;
+            }
+
+            if (controller != null)
+            {
+                controller.SettingsChanged -= (sender, e) => UpdateOffsetArrowControl();
+            }
+
+            isInitialized = false;
         }
+
+        /// <summary>
+        /// Force update of all displays
+        /// </summary>
+        public void RefreshDisplays()
+        {
+            UpdateOffsetArrowControl();
+        }
+
+        /// <summary>
+        /// Check if the panel is properly initialized
+        /// </summary>
+        public bool IsInitialized => isInitialized;
     }
 }

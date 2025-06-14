@@ -11,12 +11,12 @@ namespace DS1000Z_E_USB_Control.Trigger
     public class TriggerController
     {
         private readonly RigolDS1000ZE oscilloscope;
+        private readonly OscilloscopeSettingsManager settingsManager;
         private readonly TriggerSettings settings;
         private bool isUpdating = false;
 
         public event EventHandler<string> LogEvent;
         public event EventHandler SettingsChanged;
-        private OscilloscopeSettingsManager settingsManager;
 
         #region UI Control References
         // Main UI controls
@@ -41,92 +41,482 @@ namespace DS1000Z_E_USB_Control.Trigger
         public Button QuickZeroLevelButton { get; set; }
         #endregion
 
+        #region Constructors
+
+        /// <summary>
+        /// Constructor with both oscilloscope and settings manager (fixes compilation error)
+        /// </summary>
         public TriggerController(RigolDS1000ZE oscilloscope, OscilloscopeSettingsManager settingsManager)
         {
-            this.oscilloscope = oscilloscope;
-            this.settingsManager = settingsManager; // Corrected assignment
+            this.oscilloscope = oscilloscope ?? throw new ArgumentNullException(nameof(oscilloscope));
+            this.settingsManager = settingsManager ?? throw new ArgumentNullException(nameof(settingsManager));
             this.settings = new TriggerSettings();
         }
 
         /// <summary>
-        /// Get enhanced trigger range using channel settings
+        /// Constructor with oscilloscope only (backward compatibility)
         /// </summary>
-        private (double min, double max) GetEnhancedTriggerRange()
+        public TriggerController(RigolDS1000ZE oscilloscope)
+            : this(oscilloscope, null)
         {
-            if (settingsManager?.Channel1Settings != null && settingsManager?.Channel2Settings != null)
-            {
-                return settings.GetTriggerLevelRange(settingsManager.Channel1Settings, settingsManager.Channel2Settings);
-            }
-
-            // Fallback to default range
-            return settings.GetTriggerLevelRange();
         }
 
+        #endregion
 
+        #region Core Methods
 
-        #region UI Initialization and Management
+        /// <summary>
+        /// Handle trigger level changes from slider or other sources
+        /// </summary>
+        public void HandleTriggerLevelChanged(double level)
+        {
+            if (!oscilloscope.IsConnected) return;
+
+            string command = $":TRIGger:EDGe:LEVel {level.ToString(CultureInfo.InvariantCulture)}";
+
+            if (oscilloscope.SendCommand(command))
+            {
+                settings.EdgeLevel = level;
+                Log($"Trigger level set to {level:F3}V");
+                UpdateCurrentSettingsDisplay();
+                SettingsChanged?.Invoke(this, EventArgs.Empty);
+            }
+            else
+            {
+                Log("Failed to set trigger level");
+                UpdateSliderFromSettings();
+            }
+        }
 
         /// <summary>
         /// Initialize UI controls and set up event handlers
         /// </summary>
         public void InitializeControls()
         {
-            if (TriggerModeComboBox != null)
-            {
-                PopulateTriggerModeOptions();
-                TriggerModeComboBox.SelectionChanged += OnTriggerModeChanged;
-            }
+            PopulateTriggerModeOptions();
+            PopulateTriggerSweepOptions();
+            PopulateEdgeSourceOptions();
+            PopulateEdgeSlopeOptions();
+            PopulateTriggerCouplingOptions();
+            UpdateUIFromSettings();
+            EnableEventHandlers();
+        }
 
-            if (TriggerSweepComboBox != null)
-            {
-                TriggerSweepComboBox.SelectionChanged += OnTriggerSweepChanged;
-            }
+        /// <summary>
+        /// Query and update current settings from oscilloscope
+        /// </summary>
+        public bool QueryAndUpdateSettings()
+        {
+            if (!oscilloscope.IsConnected) return false;
 
-            if (EdgeSourceComboBox != null)
+            try
             {
-                EdgeSourceComboBox.SelectionChanged += OnEdgeSourceChanged;
-            }
+                Log("Reading trigger settings from oscilloscope...");
 
-            if (EdgeSlopeComboBox != null)
-            {
-                EdgeSlopeComboBox.SelectionChanged += OnEdgeSlopeChanged;
-            }
+                // Read trigger mode
+                string mode = oscilloscope.SendQuery(":TRIGger:MODE?");
+                if (!string.IsNullOrEmpty(mode))
+                {
+                    settings.Mode = mode.Trim();
+                }
 
-            if (TriggerCouplingComboBox != null)
-            {
-                TriggerCouplingComboBox.SelectionChanged += OnTriggerCouplingChanged;
-            }
+                // Read trigger sweep
+                string sweep = oscilloscope.SendQuery(":TRIGger:SWEep?");
+                if (!string.IsNullOrEmpty(sweep))
+                {
+                    settings.Sweep = sweep.Trim();
+                }
 
-            if (NoiseRejectCheckBox != null)
-            {
-                NoiseRejectCheckBox.Checked += OnNoiseRejectChanged;
-                NoiseRejectCheckBox.Unchecked += OnNoiseRejectChanged;
-            }
+                // Read trigger coupling
+                string coupling = oscilloscope.SendQuery(":TRIGger:COUPling?");
+                if (!string.IsNullOrEmpty(coupling))
+                {
+                    settings.Coupling = coupling.Trim();
+                }
 
-            if (TriggerLevelSlider != null)
-            {
-                TriggerLevelSlider.ValueChanged += OnTriggerLevelSliderChanged;
-                UpdateSliderRange();
-            }
+                // Read edge trigger settings if in edge mode
+                if (settings.Mode.ToUpper() == "EDGE")
+                {
+                    string edgeSource = oscilloscope.SendQuery(":TRIGger:EDGe:SOURce?");
+                    if (!string.IsNullOrEmpty(edgeSource))
+                    {
+                        settings.EdgeSource = edgeSource.Trim();
+                    }
 
-            if (HoldoffTextBox != null)
-            {
-                HoldoffTextBox.LostFocus += OnHoldoffTextChanged;
-            }
+                    string edgeSlope = oscilloscope.SendQuery(":TRIGger:EDGe:SLOPe?");
+                    if (!string.IsNullOrEmpty(edgeSlope))
+                    {
+                        settings.EdgeSlope = edgeSlope.Trim();
+                    }
 
-            if (ForceTriggerButton != null)
-            {
-                ForceTriggerButton.Click += OnForceTriggerClicked;
-            }
+                    string edgeLevel = oscilloscope.SendQuery(":TRIGger:EDGe:LEVel?");
+                    if (!string.IsNullOrEmpty(edgeLevel) &&
+                        double.TryParse(edgeLevel, NumberStyles.Float, CultureInfo.InvariantCulture, out double level))
+                    {
+                        settings.EdgeLevel = level;
+                    }
+                }
 
-            if (QuickZeroLevelButton != null)
+                // Read holdoff
+                string holdoff = oscilloscope.SendQuery(":TRIGger:HOLDoff?");
+                if (!string.IsNullOrEmpty(holdoff) &&
+                    double.TryParse(holdoff, NumberStyles.Float, CultureInfo.InvariantCulture, out double holdoffVal))
+                {
+                    settings.Holdoff = holdoffVal;
+                }
+
+                // Read noise reject
+                string noiseReject = oscilloscope.SendQuery(":TRIGger:NREJect?");
+                if (!string.IsNullOrEmpty(noiseReject))
+                {
+                    settings.NoiseReject = noiseReject.Trim().ToUpper() == "ON";
+                }
+
+                UpdateUIFromSettings();
+                Log("Trigger settings read successfully");
+                return true;
+            }
+            catch (Exception ex)
             {
-                QuickZeroLevelButton.Click += OnQuickZeroLevelClicked;
+                Log($"Error reading trigger settings: {ex.Message}");
+                return false;
             }
         }
 
         /// <summary>
-        /// Update UI controls from current settings WITHOUT sending commands to oscilloscope
+        /// Update settings from provided settings object
+        /// </summary>
+        public void UpdateFromSettings(TriggerSettings newSettings)
+        {
+            if (newSettings == null) return;
+
+            // Update internal settings object
+            settings.Mode = newSettings.Mode;
+            settings.Sweep = newSettings.Sweep;
+            settings.Coupling = newSettings.Coupling;
+            settings.EdgeSource = newSettings.EdgeSource;
+            settings.EdgeSlope = newSettings.EdgeSlope;
+            settings.EdgeLevel = newSettings.EdgeLevel;
+            settings.Holdoff = newSettings.Holdoff;
+            settings.NoiseReject = newSettings.NoiseReject;
+
+            // Update UI to reflect these settings
+            UpdateUIFromSettings();
+        }
+
+        #endregion
+
+        #region Settings Management
+
+        /// <summary>
+        /// Get current trigger settings
+        /// </summary>
+        public TriggerSettings GetSettings()
+        {
+            return settings.Clone();
+        }
+
+        /// <summary>
+        /// Set trigger settings (sends commands to oscilloscope)
+        /// </summary>
+        public void SetSettings(TriggerSettings newSettings)
+        {
+            if (newSettings == null) return;
+
+            SetTriggerMode(newSettings.Mode);
+            SetTriggerSweep(newSettings.Sweep);
+            SetTriggerCoupling(newSettings.Coupling);
+
+            if (newSettings.Mode.ToUpper() == "EDGE")
+            {
+                SetEdgeSource(newSettings.EdgeSource);
+                SetEdgeSlope(newSettings.EdgeSlope);
+                SetTriggerLevel(newSettings.EdgeLevel);
+            }
+
+            SetHoldoff(newSettings.Holdoff);
+            SetNoiseReject(newSettings.NoiseReject);
+        }
+
+        public bool SetTriggerMode(string mode)
+        {
+            string command = $":TRIGger:MODE {mode}";
+
+            if (oscilloscope.SendCommand(command))
+            {
+                settings.Mode = mode;
+                Log($"Trigger mode set to {mode}");
+                UpdateSliderRange(); // Range may change based on mode
+                UpdateCurrentSettingsDisplay();
+                SettingsChanged?.Invoke(this, EventArgs.Empty);
+                return true;
+            }
+            else
+            {
+                Log("Failed to set trigger mode");
+                return false;
+            }
+        }
+
+        public bool SetTriggerSweep(string sweep)
+        {
+            string command = $":TRIGger:SWEep {sweep}";
+
+            if (oscilloscope.SendCommand(command))
+            {
+                settings.Sweep = sweep;
+                Log($"Trigger sweep set to {sweep}");
+                UpdateCurrentSettingsDisplay();
+                SettingsChanged?.Invoke(this, EventArgs.Empty);
+                return true;
+            }
+            else
+            {
+                Log("Failed to set trigger sweep");
+                return false;
+            }
+        }
+
+        public bool SetTriggerCoupling(string coupling)
+        {
+            string command = $":TRIGger:COUPling {coupling}";
+
+            if (oscilloscope.SendCommand(command))
+            {
+                settings.Coupling = coupling;
+                Log($"Trigger coupling set to {coupling}");
+                UpdateCurrentSettingsDisplay();
+                SettingsChanged?.Invoke(this, EventArgs.Empty);
+                return true;
+            }
+            else
+            {
+                Log("Failed to set trigger coupling");
+                return false;
+            }
+        }
+
+        public bool SetEdgeSource(string source)
+        {
+            string command = $":TRIGger:EDGe:SOURce {source}";
+
+            if (oscilloscope.SendCommand(command))
+            {
+                settings.EdgeSource = source;
+                Log($"Edge trigger source set to {source}");
+                UpdateSliderRange(); // Range may change based on source
+                UpdateCurrentSettingsDisplay();
+                SettingsChanged?.Invoke(this, EventArgs.Empty);
+                return true;
+            }
+            else
+            {
+                Log("Failed to set edge trigger source");
+                return false;
+            }
+        }
+
+        public bool SetEdgeSlope(string slope)
+        {
+            string command = $":TRIGger:EDGe:SLOPe {slope}";
+
+            if (oscilloscope.SendCommand(command))
+            {
+                settings.EdgeSlope = slope;
+                Log($"Edge trigger slope set to {slope}");
+                UpdateCurrentSettingsDisplay();
+                SettingsChanged?.Invoke(this, EventArgs.Empty);
+                return true;
+            }
+            else
+            {
+                Log("Failed to set edge trigger slope");
+                return false;
+            }
+        }
+
+        public bool SetTriggerLevel(double level)
+        {
+            string command = $":TRIGger:EDGe:LEVel {level.ToString(CultureInfo.InvariantCulture)}";
+
+            if (oscilloscope.SendCommand(command))
+            {
+                settings.EdgeLevel = level;
+                Log($"Trigger level set to {level:F3}V");
+                UpdateCurrentSettingsDisplay();
+                SettingsChanged?.Invoke(this, EventArgs.Empty);
+                return true;
+            }
+            else
+            {
+                Log("Failed to set trigger level");
+                return false;
+            }
+        }
+
+        public bool SetHoldoff(double holdoff)
+        {
+            string command = $":TRIGger:HOLDoff {holdoff.ToString(CultureInfo.InvariantCulture)}";
+
+            if (oscilloscope.SendCommand(command))
+            {
+                settings.Holdoff = holdoff;
+                Log($"Trigger holdoff set to {holdoff:E2}s");
+                UpdateCurrentSettingsDisplay();
+                SettingsChanged?.Invoke(this, EventArgs.Empty);
+                return true;
+            }
+            else
+            {
+                Log("Failed to set trigger holdoff");
+                return false;
+            }
+        }
+
+        public bool SetNoiseReject(bool enabled)
+        {
+            string command = $":TRIGger:NREJect {(enabled ? "ON" : "OFF")}";
+
+            if (oscilloscope.SendCommand(command))
+            {
+                settings.NoiseReject = enabled;
+                Log($"Trigger noise reject {(enabled ? "enabled" : "disabled")}");
+                UpdateCurrentSettingsDisplay();
+                SettingsChanged?.Invoke(this, EventArgs.Empty);
+                return true;
+            }
+            else
+            {
+                Log("Failed to set trigger noise reject");
+                return false;
+            }
+        }
+
+        #endregion
+
+        #region UI Population Methods
+
+        private void PopulateTriggerModeOptions()
+        {
+            if (TriggerModeComboBox == null) return;
+
+            TriggerModeComboBox.Items.Clear();
+            var modes = new[] { "EDGE", "PULSE", "RUNT", "WIND", "NEDG", "SLOP", "VID", "PATT", "RS232", "I2C", "SPI" };
+
+            foreach (var mode in modes)
+            {
+                var item = new ComboBoxItem
+                {
+                    Content = mode,
+                    Tag = mode
+                };
+                TriggerModeComboBox.Items.Add(item);
+
+                if (mode == settings.Mode)
+                {
+                    TriggerModeComboBox.SelectedItem = item;
+                }
+            }
+        }
+
+        private void PopulateTriggerSweepOptions()
+        {
+            if (TriggerSweepComboBox == null) return;
+
+            TriggerSweepComboBox.Items.Clear();
+            var sweeps = new[] { "AUTO", "NORM", "SING" };
+
+            foreach (var sweep in sweeps)
+            {
+                var item = new ComboBoxItem
+                {
+                    Content = sweep,
+                    Tag = sweep
+                };
+                TriggerSweepComboBox.Items.Add(item);
+
+                if (sweep == settings.Sweep)
+                {
+                    TriggerSweepComboBox.SelectedItem = item;
+                }
+            }
+        }
+
+        private void PopulateEdgeSourceOptions()
+        {
+            if (EdgeSourceComboBox == null) return;
+
+            EdgeSourceComboBox.Items.Clear();
+            var sources = new[] { "CHAN1", "CHAN2", "EXT", "ACL" };
+
+            foreach (var source in sources)
+            {
+                var item = new ComboBoxItem
+                {
+                    Content = source,
+                    Tag = source
+                };
+                EdgeSourceComboBox.Items.Add(item);
+
+                if (source == settings.EdgeSource)
+                {
+                    EdgeSourceComboBox.SelectedItem = item;
+                }
+            }
+        }
+
+        private void PopulateEdgeSlopeOptions()
+        {
+            if (EdgeSlopeComboBox == null) return;
+
+            EdgeSlopeComboBox.Items.Clear();
+            var slopes = new[] { "POS", "NEG", "RFAL" };
+
+            foreach (var slope in slopes)
+            {
+                var item = new ComboBoxItem
+                {
+                    Content = slope,
+                    Tag = slope
+                };
+                EdgeSlopeComboBox.Items.Add(item);
+
+                if (slope == settings.EdgeSlope)
+                {
+                    EdgeSlopeComboBox.SelectedItem = item;
+                }
+            }
+        }
+
+        private void PopulateTriggerCouplingOptions()
+        {
+            if (TriggerCouplingComboBox == null) return;
+
+            TriggerCouplingComboBox.Items.Clear();
+            var couplings = new[] { "DC", "AC", "HFR", "LFR" };
+
+            foreach (var coupling in couplings)
+            {
+                var item = new ComboBoxItem
+                {
+                    Content = coupling,
+                    Tag = coupling
+                };
+                TriggerCouplingComboBox.Items.Add(item);
+
+                if (coupling == settings.Coupling)
+                {
+                    TriggerCouplingComboBox.SelectedItem = item;
+                }
+            }
+        }
+
+        #endregion
+
+        #region UI Update Methods
+
+        /// <summary>
+        /// Update all UI elements from current settings
         /// </summary>
         public void UpdateUIFromSettings()
         {
@@ -137,99 +527,36 @@ namespace DS1000Z_E_USB_Control.Trigger
                 isUpdating = true;
                 DisableEventHandlers();
 
-                // Update trigger mode
-                if (TriggerModeComboBox != null)
-                {
-                    foreach (ComboBoxItem item in TriggerModeComboBox.Items)
-                    {
-                        if (item.Tag.ToString().ToUpper() == settings.Mode.ToUpper())
-                        {
-                            TriggerModeComboBox.SelectedItem = item;
-                            break;
-                        }
-                    }
-                }
+                // Update ComboBoxes
+                PopulateTriggerModeOptions();
+                PopulateTriggerSweepOptions();
+                PopulateEdgeSourceOptions();
+                PopulateEdgeSlopeOptions();
+                PopulateTriggerCouplingOptions();
 
-                // Update trigger sweep
-                if (TriggerSweepComboBox != null)
-                {
-                    foreach (ComboBoxItem item in TriggerSweepComboBox.Items)
-                    {
-                        if (item.Tag.ToString().ToUpper() == settings.Sweep.ToUpper())
-                        {
-                            TriggerSweepComboBox.SelectedItem = item;
-                            break;
-                        }
-                    }
-                }
-
-                // Update edge source
-                if (EdgeSourceComboBox != null)
-                {
-                    foreach (ComboBoxItem item in EdgeSourceComboBox.Items)
-                    {
-                        if (item.Tag.ToString().ToUpper() == settings.EdgeSource.ToUpper())
-                        {
-                            EdgeSourceComboBox.SelectedItem = item;
-                            break;
-                        }
-                    }
-                }
-
-                // Update edge slope
-                if (EdgeSlopeComboBox != null)
-                {
-                    foreach (ComboBoxItem item in EdgeSlopeComboBox.Items)
-                    {
-                        if (item.Tag.ToString().ToUpper() == settings.EdgeSlope.ToUpper())
-                        {
-                            EdgeSlopeComboBox.SelectedItem = item;
-                            break;
-                        }
-                    }
-                }
-
-                // Update trigger coupling
-                if (TriggerCouplingComboBox != null)
-                {
-                    foreach (ComboBoxItem item in TriggerCouplingComboBox.Items)
-                    {
-                        if (item.Tag.ToString().ToUpper() == settings.Coupling.ToUpper())
-                        {
-                            TriggerCouplingComboBox.SelectedItem = item;
-                            break;
-                        }
-                    }
-                }
-
-                // Update noise reject
+                // Update CheckBox
                 if (NoiseRejectCheckBox != null)
-                {
                     NoiseRejectCheckBox.IsChecked = settings.NoiseReject;
-                }
 
-                // Update holdoff
-                if (HoldoffTextBox != null)
-                {
-                    HoldoffTextBox.Text = settings.Holdoff.ToString("E3");
-                }
-
-                // Update trigger level slider
+                // Update Slider
                 UpdateSliderRange();
                 if (TriggerLevelSlider != null)
-                {
                     TriggerLevelSlider.Value = settings.EdgeLevel;
-                    UpdateSliderValueDisplay();
-                }
 
-                // Update current settings display
+                // Update TextBox
+                if (HoldoffTextBox != null)
+                    HoldoffTextBox.Text = settings.Holdoff.ToString("E2", CultureInfo.InvariantCulture);
+
+                UpdateLevelValueDisplay();
                 UpdateCurrentSettingsDisplay();
+                UpdateRangeDisplays();
+                UpdateHoldoffDisplay();
 
-                Log($"Updated Trigger UI from settings: {settings}");
+                Log($"Trigger UI updated from settings: {settings}");
             }
             catch (Exception ex)
             {
-                Log($"Error updating Trigger UI: {ex.Message}");
+                Log($"Error updating trigger UI: {ex.Message}");
             }
             finally
             {
@@ -239,44 +566,7 @@ namespace DS1000Z_E_USB_Control.Trigger
         }
 
         /// <summary>
-        /// Update settings object from provided settings and then update UI
-        /// </summary>
-        public void UpdateFromSettings(TriggerSettings newSettings)
-        {
-            if (newSettings == null) return;
-
-            // Update internal settings object
-            settings.Mode = newSettings.Mode;
-            settings.Coupling = newSettings.Coupling;
-            settings.Sweep = newSettings.Sweep;
-            settings.EdgeSource = newSettings.EdgeSource;
-            settings.EdgeSlope = newSettings.EdgeSlope;
-            settings.EdgeLevel = newSettings.EdgeLevel;
-            settings.Holdoff = newSettings.Holdoff;
-            settings.NoiseReject = newSettings.NoiseReject;
-            settings.Status = newSettings.Status;
-            settings.Position = newSettings.Position;
-
-            // Update UI to reflect these settings
-            UpdateUIFromSettings();
-        }
-
-        #endregion
-
-        #region Slider and Level Management
-
-        /// <summary>
-        /// Handle trigger level changes from slider or other sources
-        /// </summary>
-        public void HandleTriggerLevelChanged(double level)
-        {
-            if (!oscilloscope.IsConnected || isUpdating) return;
-
-            SetEdgeLevel(level);
-        }
-
-        /// <summary>
-        /// Update the slider range based on trigger source
+        /// Update the trigger level slider range
         /// </summary>
         public void UpdateSliderRange()
         {
@@ -288,6 +578,11 @@ namespace DS1000Z_E_USB_Control.Trigger
             TriggerLevelSlider.Minimum = minLevel;
             TriggerLevelSlider.Maximum = maxLevel;
 
+            // Calculate smart tick frequency
+            double range = maxLevel - minLevel;
+            double tickFreq = range <= 4 ? 0.1 : range <= 40 ? 1 : range <= 200 ? 10 : 100;
+            TriggerLevelSlider.TickFrequency = tickFreq;
+
             // Clamp current value to new range
             if (TriggerLevelSlider.Value < minLevel)
                 TriggerLevelSlider.Value = minLevel;
@@ -296,310 +591,74 @@ namespace DS1000Z_E_USB_Control.Trigger
 
             isUpdating = false;
 
-            Log($"Trigger level slider range updated: {minLevel:F3}V to {maxLevel:F3}V");
+            Log($"Trigger level slider range updated: {minLevel:F1}V to {maxLevel:F1}V");
         }
 
-
-
-
-        /// <summary>
-        /// Update the slider value display text
-        /// </summary>
-        private void UpdateSliderValueDisplay()
-        {
-            if (LevelValueText != null && TriggerLevelSlider != null)
-            {
-                LevelValueText.Text = $"{TriggerLevelSlider.Value:F3} V";
-            }
-        }
-
-        /// <summary>
-        /// Update slider value from current settings
-        /// </summary>
         private void UpdateSliderFromSettings()
         {
             if (TriggerLevelSlider != null && !isUpdating)
             {
                 isUpdating = true;
                 TriggerLevelSlider.Value = settings.EdgeLevel;
-                UpdateSliderValueDisplay();
+                UpdateLevelValueDisplay();
                 isUpdating = false;
             }
         }
 
-        #endregion
+        private void UpdateLevelValueDisplay()
+        {
+            if (LevelValueText != null && TriggerLevelSlider != null)
+            {
+                LevelValueText.Text = $"{TriggerLevelSlider.Value:F3}V";
+            }
+        }
 
-        #region Settings Display Updates
-
-        /// <summary>
-        /// Update the current settings display text
-        /// </summary>
         private void UpdateCurrentSettingsDisplay()
         {
             if (CurrentTriggerSettingsText != null)
             {
-                CurrentTriggerSettingsText.Text = $"Current: Mode={settings.Mode}, Source={settings.EdgeSource}, " +
-                    $"Slope={settings.EdgeSlope}, Level={settings.EdgeLevelDisplay}, " +
-                    $"Sweep={settings.Sweep}, Coupling={settings.Coupling}";
-            }
-
-            if (TriggerStatusText != null)
-            {
-                TriggerStatusText.Text = $"Status: {settings.Status}";
+                CurrentTriggerSettingsText.Text = settings.ToString();
             }
         }
 
         /// <summary>
-        /// Populate trigger mode options
+        /// Update the min/max range displays
         /// </summary>
-        private void PopulateTriggerModeOptions()
+        public void UpdateRangeDisplays()
         {
-            if (TriggerModeComboBox == null) return;
+            var (minLevel, maxLevel) = GetEnhancedTriggerRange();
 
-            var modeOptions = TriggerSettings.GetModeOptions();
-
-            TriggerModeComboBox.Items.Clear();
-            foreach (var option in modeOptions)
+            if (MaxLevelDisplay != null)
             {
-                var item = new ComboBoxItem
-                {
-                    Content = option.display,
-                    Tag = option.value
-                };
-                TriggerModeComboBox.Items.Add(item);
+                MaxLevelDisplay.Text = FormatVoltage(maxLevel);
+            }
 
-                // Select Edge as default
-                if (option.value == "EDGe")
+            if (MinLevelDisplay != null)
+            {
+                MinLevelDisplay.Text = FormatVoltage(minLevel);
+            }
+
+            if (LevelRangeText != null)
+            {
+                string rangeText;
+                if (Math.Abs(minLevel) == Math.Abs(maxLevel))
                 {
-                    TriggerModeComboBox.SelectedItem = item;
+                    rangeText = $"Range: ±{FormatVoltage(maxLevel).Replace("+", "")}";
                 }
+                else
+                {
+                    rangeText = $"Range: {FormatVoltage(minLevel)} to {FormatVoltage(maxLevel)}";
+                }
+                LevelRangeText.Text = rangeText;
             }
         }
 
-        #endregion
-
-        #region Original Trigger Methods (Enhanced)
-
-        /// <summary>
-        /// Set the trigger mode
-        /// </summary>
-        public bool SetTriggerMode(string mode)
+        private void UpdateHoldoffDisplay()
         {
-            if (!oscilloscope.IsConnected) return false;
-
-            string command = $":TRIGger:MODE {mode}";
-            bool success = oscilloscope.SendCommand(command);
-
-            if (success)
+            if (HoldoffDisplayText != null)
             {
-                settings.Mode = mode;
-                Log($"Trigger mode set to {mode}");
-                UpdateCurrentSettingsDisplay();
-                SettingsChanged?.Invoke(this, EventArgs.Empty);
+                HoldoffDisplayText.Text = FormatTime(settings.Holdoff);
             }
-            else
-            {
-                Log("Failed to set trigger mode");
-            }
-
-            return success;
-        }
-
-        /// <summary>
-        /// Set the trigger sweep mode
-        /// </summary>
-        public bool SetTriggerSweep(string sweep)
-        {
-            if (!oscilloscope.IsConnected) return false;
-
-            string command = $":TRIGger:SWEep {sweep}";
-            bool success = oscilloscope.SendCommand(command);
-
-            if (success)
-            {
-                settings.Sweep = sweep;
-                Log($"Trigger sweep set to {sweep}");
-                UpdateCurrentSettingsDisplay();
-                SettingsChanged?.Invoke(this, EventArgs.Empty);
-            }
-            else
-            {
-                Log("Failed to set trigger sweep");
-            }
-
-            return success;
-        }
-
-        /// <summary>
-        /// Set the edge trigger source
-        /// </summary>
-        public bool SetEdgeSource(string source)
-        {
-            if (!oscilloscope.IsConnected) return false;
-
-            string command = $":TRIGger:EDGe:SOURce {source}";
-            bool success = oscilloscope.SendCommand(command);
-
-            if (success)
-            {
-                settings.EdgeSource = source;
-                Log($"Edge trigger source set to {source}");
-                UpdateSliderRange();
-                UpdateCurrentSettingsDisplay();
-                SettingsChanged?.Invoke(this, EventArgs.Empty);
-            }
-            else
-            {
-                Log("Failed to set edge trigger source");
-            }
-
-            return success;
-        }
-
-        /// <summary>
-        /// Set the edge trigger slope
-        /// </summary>
-        public bool SetEdgeSlope(string slope)
-        {
-            if (!oscilloscope.IsConnected) return false;
-
-            string command = $":TRIGger:EDGe:SLOPe {slope}";
-            bool success = oscilloscope.SendCommand(command);
-
-            if (success)
-            {
-                settings.EdgeSlope = slope;
-                Log($"Edge trigger slope set to {slope}");
-                UpdateCurrentSettingsDisplay();
-                SettingsChanged?.Invoke(this, EventArgs.Empty);
-            }
-            else
-            {
-                Log("Failed to set edge trigger slope");
-            }
-
-            return success;
-        }
-
-        /// <summary>
-        /// Set the edge trigger level
-        /// </summary>
-        public bool SetEdgeLevel(double level)
-        {
-            if (!oscilloscope.IsConnected) return false;
-
-            string command = $":TRIGger:EDGe:LEVel {level.ToString(CultureInfo.InvariantCulture)}";
-            bool success = oscilloscope.SendCommand(command);
-
-            if (success)
-            {
-                settings.EdgeLevel = level;
-                Log($"Edge trigger level set to {settings.EdgeLevelDisplay}");
-                UpdateCurrentSettingsDisplay();
-                SettingsChanged?.Invoke(this, EventArgs.Empty);
-            }
-            else
-            {
-                Log("Failed to set edge trigger level");
-            }
-
-            return success;
-        }
-
-        /// <summary>
-        /// Set the trigger coupling
-        /// </summary>
-        public bool SetTriggerCoupling(string coupling)
-        {
-            if (!oscilloscope.IsConnected) return false;
-
-            string command = $":TRIGger:COUPling {coupling}";
-            bool success = oscilloscope.SendCommand(command);
-
-            if (success)
-            {
-                settings.Coupling = coupling;
-                Log($"Trigger coupling set to {coupling}");
-                UpdateCurrentSettingsDisplay();
-                SettingsChanged?.Invoke(this, EventArgs.Empty);
-            }
-            else
-            {
-                Log("Failed to set trigger coupling");
-            }
-
-            return success;
-        }
-
-        /// <summary>
-        /// Set the trigger holdoff time
-        /// </summary>
-        public bool SetHoldoff(double holdoff)
-        {
-            if (!oscilloscope.IsConnected) return false;
-
-            string command = $":TRIGger:HOLDoff {holdoff.ToString(CultureInfo.InvariantCulture)}";
-            bool success = oscilloscope.SendCommand(command);
-
-            if (success)
-            {
-                settings.Holdoff = holdoff;
-                Log($"Trigger holdoff set to {settings.HoldoffDisplay}");
-                UpdateCurrentSettingsDisplay();
-                SettingsChanged?.Invoke(this, EventArgs.Empty);
-            }
-            else
-            {
-                Log("Failed to set trigger holdoff");
-            }
-
-            return success;
-        }
-
-        /// <summary>
-        /// Enable or disable noise reject
-        /// </summary>
-        public bool SetNoiseReject(bool enable)
-        {
-            if (!oscilloscope.IsConnected) return false;
-
-            string command = $":TRIGger:NREJect {(enable ? "ON" : "OFF")}";
-            bool success = oscilloscope.SendCommand(command);
-
-            if (success)
-            {
-                settings.NoiseReject = enable;
-                Log($"Trigger noise reject {(enable ? "enabled" : "disabled")}");
-                UpdateCurrentSettingsDisplay();
-                SettingsChanged?.Invoke(this, EventArgs.Empty);
-            }
-            else
-            {
-                Log("Failed to set trigger noise reject");
-            }
-
-            return success;
-        }
-
-        /// <summary>
-        /// Force a trigger
-        /// </summary>
-        public bool ForceTrigger()
-        {
-            if (!oscilloscope.IsConnected) return false;
-
-            bool success = oscilloscope.SendCommand(":TFORce");
-
-            if (success)
-            {
-                Log("Trigger forced");
-            }
-            else
-            {
-                Log("Failed to force trigger");
-            }
-
-            return success;
         }
 
         #endregion
@@ -678,7 +737,7 @@ namespace DS1000Z_E_USB_Control.Trigger
             // Update the value display immediately
             if (LevelValueText != null)
             {
-                LevelValueText.Text = $"{newValue:F3} V";
+                LevelValueText.Text = $"{newValue:F3}V";
             }
 
             // Send the command to the oscilloscope
@@ -689,7 +748,7 @@ namespace DS1000Z_E_USB_Control.Trigger
         {
             if (isUpdating) return;
 
-            if (HoldoffTextBox != null && double.TryParse(HoldoffTextBox.Text, out double holdoff))
+            if (HoldoffTextBox != null && double.TryParse(HoldoffTextBox.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out double holdoff))
             {
                 SetHoldoff(holdoff);
             }
@@ -697,12 +756,20 @@ namespace DS1000Z_E_USB_Control.Trigger
 
         private void OnForceTriggerClicked(object sender, System.Windows.RoutedEventArgs e)
         {
-            ForceTrigger();
+            if (oscilloscope.SendCommand(":TFORce"))
+            {
+                Log("Force trigger executed");
+            }
+            else
+            {
+                Log("Failed to force trigger");
+            }
         }
 
         private void OnQuickZeroLevelClicked(object sender, System.Windows.RoutedEventArgs e)
         {
-            SetEdgeLevel(0);
+            SetTriggerLevel(0.0);
+            Log("Trigger level set to 0V");
         }
 
         #endregion
@@ -730,6 +797,10 @@ namespace DS1000Z_E_USB_Control.Trigger
                 TriggerLevelSlider.ValueChanged -= OnTriggerLevelSliderChanged;
             if (HoldoffTextBox != null)
                 HoldoffTextBox.LostFocus -= OnHoldoffTextChanged;
+            if (ForceTriggerButton != null)
+                ForceTriggerButton.Click -= OnForceTriggerClicked;
+            if (QuickZeroLevelButton != null)
+                QuickZeroLevelButton.Click -= OnQuickZeroLevelClicked;
         }
 
         private void EnableEventHandlers()
@@ -753,136 +824,71 @@ namespace DS1000Z_E_USB_Control.Trigger
                 TriggerLevelSlider.ValueChanged += OnTriggerLevelSliderChanged;
             if (HoldoffTextBox != null)
                 HoldoffTextBox.LostFocus += OnHoldoffTextChanged;
+            if (ForceTriggerButton != null)
+                ForceTriggerButton.Click += OnForceTriggerClicked;
+            if (QuickZeroLevelButton != null)
+                QuickZeroLevelButton.Click += OnQuickZeroLevelClicked;
         }
 
         #endregion
 
-        #region Query and Update Methods
+        #region Helper Methods
 
         /// <summary>
-        /// Query and update all trigger settings from oscilloscope
+        /// Get enhanced trigger range using channel settings if available
         /// </summary>
-        public bool QueryAndUpdateSettings()
+        private (double min, double max) GetEnhancedTriggerRange()
         {
-            if (!oscilloscope.IsConnected) return false;
-
-            try
+            if (settingsManager?.Channel1Settings != null && settingsManager?.Channel2Settings != null)
             {
-                // Read trigger mode
-                string mode = oscilloscope.SendQuery(":TRIGger:MODE?");
-                if (!string.IsNullOrEmpty(mode))
-                {
-                    settings.Mode = mode.Trim();
-                }
-
-                // Read trigger coupling
-                string coupling = oscilloscope.SendQuery(":TRIGger:COUPling?");
-                if (!string.IsNullOrEmpty(coupling))
-                {
-                    settings.Coupling = coupling.Trim();
-                }
-
-                // Read trigger sweep mode
-                string sweep = oscilloscope.SendQuery(":TRIGger:SWEep?");
-                if (!string.IsNullOrEmpty(sweep))
-                {
-                    settings.Sweep = sweep.Trim();
-                }
-
-                // Read trigger status
-                string status = oscilloscope.SendQuery(":TRIGger:STATus?");
-                if (!string.IsNullOrEmpty(status))
-                {
-                    settings.Status = status.Trim();
-                }
-
-                // For edge trigger mode, read edge-specific settings
-                if (settings.Mode.ToUpper() == "EDGE")
-                {
-                    // Read edge trigger source
-                    string edgeSource = oscilloscope.SendQuery(":TRIGger:EDGe:SOURce?");
-                    if (!string.IsNullOrEmpty(edgeSource))
-                    {
-                        settings.EdgeSource = edgeSource.Trim();
-                    }
-
-                    // Read edge trigger slope
-                    string edgeSlope = oscilloscope.SendQuery(":TRIGger:EDGe:SLOPe?");
-                    if (!string.IsNullOrEmpty(edgeSlope))
-                    {
-                        settings.EdgeSlope = edgeSlope.Trim();
-                    }
-
-                    // Read edge trigger level
-                    string edgeLevel = oscilloscope.SendQuery(":TRIGger:EDGe:LEVel?");
-                    if (!string.IsNullOrEmpty(edgeLevel) &&
-                        double.TryParse(edgeLevel, NumberStyles.Float, CultureInfo.InvariantCulture, out double level))
-                    {
-                        settings.EdgeLevel = level;
-                    }
-                }
-
-                // Read holdoff
-                string holdoff = oscilloscope.SendQuery(":TRIGger:HOLDoff?");
-                if (!string.IsNullOrEmpty(holdoff) &&
-                    double.TryParse(holdoff, NumberStyles.Float, CultureInfo.InvariantCulture, out double holdoffVal))
-                {
-                    settings.Holdoff = holdoffVal;
-                }
-
-                // Read noise reject
-                string noiseReject = oscilloscope.SendQuery(":TRIGger:NREJect?");
-                if (!string.IsNullOrEmpty(noiseReject))
-                {
-                    settings.NoiseReject = noiseReject.Trim() == "1" || noiseReject.Trim().ToUpper() == "ON";
-                }
-
-                // Update UI with new settings
-                UpdateUIFromSettings();
-
-                Log($"Trigger settings updated: {settings}");
-                return true;
+                return settings.GetTriggerLevelRange(settingsManager.Channel1Settings, settingsManager.Channel2Settings);
             }
-            catch (Exception ex)
-            {
-                Log($"Error querying Trigger settings: {ex.Message}");
-                return false;
-            }
+
+            // Fallback to default range
+            return settings.GetTriggerLevelRange();
+        }
+
+        private void Log(string message)
+        {
+            LogEvent?.Invoke(this, message);
+        }
+
+        /// <summary>
+        /// Helper method to format voltage values
+        /// </summary>
+        private string FormatVoltage(double voltage)
+        {
+            if (Math.Abs(voltage) >= 1.0)
+                return $"{voltage:F3}V";
+            else if (Math.Abs(voltage) >= 0.001)
+                return $"{voltage * 1000:F1}mV";
+            else
+                return $"{voltage * 1000000:F1}μV";
+        }
+
+        /// <summary>
+        /// Helper method to format time values
+        /// </summary>
+        private string FormatTime(double time)
+        {
+            if (time == 0) return "0s";
+
+            double absTime = Math.Abs(time);
+            if (absTime >= 1.0)
+                return $"{time:F3}s";
+            else if (absTime >= 1e-3)
+                return $"{time * 1000:F3}ms";
+            else if (absTime >= 1e-6)
+                return $"{time * 1000000:F3}μs";
+            else if (absTime >= 1e-9)
+                return $"{time * 1000000000:F3}ns";
+            else
+                return $"{time:E2}s";
         }
 
         #endregion
 
-        #region Public API
-
-        /// <summary>
-        /// Get current trigger settings
-        /// </summary>
-        public TriggerSettings GetSettings()
-        {
-            return settings.Clone();
-        }
-
-        /// <summary>
-        /// Set trigger settings
-        /// </summary>
-        public void SetSettings(TriggerSettings newSettings)
-        {
-            if (newSettings == null) return;
-
-            SetTriggerMode(newSettings.Mode);
-            SetTriggerCoupling(newSettings.Coupling);
-            SetTriggerSweep(newSettings.Sweep);
-
-            if (newSettings.Mode.ToUpper() == "EDGE")
-            {
-                SetEdgeSource(newSettings.EdgeSource);
-                SetEdgeSlope(newSettings.EdgeSlope);
-                SetEdgeLevel(newSettings.EdgeLevel);
-            }
-
-            SetHoldoff(newSettings.Holdoff);
-            SetNoiseReject(newSettings.NoiseReject);
-        }
+        #region Disposal
 
         /// <summary>
         /// Clean up resources
@@ -893,10 +899,5 @@ namespace DS1000Z_E_USB_Control.Trigger
         }
 
         #endregion
-
-        private void Log(string message)
-        {
-            LogEvent?.Invoke(this, message);
-        }
     }
 }

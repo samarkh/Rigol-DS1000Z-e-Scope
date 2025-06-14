@@ -19,23 +19,35 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
         public event EventHandler<string> LogEvent;
         public event EventHandler SettingsChanged;
 
-        // UI Control references
+        #region UI Control References
+        // Basic UI Control references
         public CheckBox EnableCheckBox { get; set; }
         public ComboBox ProbeRatioComboBox { get; set; }
         public ComboBox VerticalScaleComboBox { get; set; }
-        public ComboBox CouplingComboBox { get; set; }  // Changed from UnitsComboBox
+        public ComboBox CouplingComboBox { get; set; }
         public TextBlock CurrentSettingsTextBlock { get; set; }
         public Slider VerticalOffsetSlider { get; set; }
         public TextBlock SliderValueText { get; set; }
 
+        // Enhanced UI Control References (missing from original implementation)
+        public TextBlock MaxValueDisplay { get; set; }
+        public TextBlock MinValueDisplay { get; set; }
+        public TextBlock OffsetRangeText { get; set; }
+        public Button QuickZeroButton { get; set; }
+        #endregion
+
+        #region Constructor
         public Ch1Controller(RigolDS1000ZE oscilloscope)
         {
-            this.oscilloscope = oscilloscope;
+            this.oscilloscope = oscilloscope ?? throw new ArgumentNullException(nameof(oscilloscope));
             this.settings = new Ch1Settings();
         }
+        #endregion
+
+        #region Core Methods
 
         /// <summary>
-        /// Handle vertical offset changes from slider or other sources
+        /// Handle vertical offset changes from slider, arrow controls, or other sources
         /// </summary>
         public void HandleVerticalOffsetChanged(double offset)
         {
@@ -53,6 +65,7 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
             else
             {
                 Log("Failed to set Channel 1 vertical offset");
+                // Revert slider to last known good value
                 UpdateSliderFromSettings();
             }
         }
@@ -62,340 +75,272 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
         /// </summary>
         public void InitializeControls()
         {
-            if (ProbeRatioComboBox != null)
-            {
-                PopulateProbeRatioOptions();
-                ProbeRatioComboBox.SelectionChanged += OnProbeRatioChanged;
-            }
+            PopulateProbeRatioOptions();
+            PopulateVerticalScaleOptions();
+            PopulateCouplingOptions();
+            UpdateUIFromSettings();
+            EnableEventHandlers();
+        }
 
-            if (VerticalScaleComboBox != null)
-            {
-                UpdateVerticalScaleOptions();
-                VerticalScaleComboBox.SelectionChanged += OnVerticalScaleChanged;
-            }
+        /// <summary>
+        /// Set vertical offset (used by arrow controls and other sources)
+        /// </summary>
+        public void SetVerticalOffset(double offset)
+        {
+            HandleVerticalOffsetChanged(offset);
+        }
 
-            if (EnableCheckBox != null)
+        /// <summary>
+        /// Update slider from current settings (missing method from compilation errors)
+        /// </summary>
+        private void UpdateSliderFromSettings()
+        {
+            if (VerticalOffsetSlider != null && !isUpdating)
             {
-                EnableCheckBox.Checked += OnEnableChanged;
-                EnableCheckBox.Unchecked += OnEnableChanged;
-            }
-
-            if (CouplingComboBox != null)  // Changed from UnitsComboBox
-            {
-                CouplingComboBox.SelectionChanged += OnCouplingChanged;
-            }
-
-            if (VerticalOffsetSlider != null)
-            {
-                VerticalOffsetSlider.ValueChanged += OnVerticalOffsetSliderChanged;
-                UpdateSliderRange();
+                isUpdating = true;
+                VerticalOffsetSlider.Value = settings.VerticalOffset;
+                UpdateSliderValueDisplay();
+                isUpdating = false;
             }
         }
 
         /// <summary>
-        /// Enable or disable Channel 1
+        /// Update settings from provided settings - single argument overload (missing from compilation errors)
         /// </summary>
+        public void UpdateFromSettings(Ch1Settings newSettings)
+        {
+            if (newSettings == null) return;
+
+            // Update internal settings object
+            settings.IsEnabled = newSettings.IsEnabled;
+            settings.ProbeRatio = newSettings.ProbeRatio;
+            settings.VerticalScale = newSettings.VerticalScale;
+            settings.VerticalOffset = newSettings.VerticalOffset;
+            settings.Coupling = newSettings.Coupling;
+            settings.BandwidthLimit = newSettings.BandwidthLimit;
+            settings.Units = newSettings.Units;
+            settings.InvertEnabled = newSettings.InvertEnabled;
+            settings.VernierEnabled = newSettings.VernierEnabled;
+
+            // Update UI to reflect these settings
+            UpdateUIFromSettings();
+        }
+        #endregion
+
+        #region Settings Management
+
+        /// <summary>
+        /// Get current Channel 1 settings
+        /// </summary>
+        public Ch1Settings GetSettings()
+        {
+            return settings.Clone();
+        }
+
+        /// <summary>
+        /// Set Channel 1 settings (sends commands to oscilloscope)
+        /// </summary>
+        public void SetSettings(Ch1Settings newSettings)
+        {
+            if (newSettings == null) return;
+
+            SetEnabled(newSettings.IsEnabled);
+            SetProbeRatio(newSettings.ProbeRatio);
+            SetVerticalScale(newSettings.VerticalScale);
+            SetVerticalOffset(newSettings.VerticalOffset);
+            SetCoupling(newSettings.Coupling);
+        }
+
         public bool SetEnabled(bool enabled)
         {
-            if (!oscilloscope.IsConnected) return false;
-
             string command = $":CHANnel1:DISPlay {(enabled ? "ON" : "OFF")}";
-            bool success = oscilloscope.SendCommand(command);
 
-            if (success)
+            if (oscilloscope.SendCommand(command))
             {
                 settings.IsEnabled = enabled;
                 Log($"Channel 1 {(enabled ? "enabled" : "disabled")}");
                 UpdateCurrentSettingsDisplay();
                 SettingsChanged?.Invoke(this, EventArgs.Empty);
+                return true;
             }
             else
             {
-                Log("Failed to set Channel 1 enable state");
+                Log("Failed to change Channel 1 enable state");
+                return false;
             }
-
-            return success;
         }
 
-        /// <summary>
-        /// Set the probe ratio for Channel 1
-        /// </summary>
         public bool SetProbeRatio(double ratio)
         {
-            if (!oscilloscope.IsConnected) return false;
-
             string command = $":CHANnel1:PROBe {ratio.ToString(CultureInfo.InvariantCulture)}";
-            bool success = oscilloscope.SendCommand(command);
 
-            if (success)
+            if (oscilloscope.SendCommand(command))
             {
                 settings.ProbeRatio = ratio;
-                Log($"Channel 1 probe ratio set to {ratio}×");
+                Log($"Channel 1 probe ratio set to {ratio}:1");
                 UpdateVerticalScaleOptions();
                 UpdateSliderRange();
                 UpdateCurrentSettingsDisplay();
                 SettingsChanged?.Invoke(this, EventArgs.Empty);
+                return true;
             }
             else
             {
                 Log("Failed to set Channel 1 probe ratio");
+                return false;
             }
-
-            return success;
         }
 
-        /// <summary>
-        /// Set the vertical scale for Channel 1
-        /// </summary>
         public bool SetVerticalScale(double scale)
         {
-            if (!oscilloscope.IsConnected) return false;
-
             string command = $":CHANnel1:SCALe {scale.ToString(CultureInfo.InvariantCulture)}";
-            bool success = oscilloscope.SendCommand(command);
 
-            if (success)
+            if (oscilloscope.SendCommand(command))
             {
                 settings.VerticalScale = scale;
                 Log($"Channel 1 vertical scale set to {scale}V/div");
                 UpdateSliderRange();
                 UpdateCurrentSettingsDisplay();
                 SettingsChanged?.Invoke(this, EventArgs.Empty);
+                return true;
             }
             else
             {
                 Log("Failed to set Channel 1 vertical scale");
+                return false;
             }
-
-            return success;
         }
 
-        /// <summary>
-        /// Set the vertical offset for Channel 1
-        /// </summary>
-        public bool SetVerticalOffset(double offset)
-        {
-            if (!oscilloscope.IsConnected) return false;
-
-            string command = $":CHANnel1:OFFSet {offset.ToString(CultureInfo.InvariantCulture)}";
-            bool success = oscilloscope.SendCommand(command);
-
-            if (success)
-            {
-                settings.VerticalOffset = offset;
-                Log($"Channel 1 vertical offset set to {offset:F3}V");
-                UpdateCurrentSettingsDisplay();
-                SettingsChanged?.Invoke(this, EventArgs.Empty);
-            }
-            else
-            {
-                Log("Failed to set Channel 1 vertical offset");
-            }
-
-            return success;
-        }
-
-        /// <summary>
-        /// Set the input coupling for Channel 1
-        /// </summary>
         public bool SetCoupling(string coupling)
         {
-            if (!oscilloscope.IsConnected) return false;
-
             string command = $":CHANnel1:COUPling {coupling}";
-            bool success = oscilloscope.SendCommand(command);
 
-            if (success)
+            if (oscilloscope.SendCommand(command))
             {
                 settings.Coupling = coupling;
-                Log($"Channel 1 input coupling set to {coupling}");
+                Log($"Channel 1 coupling set to {coupling}");
                 UpdateCurrentSettingsDisplay();
                 SettingsChanged?.Invoke(this, EventArgs.Empty);
+                return true;
             }
             else
             {
-                Log("Failed to set Channel 1 input coupling");
-            }
-
-            return success;
-        }
-
-        /// <summary>
-        /// Refresh settings from the oscilloscope
-        /// </summary>
-        public void RefreshSettings()
-        {
-            if (!oscilloscope.IsConnected) return;
-
-            try
-            {
-                isUpdating = true;
-
-                // Query current channel settings
-                string enableQuery = oscilloscope.SendQuery(":CHANnel1:DISPlay?");
-                string scaleQuery = oscilloscope.SendQuery(":CHANnel1:SCALe?");
-                string offsetQuery = oscilloscope.SendQuery(":CHANnel1:OFFSet?");
-                string couplingQuery = oscilloscope.SendQuery(":CHANnel1:COUPling?");
-                string probeQuery = oscilloscope.SendQuery(":CHANnel1:PROBe?");
-
-                // Update UI controls if they exist
-                if (EnableCheckBox != null && bool.TryParse(enableQuery?.Trim(), out bool enabled))
-                    EnableCheckBox.IsChecked = enabled;
-
-                if (VerticalScaleComboBox != null && !string.IsNullOrEmpty(scaleQuery))
-                    SelectComboBoxItem(VerticalScaleComboBox, scaleQuery.Trim());
-
-                if (CouplingComboBox != null && !string.IsNullOrEmpty(couplingQuery))
-                    SelectComboBoxItem(CouplingComboBox, couplingQuery.Trim());
-
-                if (ProbeRatioComboBox != null && !string.IsNullOrEmpty(probeQuery))
-                    SelectComboBoxItem(ProbeRatioComboBox, probeQuery.Trim());
-
-                // Update offset slider if present
-                if (VerticalOffsetSlider != null && !string.IsNullOrEmpty(offsetQuery))
-                {
-                    if (double.TryParse(offsetQuery.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out double offset))
-                    {
-                        VerticalOffsetSlider.Value = offset;
-                        settings.VerticalOffset = offset;
-                    }
-                }
-
-                SettingsChanged?.Invoke(this, EventArgs.Empty);
-                LogEvent?.Invoke(this, "Channel 1 settings refreshed from oscilloscope");
-            }
-            catch (Exception ex)
-            {
-                LogEvent?.Invoke(this, $"Error refreshing Channel 1 settings: {ex.Message}");
-            }
-            finally
-            {
-                isUpdating = false;
+                Log("Failed to set Channel 1 coupling");
+                return false;
             }
         }
+        #endregion
 
-        /// <summary>
-        /// Apply a preset configuration to Channel 1
-        /// </summary>
-        public void ApplyPreset(string presetName)
+        #region UI Population Methods
+
+        private void PopulateProbeRatioOptions()
         {
-            if (!oscilloscope.IsConnected) return;
+            if (ProbeRatioComboBox == null) return;
 
-            try
+            ProbeRatioComboBox.Items.Clear();
+            var probeOptions = new[] { 1.0, 10.0, 100.0, 1000.0 };
+
+            foreach (var ratio in probeOptions)
             {
-                // Define some common presets
-                switch (presetName.ToLower())
+                var item = new ComboBoxItem
                 {
-                    case "default":
-                        oscilloscope.SendCommand(":CHANnel1:DISPlay ON");
-                        oscilloscope.SendCommand(":CHANnel1:SCALe 1");
-                        oscilloscope.SendCommand(":CHANnel1:OFFSet 0");
-                        oscilloscope.SendCommand(":CHANnel1:COUPling DC");
-                        oscilloscope.SendCommand(":CHANnel1:PROBe 1");
-                        break;
-
-                    case "high_voltage":
-                        oscilloscope.SendCommand(":CHANnel1:DISPlay ON");
-                        oscilloscope.SendCommand(":CHANnel1:SCALe 10");
-                        oscilloscope.SendCommand(":CHANnel1:OFFSet 0");
-                        oscilloscope.SendCommand(":CHANnel1:COUPling DC");
-                        oscilloscope.SendCommand(":CHANnel1:PROBe 10");
-                        break;
-
-                    case "low_voltage":
-                        oscilloscope.SendCommand(":CHANnel1:DISPlay ON");
-                        oscilloscope.SendCommand(":CHANnel1:SCALe 0.1");
-                        oscilloscope.SendCommand(":CHANnel1:OFFSet 0");
-                        oscilloscope.SendCommand(":CHANnel1:COUPling DC");
-                        oscilloscope.SendCommand(":CHANnel1:PROBe 1");
-                        break;
-
-                    case "ac_coupled":
-                        oscilloscope.SendCommand(":CHANnel1:DISPlay ON");
-                        oscilloscope.SendCommand(":CHANnel1:SCALe 1");
-                        oscilloscope.SendCommand(":CHANnel1:OFFSet 0");
-                        oscilloscope.SendCommand(":CHANnel1:COUPling AC");
-                        oscilloscope.SendCommand(":CHANnel1:PROBe 1");
-                        break;
-
-                    default:
-                        LogEvent?.Invoke(this, $"Unknown preset: {presetName}");
-                        return;
-                }
-
-                RefreshSettings(); // Update UI after applying preset
-                LogEvent?.Invoke(this, $"Applied preset '{presetName}' to Channel 1");
-            }
-            catch (Exception ex)
-            {
-                LogEvent?.Invoke(this, $"Error applying preset '{presetName}': {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// Get current channel settings as an object
-        /// </summary>
-        public object GetCurrentSettings()
-        {
-            if (!oscilloscope.IsConnected) return null;
-
-            try
-            {
-                return new
-                {
-                    Enabled = EnableCheckBox?.IsChecked ?? false,
-                    Scale = VerticalScaleComboBox?.SelectedItem?.ToString(),
-                    Coupling = CouplingComboBox?.SelectedItem?.ToString(),
-                    ProbeRatio = ProbeRatioComboBox?.SelectedItem?.ToString(),
-                    Offset = VerticalOffsetSlider?.Value ?? 0.0,
-                    Settings = settings
+                    Content = $"{ratio}:1",
+                    Tag = ratio
                 };
-            }
-            catch (Exception ex)
-            {
-                LogEvent?.Invoke(this, $"Error getting current settings: {ex.Message}");
-                return null;
+                ProbeRatioComboBox.Items.Add(item);
+
+                if (Math.Abs(ratio - settings.ProbeRatio) < 0.01)
+                {
+                    ProbeRatioComboBox.SelectedItem = item;
+                }
             }
         }
 
-        /// <summary>
-        /// Query all Channel 1 settings from the oscilloscope
-        /// </summary>
-        public void QueryAndUpdateSettings()
+        private void PopulateVerticalScaleOptions()
         {
-            if (!oscilloscope.IsConnected || isUpdating) return;
+            if (VerticalScaleComboBox == null) return;
+
+            var scaleOptions = Ch1Settings.GetScaleOptionsForProbeRatio(settings.ProbeRatio);
+
+            VerticalScaleComboBox.Items.Clear();
+            foreach (var option in scaleOptions)
+            {
+                var item = new ComboBoxItem
+                {
+                    Content = option.display,
+                    Tag = option.value
+                };
+                VerticalScaleComboBox.Items.Add(item);
+
+                if (Math.Abs(option.value - settings.VerticalScale) < 1e-9)
+                {
+                    VerticalScaleComboBox.SelectedItem = item;
+                }
+            }
+        }
+
+        private void PopulateCouplingOptions()
+        {
+            if (CouplingComboBox == null) return;
+
+            CouplingComboBox.Items.Clear();
+            var couplingOptions = new[] { "DC", "AC", "GND" };
+
+            foreach (var coupling in couplingOptions)
+            {
+                var item = new ComboBoxItem
+                {
+                    Content = coupling,
+                    Tag = coupling
+                };
+                CouplingComboBox.Items.Add(item);
+
+                if (coupling == settings.Coupling)
+                {
+                    CouplingComboBox.SelectedItem = item;
+                }
+            }
+        }
+
+        private void UpdateVerticalScaleOptions()
+        {
+            PopulateVerticalScaleOptions();
+        }
+        #endregion
+
+        #region UI Update Methods
+
+        /// <summary>
+        /// Update all UI elements from current settings
+        /// </summary>
+        public void UpdateUIFromSettings()
+        {
+            if (isUpdating) return;
 
             try
             {
                 isUpdating = true;
                 DisableEventHandlers();
 
-                // Query current settings
-                string enableState = oscilloscope.SendQuery(":CHANnel1:DISPlay?");
-                string probeRatio = oscilloscope.SendQuery(":CHANnel1:PROBe?");
-                string verticalScale = oscilloscope.SendQuery(":CHANnel1:SCALe?");
-                string verticalOffset = oscilloscope.SendQuery(":CHANnel1:OFFSet?");
-                string coupling = oscilloscope.SendQuery(":CHANnel1:COUPling?");
+                // Update basic controls
+                if (EnableCheckBox != null)
+                    EnableCheckBox.IsChecked = settings.IsEnabled;
 
-                // Parse and update settings
-                if (bool.TryParse(enableState?.Trim(), out bool enabled))
-                    settings.IsEnabled = enabled;
+                // Update ComboBoxes (these methods handle the selection)
+                PopulateProbeRatioOptions();
+                PopulateVerticalScaleOptions();
+                PopulateCouplingOptions();
 
-                if (double.TryParse(probeRatio?.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out double probe))
-                    settings.ProbeRatio = probe;
+                // Update slider
+                UpdateSliderRange();
+                if (VerticalOffsetSlider != null)
+                    VerticalOffsetSlider.Value = settings.VerticalOffset;
 
-                if (double.TryParse(verticalScale?.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out double scale))
-                    settings.VerticalScale = scale;
+                UpdateSliderValueDisplay();
+                UpdateCurrentSettingsDisplay();
+                UpdateRangeDisplays();
 
-                if (double.TryParse(verticalOffset?.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out double offset))
-                    settings.VerticalOffset = offset;
-
-                if (!string.IsNullOrEmpty(coupling))
-                    settings.Coupling = coupling.Trim();
-
-                // Update UI from settings
-                UpdateUIFromSettings();
-                Log($"Channel 1 settings updated from oscilloscope: {settings}");
+                Log($"Channel 1 UI updated from settings: {settings}");
             }
             catch (Exception ex)
             {
@@ -408,71 +353,22 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
             }
         }
 
-        #region UI Update Methods
-
         /// <summary>
-        /// Update UI controls from current settings
+        /// Update the slider range based on current probe ratio and vertical scale
         /// </summary>
-        private void UpdateUIFromSettings()
+        public void UpdateSliderRange()
         {
-            if (isUpdating) return;
+            if (VerticalOffsetSlider == null) return;
 
-            try
-            {
-                isUpdating = true;
-
-                // Update checkbox
-                if (EnableCheckBox != null)
-                    EnableCheckBox.IsChecked = settings.IsEnabled;
-
-                // Update probe ratio combo
-                if (ProbeRatioComboBox != null)
-                    SelectComboBoxByValue(ProbeRatioComboBox, settings.ProbeRatio.ToString(CultureInfo.InvariantCulture));
-
-                // Update vertical scale combo
-                if (VerticalScaleComboBox != null)
-                    SelectComboBoxByValue(VerticalScaleComboBox, settings.VerticalScale.ToString(CultureInfo.InvariantCulture));
-
-                // Update coupling combo
-                if (CouplingComboBox != null)
-                    SelectComboBoxByValue(CouplingComboBox, settings.Coupling);
-
-                // Update slider
-                if (VerticalOffsetSlider != null)
-                    VerticalOffsetSlider.Value = settings.VerticalOffset;
-
-                UpdateCurrentSettingsDisplay();
-                UpdateSliderValueDisplay();
-            }
-            finally
-            {
-                isUpdating = false;
-            }
-        }
-
-        /// <summary>
-        /// Update slider range based on current vertical scale and probe ratio
-        /// </summary>
-        private void UpdateSliderRange()
-        {
-            if (VerticalOffsetSlider == null || isUpdating) return;
+            var (minOffset, maxOffset) = settings.GetOffsetRange();
 
             isUpdating = true;
-
-            // Calculate maximum offset based on scale and probe ratio
-            double maxOffset = settings.VerticalScale * settings.ProbeRatio * 5.0; // ±5 divisions
-            double minOffset = -maxOffset;
-
             VerticalOffsetSlider.Minimum = minOffset;
             VerticalOffsetSlider.Maximum = maxOffset;
 
-            // Set tick frequency based on scale
-            double tickFreq;
-            if (maxOffset <= 1.0) tickFreq = 0.01;      // For ±1V range
-            else if (maxOffset <= 10.0) tickFreq = 0.1; // For ±10V range  
-            else if (maxOffset <= 100.0) tickFreq = 1.0; // For ±100V range
-            else tickFreq = 10.0;    // For ±1000V range
-
+            // Calculate smart tick frequency
+            double range = maxOffset - minOffset;
+            double tickFreq = range <= 4 ? 0.2 : range <= 40 ? 2 : range <= 200 ? 20 : 200;
             VerticalOffsetSlider.TickFrequency = tickFreq;
 
             // Clamp current value to new range
@@ -486,90 +382,65 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
             Log($"Channel 1 slider range updated: {minOffset:F1}V to {maxOffset:F1}V (ticks: {tickFreq})");
         }
 
-        /// <summary>
-        /// Update the slider value display text
-        /// </summary>
         private void UpdateSliderValueDisplay()
         {
             if (SliderValueText != null && VerticalOffsetSlider != null)
             {
-                SliderValueText.Text = $"{VerticalOffsetSlider.Value:F3} V";
+                SliderValueText.Text = $"{VerticalOffsetSlider.Value:F3}V";
             }
         }
 
-        /// <summary>
-        /// Update vertical scale options based on probe ratio
-        /// </summary>
-        public void UpdateVerticalScaleOptions()
-        {
-            if (VerticalScaleComboBox == null) return;
-
-            var scaleOptions = Ch1Settings.GetScaleOptionsForProbeRatio(settings.ProbeRatio);
-
-            VerticalScaleComboBox.Items.Clear();
-            foreach (var option in scaleOptions)
-            {
-                var item = new ComboBoxItem
-                {
-                    Content = option.display,
-                    Tag = option.value.ToString(CultureInfo.InvariantCulture)
-                };
-                VerticalScaleComboBox.Items.Add(item);
-            }
-
-            // Select 1V/div as default if nothing is selected
-            if (VerticalScaleComboBox.SelectedItem == null)
-            {
-                foreach (ComboBoxItem item in VerticalScaleComboBox.Items)
-                {
-                    if (item.Tag.ToString() == "1")
-                    {
-                        VerticalScaleComboBox.SelectedItem = item;
-                        break;
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Update the current settings display text
-        /// </summary>
         private void UpdateCurrentSettingsDisplay()
         {
             if (CurrentSettingsTextBlock != null)
             {
-                double range = settings.VerticalScale * 8; // 8 divisions
-                CurrentSettingsTextBlock.Text = $"Current: Scale={settings.VerticalScale:F3}V/div, Offset={settings.VerticalOffset:F3}V, Range={range:F1}V, Coupling={settings.Coupling}";
+                CurrentSettingsTextBlock.Text = settings.ToString();
             }
         }
 
         /// <summary>
-        /// Populate probe ratio options
+        /// Update the min/max range displays (for arrow controls)
         /// </summary>
-        private void PopulateProbeRatioOptions()
+        public void UpdateRangeDisplays()
         {
-            if (ProbeRatioComboBox == null) return;
+            if (settings == null) return;
 
-            var probeOptions = Ch1Settings.GetProbeRatioOptions();
+            var (minOffset, maxOffset) = settings.GetOffsetRange();
 
-            ProbeRatioComboBox.Items.Clear();
-            foreach (var option in probeOptions)
+            if (MaxValueDisplay != null)
             {
-                var item = new ComboBoxItem
-                {
-                    Content = option.display,
-                    Tag = option.value.ToString(CultureInfo.InvariantCulture)
-                };
-                ProbeRatioComboBox.Items.Add(item);
+                MaxValueDisplay.Text = FormatVoltage(maxOffset);
+            }
 
-                // Select 10× as default
-                if (option.value == 10.0)
+            if (MinValueDisplay != null)
+            {
+                MinValueDisplay.Text = FormatVoltage(minOffset);
+            }
+
+            if (OffsetRangeText != null)
+            {
+                string rangeText;
+                if (Math.Abs(minOffset) == Math.Abs(maxOffset))
                 {
-                    ProbeRatioComboBox.SelectedItem = item;
+                    rangeText = $"Range: ±{FormatVoltage(maxOffset).Replace("+", "")}";
                 }
+                else
+                {
+                    rangeText = $"Range: {FormatVoltage(minOffset)} to {FormatVoltage(maxOffset)}";
+                }
+                OffsetRangeText.Text = rangeText;
             }
         }
 
+        /// <summary>
+        /// Update all UI elements when settings change
+        /// </summary>
+        public void UpdateAllDisplays()
+        {
+            UpdateSliderRange();
+            UpdateCurrentSettingsDisplay();
+            UpdateRangeDisplays();
+        }
         #endregion
 
         #region Event Handlers
@@ -611,7 +482,7 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
             }
         }
 
-        private void OnCouplingChanged(object sender, SelectionChangedEventArgs e)  // Changed from OnUnitsChanged
+        private void OnCouplingChanged(object sender, SelectionChangedEventArgs e)
         {
             if (isUpdating) return;
 
@@ -627,47 +498,20 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
             if (isUpdating) return;
 
             double newValue = e.NewValue;
-            HandleVerticalOffsetChanged(newValue);
-            UpdateSliderValueDisplay();
-        }
 
+            // Update the value display immediately
+            if (SliderValueText != null)
+            {
+                SliderValueText.Text = $"{newValue:F3}V";
+            }
+
+            // Send the command to the oscilloscope
+            HandleVerticalOffsetChanged(newValue);
+        }
         #endregion
 
-        #region Helper Methods
+        #region Event Handler Management
 
-        /// <summary>
-        /// Helper method to select an item in a ComboBox by value
-        /// </summary>
-        private void SelectComboBoxItem(ComboBox comboBox, string value)
-        {
-            for (int i = 0; i < comboBox.Items.Count; i++)
-            {
-                if (comboBox.Items[i].ToString().Equals(value, StringComparison.OrdinalIgnoreCase))
-                {
-                    comboBox.SelectedIndex = i;
-                    break;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Helper method to select an item in a ComboBox by tag value
-        /// </summary>
-        private void SelectComboBoxByValue(ComboBox comboBox, string tagValue)
-        {
-            foreach (ComboBoxItem item in comboBox.Items)
-            {
-                if (item.Tag?.ToString().Equals(tagValue, StringComparison.OrdinalIgnoreCase) == true)
-                {
-                    comboBox.SelectedItem = item;
-                    break;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Disable event handlers during updates
-        /// </summary>
         private void DisableEventHandlers()
         {
             if (EnableCheckBox != null)
@@ -675,23 +519,16 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
                 EnableCheckBox.Checked -= OnEnableChanged;
                 EnableCheckBox.Unchecked -= OnEnableChanged;
             }
-
             if (ProbeRatioComboBox != null)
                 ProbeRatioComboBox.SelectionChanged -= OnProbeRatioChanged;
-
             if (VerticalScaleComboBox != null)
                 VerticalScaleComboBox.SelectionChanged -= OnVerticalScaleChanged;
-
             if (CouplingComboBox != null)
                 CouplingComboBox.SelectionChanged -= OnCouplingChanged;
-
             if (VerticalOffsetSlider != null)
                 VerticalOffsetSlider.ValueChanged -= OnVerticalOffsetSliderChanged;
         }
 
-        /// <summary>
-        /// Enable event handlers after updates
-        /// </summary>
         private void EnableEventHandlers()
         {
             if (EnableCheckBox != null)
@@ -699,54 +536,39 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
                 EnableCheckBox.Checked += OnEnableChanged;
                 EnableCheckBox.Unchecked += OnEnableChanged;
             }
-
             if (ProbeRatioComboBox != null)
                 ProbeRatioComboBox.SelectionChanged += OnProbeRatioChanged;
-
             if (VerticalScaleComboBox != null)
                 VerticalScaleComboBox.SelectionChanged += OnVerticalScaleChanged;
-
             if (CouplingComboBox != null)
                 CouplingComboBox.SelectionChanged += OnCouplingChanged;
-
             if (VerticalOffsetSlider != null)
                 VerticalOffsetSlider.ValueChanged += OnVerticalOffsetSliderChanged;
         }
-
-        /// <summary>
-        /// Update all UI elements when settings change
-        /// </summary>
-        public void UpdateAllUIElements()
-        {
-            UpdateSliderRange();
-            UpdateCurrentSettingsDisplay();
-        }
-
         #endregion
 
-        #region Public API Methods
+        #region Helper Methods
 
-        /// <summary>
-        /// Get current Channel 1 settings
-        /// </summary>
-        public Ch1Settings GetSettings()
+        private void Log(string message)
         {
-            return settings.Clone();
+            LogEvent?.Invoke(this, message);
         }
 
         /// <summary>
-        /// Set Channel 1 settings (sends commands to oscilloscope)
+        /// Helper method to format voltage values
         /// </summary>
-        public void SetSettings(Ch1Settings newSettings)
+        private string FormatVoltage(double voltage)
         {
-            if (newSettings == null) return;
-
-            SetEnabled(newSettings.IsEnabled);
-            SetProbeRatio(newSettings.ProbeRatio);
-            SetVerticalScale(newSettings.VerticalScale);
-            SetVerticalOffset(newSettings.VerticalOffset);
-            SetCoupling(newSettings.Coupling);  // Changed from SetUnits
+            if (Math.Abs(voltage) >= 1.0)
+                return $"{voltage:F3}V";
+            else if (Math.Abs(voltage) >= 0.001)
+                return $"{voltage * 1000:F1}mV";
+            else
+                return $"{voltage * 1000000:F1}μV";
         }
+        #endregion
+
+        #region Disposal
 
         /// <summary>
         /// Clean up resources
@@ -755,12 +577,6 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
         {
             DisableEventHandlers();
         }
-
         #endregion
-
-        private void Log(string message)
-        {
-            LogEvent?.Invoke(this, message);
-        }
     }
 }

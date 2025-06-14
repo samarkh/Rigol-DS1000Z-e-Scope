@@ -70,9 +70,11 @@
                 <TextBlock x:Name="OffsetRangeDisplay" Text="Range: ±50ms" FontSize="8" Foreground="Gray" 
                            HorizontalAlignment="Center" Margin="2"/>
 
-                <!-- Media Control Style Horizontal Arrow Control -->
-                <local:HorizontalGraticuleArrowControl x:Name="HorizontalOffsetArrows"
-                                                     HorizontalAlignment="Center" />
+                <!-- FIXED: Use unified GraticuleArrowControl with Horizontal orientation -->
+                <local:GraticuleArrowControl x:Name="HorizontalOffsetArrows"
+                                           Orientation="Horizontal"
+                                           Units="s"
+                                           HorizontalAlignment="Center" />
 
                 <!-- Min/Max Value Displays -->
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="2">

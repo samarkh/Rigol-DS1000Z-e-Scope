@@ -71,10 +71,11 @@
                            HorizontalAlignment="Center" Margin="2"/>
 
                 <!-- FIXED: Use unified GraticuleArrowControl with Horizontal orientation -->
-                <local:GraticuleArrowControl x:Name="HorizontalOffsetArrows"
-                                           Orientation="Horizontal"
-                                           Units="s"
-                                           HorizontalAlignment="Center" />
+                <local:EmojiTimeBaseArrows x:Name="HorizontalOffsetArrows"
+                          Units="s"
+                          HorizontalAlignment="Center" 
+                          VerticalAlignment="Center"
+                          Margin="10"/>
 
                 <!-- Min/Max Value Displays -->
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="2">

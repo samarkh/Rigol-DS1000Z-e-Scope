@@ -7,8 +7,8 @@ using DS1000Z_E_USB_Control.Controls;
 namespace DS1000Z_E_USB_Control.Channels.Ch1
 {
     /// <summary>
-    /// Enhanced Ch1ControlPanel with rotated multimedia arrow controls
-    /// Uses EmojiTimeBaseArrows with Orientation="Vertical" for voltage offset control
+    /// Simplified Ch1ControlPanel with multimedia arrow controls
+    /// Clean implementation focused on voltage controls only (no time data)
     /// </summary>
     public partial class Ch1ControlPanel : UserControl
     {
@@ -35,15 +35,14 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
             controller.LogEvent += (sender, message) => LogEvent?.Invoke(this, message);
             controller.SettingsChanged += (sender, e) => LogEvent?.Invoke(this, "Channel 1 settings changed");
 
-            // Wire up UI controls to the controller
+            // Wire up basic UI controls to the controller
             controller.EnableCheckBox = EnableCheckBox;
             controller.ProbeRatioComboBox = ProbeRatioComboBox;
             controller.VerticalScaleComboBox = VerticalScaleComboBox;
             controller.CouplingComboBox = CouplingComboBox;
             controller.CurrentSettingsTextBlock = CurrentSettingsText;
-            // Note: Removed SliderValueText - we're not displaying current offset value
 
-            // Wire up additional enhanced UI elements
+            // Wire up range display controls
             controller.MaxValueDisplay = MaxValueDisplay;
             controller.MinValueDisplay = MinValueDisplay;
             controller.OffsetRangeText = OffsetRangeText;
@@ -55,15 +54,15 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
             // Initialize the controller
             controller.InitializeControls();
 
-            // Set up enhanced UI elements
-            SetupEnhancedUI();
+            // Update displays
+            UpdateDisplays();
 
             isInitialized = true;
-            LogEvent?.Invoke(this, "Channel 1 control panel initialized with multimedia controls");
+            LogEvent?.Invoke(this, "Channel 1 control panel initialized (simplified)");
         }
 
         /// <summary>
-        /// Wire up event handlers for all controls
+        /// Wire up event handlers for controls
         /// </summary>
         private void WireUpEventHandlers()
         {
@@ -78,18 +77,15 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
                 QuickZeroButton.Click += QuickZero_Click;
 
             if (PresetButton1 != null)
-                PresetButton1.Click += (s, e) => ApplyVoltagePreset(5.0);
+                PresetButton1.Click += (s, e) => ApplyPreset("±5V");
 
             if (PresetButton2 != null)
-                PresetButton2.Click += (s, e) => ApplyVoltagePreset(10.0);
-
-            if (PresetButton3 != null)
-                PresetButton3.Click += (s, e) => ApplyGroundingPreset();
+                PresetButton2.Click += (s, e) => ApplyPreset("±10V");
 
             // Subscribe to controller events for UI updates
             if (controller != null)
             {
-                controller.SettingsChanged += (sender, e) => UpdateOffsetArrowControl();
+                controller.SettingsChanged += (sender, e) => UpdateOffsetControl();
             }
         }
 
@@ -106,8 +102,7 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
                 // Update the controller with the new offset value
                 controller.HandleVerticalOffsetChanged(e.NewValue);
 
-                string movementDescription = GetMovementDescription(e.MovementType, e.GraticuleMultiplier);
-                LogEvent?.Invoke(this, $"CH1 vertical offset {movementDescription} to {FormatVoltage(e.NewValue)}");
+                LogEvent?.Invoke(this, $"CH1 offset: {FormatVoltage(e.NewValue)}");
             }
             finally
             {
@@ -116,35 +111,9 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
         }
 
         /// <summary>
-        /// Get human-readable movement description
+        /// Update the offset control based on current settings
         /// </summary>
-        private string GetMovementDescription(GraticuleMovementType movementType, double multiplier)
-        {
-            switch (movementType)
-            {
-                case GraticuleMovementType.LargeUp:
-                    return "moved up (large step)";
-                case GraticuleMovementType.SmallUp:
-                    return "moved up (small step)";
-                case GraticuleMovementType.SmallDown:
-                    return "moved down (small step)";
-                case GraticuleMovementType.LargeDown:
-                    return "moved down (large step)";
-                case GraticuleMovementType.VerticalUp:
-                    return "moved up";
-                case GraticuleMovementType.VerticalDown:
-                    return "moved down";
-                case GraticuleMovementType.Zero:
-                    return "reset to zero";
-                default:
-                    return $"adjusted by {multiplier:F1} graticule";
-            }
-        }
-
-        /// <summary>
-        /// Update the arrow control based on current settings
-        /// </summary>
-        public void UpdateOffsetArrowControl()
+        public void UpdateOffsetControl()
         {
             if (VerticalOffsetArrows == null || controller == null || isUpdating) return;
 
@@ -152,22 +121,47 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
             var (minOffset, maxOffset) = settings.GetOffsetRange();
 
             // Update arrow control properties
-            VerticalOffsetArrows.GraticuleSize = settings.VerticalScale; // 1 graticule = 1 voltage scale
-            VerticalOffsetArrows.Units = "V";
+            VerticalOffsetArrows.GraticuleSize = settings.VerticalScale;
             VerticalOffsetArrows.UpdateRange(minOffset, maxOffset);
             VerticalOffsetArrows.SetValue(settings.VerticalOffset);
 
             // Update range displays
-            UpdateRangeDisplays();
+            UpdateRangeDisplays(minOffset, maxOffset);
         }
 
         /// <summary>
-        /// Set up enhanced UI elements
+        /// Update range display elements
         /// </summary>
-        private void SetupEnhancedUI()
+        private void UpdateRangeDisplays(double minOffset, double maxOffset)
         {
-            UpdateRangeDisplays();
-            UpdateOffsetArrowControl();
+            if (MaxValueDisplay != null)
+                MaxValueDisplay.Text = FormatVoltage(maxOffset);
+
+            if (MinValueDisplay != null)
+                MinValueDisplay.Text = FormatVoltage(minOffset);
+
+            if (OffsetRangeText != null)
+            {
+                if (Math.Abs(minOffset) == Math.Abs(maxOffset))
+                {
+                    OffsetRangeText.Text = $"±{FormatVoltage(maxOffset).Replace("+", "")}";
+                }
+                else
+                {
+                    OffsetRangeText.Text = $"{FormatVoltage(minOffset)} to {FormatVoltage(maxOffset)}";
+                }
+            }
+        }
+
+        /// <summary>
+        /// Update all displays
+        /// </summary>
+        private void UpdateDisplays()
+        {
+            if (controller != null)
+            {
+                UpdateOffsetControl();
+            }
         }
 
         /// <summary>
@@ -178,97 +172,40 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
             if (controller != null)
             {
                 controller.SetVerticalOffset(0);
-                LogEvent?.Invoke(this, "Channel 1 offset zeroed");
+                LogEvent?.Invoke(this, "CH1 offset reset to zero");
             }
         }
 
         /// <summary>
-        /// Apply voltage range preset
+        /// Apply simple presets
         /// </summary>
-        private void ApplyVoltagePreset(double voltage)
+        private void ApplyPreset(string preset)
         {
             if (controller == null) return;
 
             try
             {
-                // Set vertical scale to show the voltage range nicely
-                double scale = voltage / 4.0; // 4 divisions to show full range
-                controller.SetVerticalScale(scale);
-                controller.SetVerticalOffset(0);
-
-                LogEvent?.Invoke(this, $"Applied ±{voltage}V preset to Channel 1");
+                switch (preset)
+                {
+                    case "±5V":
+                        controller.SetVerticalScale(1.25); // 5V in 4 divisions
+                        controller.SetVerticalOffset(0);
+                        break;
+                    case "±10V":
+                        controller.SetVerticalScale(2.5); // 10V in 4 divisions  
+                        controller.SetVerticalOffset(0);
+                        break;
+                }
+                LogEvent?.Invoke(this, $"Applied {preset} preset to CH1");
             }
             catch (Exception ex)
             {
-                LogEvent?.Invoke(this, $"Error applying voltage preset: {ex.Message}");
+                LogEvent?.Invoke(this, $"Error applying preset: {ex.Message}");
             }
         }
 
         /// <summary>
-        /// Apply grounding preset
-        /// </summary>
-        private void ApplyGroundingPreset()
-        {
-            if (controller == null) return;
-
-            try
-            {
-                controller.SetCoupling("GND");
-                controller.SetVerticalOffset(0);
-                LogEvent?.Invoke(this, "Applied grounding preset to Channel 1");
-            }
-            catch (Exception ex)
-            {
-                LogEvent?.Invoke(this, $"Error applying grounding preset: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// Update the min/max range displays
-        /// </summary>
-        public void UpdateRangeDisplays()
-        {
-            if (controller == null) return;
-
-            try
-            {
-                var settings = controller.GetSettings();
-                var (minOffset, maxOffset) = settings.GetOffsetRange();
-
-                if (MaxValueDisplay != null)
-                {
-                    MaxValueDisplay.Text = FormatVoltage(maxOffset);
-                }
-
-                if (MinValueDisplay != null)
-                {
-                    MinValueDisplay.Text = FormatVoltage(minOffset);
-                }
-
-                if (OffsetRangeText != null)
-                {
-                    string rangeText;
-                    if (Math.Abs(minOffset) == Math.Abs(maxOffset))
-                    {
-                        rangeText = $"Range: ±{FormatVoltage(maxOffset).Replace("+", "")}";
-                    }
-                    else
-                    {
-                        rangeText = $"Range: {FormatVoltage(minOffset)} to {FormatVoltage(maxOffset)}";
-                    }
-                    OffsetRangeText.Text = rangeText;
-                }
-
-                LogEvent?.Invoke(this, $"CH1 offset range updated: {FormatVoltage(minOffset)} to {FormatVoltage(maxOffset)}");
-            }
-            catch (Exception ex)
-            {
-                LogEvent?.Invoke(this, $"Error updating range displays: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// Helper method to format voltage values
+        /// Format voltage values with appropriate units
         /// </summary>
         private string FormatVoltage(double voltage)
         {
@@ -284,6 +221,8 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
                 return $"{sign}{voltage * 1000000:F1}μV";
         }
 
+        #region Public API for MainWindow Compatibility
+
         /// <summary>
         /// Get the current controller (for external access)
         /// </summary>
@@ -293,9 +232,23 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
         }
 
         /// <summary>
-        /// Check if the panel is properly initialized (using 'new' to avoid CS0108 warning)
+        /// Check if the panel is properly initialized
         /// </summary>
         public new bool IsInitialized => isInitialized;
+
+        /// <summary>
+        /// Enable or disable the entire control panel
+        /// </summary>
+        public void SetEnabled(bool enabled)
+        {
+            this.IsEnabled = enabled;
+
+            if (controller != null && EnableCheckBox != null)
+            {
+                EnableCheckBox.IsChecked = enabled;
+                controller.SetEnabled(enabled);
+            }
+        }
 
         /// <summary>
         /// Force update of all displays
@@ -304,8 +257,7 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
         {
             if (isInitialized && !isUpdating)
             {
-                UpdateOffsetArrowControl();
-                UpdateRangeDisplays();
+                UpdateDisplays();
             }
         }
 
@@ -322,7 +274,7 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
 
             if (controller != null)
             {
-                controller.SettingsChanged -= (sender, e) => UpdateOffsetArrowControl();
+                controller.SettingsChanged -= (sender, e) => UpdateOffsetControl();
                 controller.Dispose();
             }
 
@@ -330,58 +282,6 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
             isInitialized = false;
         }
 
-        /// <summary>
-        /// Get current vertical offset value
-        /// </summary>
-        public double GetCurrentOffset()
-        {
-            return VerticalOffsetArrows?.CurrentValue ?? 0.0;
-        }
-
-        /// <summary>
-        /// Set vertical offset value
-        /// </summary>
-        public void SetCurrentOffset(double offset)
-        {
-            if (VerticalOffsetArrows != null && controller != null)
-            {
-                VerticalOffsetArrows.CurrentValue = offset;
-                controller.SetVerticalOffset(offset);
-            }
-        }
-
-        /// <summary>
-        /// Check if channel is currently enabled
-        /// </summary>
-        public bool IsChannelEnabled()
-        {
-            return EnableCheckBox?.IsChecked ?? false;
-        }
-
-        /// <summary>
-        /// Enable or disable the entire control panel (for MainWindow compatibility)
-        /// </summary>
-        public void SetEnabled(bool enabled)
-        {
-            this.IsEnabled = enabled;
-
-            // Also update the controller if available
-            if (controller != null && EnableCheckBox != null)
-            {
-                EnableCheckBox.IsChecked = enabled;
-                controller.SetEnabled(enabled);
-            }
-        }
-
-        /// <summary>
-        /// Enable or disable just the channel (not the entire panel)
-        /// </summary>
-        public void SetChannelEnabled(bool enabled)
-        {
-            if (controller != null)
-            {
-                controller.SetEnabled(enabled);
-            }
-        }
+        #endregion
     }
 }

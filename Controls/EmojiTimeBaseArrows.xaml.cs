@@ -341,6 +341,34 @@ namespace DS1000Z_E_USB_Control.Controls
         }
 
         #endregion
+
+        #region Public API Methods (for compatibility with existing code)
+
+        /// <summary>
+        /// Update the range of the control (compatibility method)
+        /// </summary>
+        public void UpdateRange(double min, double max)
+        {
+            MinValue = min;
+            MaxValue = max;
+            // Clamp current value to new range
+            if (CurrentValue < min) CurrentValue = min;
+            if (CurrentValue > max) CurrentValue = max;
+            UpdateDisplay();
+            UpdateButtonStates();
+        }
+
+        /// <summary>
+        /// Set the current value (compatibility method)
+        /// </summary>
+        public void SetValue(double value)
+        {
+            CurrentValue = Math.Max(MinValue, Math.Min(MaxValue, value));
+            UpdateDisplay();
+            UpdateButtonStates();
+        }
+
+        #endregion
     }
 
     // Note: Using existing GraticuleMovementEventArgs and GraticuleMovementType 

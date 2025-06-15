@@ -325,5 +325,62 @@ namespace DS1000Z_E_USB_Control.Trigger
             controller?.Dispose();
             controller = null;
         }
+
+
+        // ============================================================================
+        // FIX 1: Add missing Initialize overload to TriggerControlPanel.xaml.cs
+        // ============================================================================
+
+        // Add this method to TriggerControlPanel class:
+        /// <summary>
+        /// ADDED: Initialize overload with settings manager - fixes CS1501 error on line 72
+        /// </summary>
+        public void Initialize(RigolDS1000ZE oscilloscope, OscilloscopeSettingsManager settingsManager)
+        {
+            if (isInitialized) return;
+
+            try
+            {
+                // Create the controller with settings manager reference
+                controller = new TriggerController(oscilloscope, settingsManager);
+                controller.LogEvent += (sender, message) => LogEvent?.Invoke(this, message);
+                controller.SettingsChanged += (sender, e) => LogEvent?.Invoke(this, "Trigger settings changed");
+
+                // Wire up UI controls to the controller (same as single-parameter version)
+                controller.TriggerModeComboBox = TriggerModeComboBox;
+                controller.TriggerSweepComboBox = TriggerSweepComboBox;
+                controller.EdgeSourceComboBox = EdgeSourceComboBox;
+                controller.EdgeSlopeComboBox = EdgeSlopeComboBox;
+                controller.TriggerCouplingComboBox = TriggerCouplingComboBox;
+                controller.NoiseRejectCheckBox = NoiseRejectCheckBox;
+                controller.HoldoffTextBox = HoldoffTextBox;
+                controller.TriggerLevelSlider = TriggerLevelSlider;
+                controller.LevelValueText = LevelValueText;
+                controller.CurrentTriggerSettingsText = CurrentTriggerSettingsText;
+                controller.TriggerStatusText = TriggerStatusText;
+
+                // Wire up enhanced UI controls if they exist
+                if (MaxLevelDisplay != null) controller.MaxLevelDisplay = MaxLevelDisplay;
+                if (MinLevelDisplay != null) controller.MinLevelDisplay = MinLevelDisplay;
+                if (LevelRangeText != null) controller.LevelRangeText = LevelRangeText;
+                if (HoldoffDisplayText != null) controller.HoldoffDisplayText = HoldoffDisplayText;
+                if (ForceTriggerButton != null) controller.ForceTriggerButton = ForceTriggerButton;
+                if (QuickZeroLevelButton != null) controller.QuickZeroLevelButton = QuickZeroLevelButton;
+
+                // Wire up additional controls and initialize
+                WireUpAdditionalControls();
+                controller.InitializeControls();
+                SetupEnhancedUI();
+
+                isInitialized = true;
+                LogEvent?.Invoke(this, "Trigger control panel initialized with settings manager");
+            }
+            catch (Exception ex)
+            {
+                LogEvent?.Invoke(this, $"Error initializing Trigger control panel: {ex.Message}");
+            }
+        }
+
+
     }
 }

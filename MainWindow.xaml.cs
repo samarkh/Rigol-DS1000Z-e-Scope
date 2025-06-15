@@ -680,6 +680,38 @@ namespace Rigol_DS1000Z_E_Control
 
             // You can add additional logging here (file, UI log panel, etc.)
         }
+
+
+        // ============================================================================
+        // FIX 1: Add missing Initialize overload to TriggerControlPanel.xaml.cs
+        // ============================================================================
+
+        // ============================================================================
+        // FIX 2: Add missing ClearLogButton_Click to MainWindow.xaml.cs
+        // ============================================================================
+
+        // Add this method to MainWindow class:
+        /// <summary>
+        /// ADDED: Missing ClearLogButton_Click method - fixes CS1061 error on line 238
+        /// </summary>
+        private void ClearLogButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (LogTextBox != null)
+                {
+                    LogTextBox.Clear();
+                    Log("Log cleared");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"Error clearing log: {ex.Message}");
+            }
+        }
+
+
+
         #endregion
     }
 }

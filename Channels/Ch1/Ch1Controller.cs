@@ -9,6 +9,7 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
 {
     /// <summary>
     /// Controller class for Channel 1 operations and UI management
+    /// FIXED: Added missing methods - RefreshSettings, ApplyPreset, GetCurrentSettings
     /// </summary>
     public class Ch1Controller
     {
@@ -29,7 +30,7 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
         public Slider VerticalOffsetSlider { get; set; }
         public TextBlock SliderValueText { get; set; }
 
-        // Enhanced UI Control References (missing from original implementation)
+        // Enhanced UI Control References
         public TextBlock MaxValueDisplay { get; set; }
         public TextBlock MinValueDisplay { get; set; }
         public TextBlock OffsetRangeText { get; set; }
@@ -80,6 +81,123 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
             PopulateCouplingOptions();
             UpdateUIFromSettings();
             EnableEventHandlers();
+        }
+
+        /// <summary>
+        /// ADDED: Missing RefreshSettings method - CS1061 fix
+        /// </summary>
+        public void RefreshSettings()
+        {
+            try
+            {
+                Log("Refreshing Channel 1 settings from oscilloscope...");
+
+                // Read current settings from oscilloscope
+                string enabledQuery = oscilloscope.SendQuery(":CHANnel1:DISPlay?");
+                if (!string.IsNullOrEmpty(enabledQuery))
+                {
+                    settings.IsEnabled = enabledQuery.Trim().ToUpper() == "ON" || enabledQuery.Trim() == "1";
+                }
+
+                string scaleQuery = oscilloscope.SendQuery(":CHANnel1:SCALe?");
+                if (!string.IsNullOrEmpty(scaleQuery) && double.TryParse(scaleQuery, NumberStyles.Float, CultureInfo.InvariantCulture, out double scale))
+                {
+                    settings.VerticalScale = scale;
+                }
+
+                string offsetQuery = oscilloscope.SendQuery(":CHANnel1:OFFSet?");
+                if (!string.IsNullOrEmpty(offsetQuery) && double.TryParse(offsetQuery, NumberStyles.Float, CultureInfo.InvariantCulture, out double offset))
+                {
+                    settings.VerticalOffset = offset;
+                }
+
+                string couplingQuery = oscilloscope.SendQuery(":CHANnel1:COUPling?");
+                if (!string.IsNullOrEmpty(couplingQuery))
+                {
+                    settings.Coupling = couplingQuery.Trim().ToUpper();
+                }
+
+                string probeQuery = oscilloscope.SendQuery(":CHANnel1:PROBe?");
+                if (!string.IsNullOrEmpty(probeQuery) && double.TryParse(probeQuery, NumberStyles.Float, CultureInfo.InvariantCulture, out double probe))
+                {
+                    settings.ProbeRatio = probe;
+                }
+
+                // Update UI controls with refreshed settings
+                UpdateUIFromSettings();
+
+                Log("Channel 1 settings refreshed from oscilloscope");
+            }
+            catch (Exception ex)
+            {
+                Log($"Error refreshing Channel 1 settings: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// ADDED: Missing ApplyPreset method - CS1061 fix
+        /// </summary>
+        public void ApplyPreset(string presetName)
+        {
+            try
+            {
+                Log($"Applying preset '{presetName}' to Channel 1...");
+
+                // Define common presets
+                switch (presetName.ToLower())
+                {
+                    case "default":
+                        SetEnabled(true);
+                        SetProbeRatio(1.0);
+                        SetVerticalScale(1.0);
+                        SetVerticalOffset(0.0);
+                        SetCoupling("DC");
+                        break;
+
+                    case "sensitive":
+                        SetEnabled(true);
+                        SetProbeRatio(1.0);
+                        SetVerticalScale(0.01); // 10mV/div
+                        SetVerticalOffset(0.0);
+                        SetCoupling("DC");
+                        break;
+
+                    case "high_voltage":
+                        SetEnabled(true);
+                        SetProbeRatio(10.0);
+                        SetVerticalScale(10.0); // 10V/div
+                        SetVerticalOffset(0.0);
+                        SetCoupling("DC");
+                        break;
+
+                    case "ac_coupled":
+                        SetEnabled(true);
+                        SetProbeRatio(1.0);
+                        SetVerticalScale(1.0);
+                        SetVerticalOffset(0.0);
+                        SetCoupling("AC");
+                        break;
+
+                    default:
+                        Log($"Unknown preset: {presetName}");
+                        return;
+                }
+
+                Log($"Applied preset '{presetName}' to Channel 1");
+            }
+            catch (Exception ex)
+            {
+                Log($"Error applying preset '{presetName}': {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// ADDED: Missing GetCurrentSettings method - CS1061 fix
+        /// </summary>
+        public Ch1Settings GetCurrentSettings()
+        {
+            RefreshSettings(); // Ensure we have latest settings
+            return settings.Clone(); // Return a copy
         }
 
         /// <summary>
@@ -165,7 +283,7 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
             }
             else
             {
-                Log("Failed to change Channel 1 enable state");
+                Log("Failed to set Channel 1 enabled state");
                 return false;
             }
         }
@@ -178,7 +296,9 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
             {
                 settings.ProbeRatio = ratio;
                 Log($"Channel 1 probe ratio set to {ratio}:1");
-                UpdateVerticalScaleOptions();
+
+                // Update vertical scale options when probe ratio changes
+                PopulateVerticalScaleOptions();
                 UpdateSliderRange();
                 UpdateCurrentSettingsDisplay();
                 SettingsChanged?.Invoke(this, EventArgs.Empty);
@@ -198,7 +318,8 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
             if (oscilloscope.SendCommand(command))
             {
                 settings.VerticalScale = scale;
-                Log($"Channel 1 vertical scale set to {scale}V/div");
+                Log($"Channel 1 vertical scale set to {FormatVoltage(scale)}/div");
+
                 UpdateSliderRange();
                 UpdateCurrentSettingsDisplay();
                 SettingsChanged?.Invoke(this, EventArgs.Empty);
@@ -301,17 +422,12 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
                 }
             }
         }
-
-        private void UpdateVerticalScaleOptions()
-        {
-            PopulateVerticalScaleOptions();
-        }
         #endregion
 
         #region UI Update Methods
 
         /// <summary>
-        /// Update all UI elements from current settings
+        /// Update UI controls from current settings WITHOUT sending commands to oscilloscope
         /// </summary>
         public void UpdateUIFromSettings()
         {
@@ -368,25 +484,17 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
 
             // Calculate smart tick frequency
             double range = maxOffset - minOffset;
-            double tickFreq = range <= 4 ? 0.2 : range <= 40 ? 2 : range <= 200 ? 20 : 200;
+            double tickFreq = range <= 4 ? 0.2 : range <= 40 ? 2 : range <= 200 ? 20 : 100;
             VerticalOffsetSlider.TickFrequency = tickFreq;
 
-            // Clamp current value to new range
-            if (VerticalOffsetSlider.Value < minOffset)
-                VerticalOffsetSlider.Value = minOffset;
-            else if (VerticalOffsetSlider.Value > maxOffset)
-                VerticalOffsetSlider.Value = maxOffset;
-
             isUpdating = false;
-
-            Log($"Channel 1 slider range updated: {minOffset:F1}V to {maxOffset:F1}V (ticks: {tickFreq})");
         }
 
         private void UpdateSliderValueDisplay()
         {
             if (SliderValueText != null && VerticalOffsetSlider != null)
             {
-                SliderValueText.Text = $"{VerticalOffsetSlider.Value:F3}V";
+                SliderValueText.Text = FormatVoltage(VerticalOffsetSlider.Value);
             }
         }
 
@@ -394,35 +502,26 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
         {
             if (CurrentSettingsTextBlock != null)
             {
-                CurrentSettingsTextBlock.Text = settings.ToString();
+                CurrentSettingsTextBlock.Text = $"Ch1: {(settings.IsEnabled ? "ON" : "OFF")}, " +
+                    $"{settings.ProbeRatio}:1, {FormatVoltage(settings.VerticalScale)}/div, " +
+                    $"Offset: {FormatVoltage(settings.VerticalOffset)}, {settings.Coupling}";
             }
         }
 
-        /// <summary>
-        /// Update the min/max range displays (for arrow controls)
-        /// </summary>
-        public void UpdateRangeDisplays()
+        private void UpdateRangeDisplays()
         {
-            if (settings == null) return;
-
             var (minOffset, maxOffset) = settings.GetOffsetRange();
 
             if (MaxValueDisplay != null)
-            {
                 MaxValueDisplay.Text = FormatVoltage(maxOffset);
-            }
-
             if (MinValueDisplay != null)
-            {
                 MinValueDisplay.Text = FormatVoltage(minOffset);
-            }
-
             if (OffsetRangeText != null)
             {
                 string rangeText;
                 if (Math.Abs(minOffset) == Math.Abs(maxOffset))
                 {
-                    rangeText = $"Range: ±{FormatVoltage(maxOffset).Replace("+", "")}";
+                    rangeText = $"Range: ±{FormatVoltage(Math.Abs(maxOffset))}";
                 }
                 else
                 {
@@ -430,16 +529,6 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
                 }
                 OffsetRangeText.Text = rangeText;
             }
-        }
-
-        /// <summary>
-        /// Update all UI elements when settings change
-        /// </summary>
-        public void UpdateAllDisplays()
-        {
-            UpdateSliderRange();
-            UpdateCurrentSettingsDisplay();
-            UpdateRangeDisplays();
         }
         #endregion
 
@@ -452,7 +541,6 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
             bool enabled = EnableCheckBox?.IsChecked ?? false;
             if (!SetEnabled(enabled))
             {
-                // Revert on failure
                 isUpdating = true;
                 if (EnableCheckBox != null)
                     EnableCheckBox.IsChecked = !enabled;
@@ -497,20 +585,9 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
         {
             if (isUpdating) return;
 
-            double newValue = e.NewValue;
-
-            // Update the value display immediately
-            if (SliderValueText != null)
-            {
-                SliderValueText.Text = $"{newValue:F3}V";
-            }
-
-            // Send the command to the oscilloscope
-            HandleVerticalOffsetChanged(newValue);
+            HandleVerticalOffsetChanged(e.NewValue);
+            UpdateSliderValueDisplay();
         }
-        #endregion
-
-        #region Event Handler Management
 
         private void DisableEventHandlers()
         {

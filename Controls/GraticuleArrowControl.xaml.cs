@@ -1,5 +1,7 @@
 ﻿// Enhanced single control that handles both orientations
 // File: Controls/GraticuleArrowControl.xaml.cs
+// File: Controls/GraticuleArrowControl.xaml.cs
+// FIXED: Updated to properly set MovementType in events
 
 using System;
 using System.Windows;
@@ -80,219 +82,58 @@ namespace DS1000Z_E_USB_Control.Controls
             set { SetValue(MaxValueProperty, value); }
         }
 
-        // UI Elements (will be created dynamically)
+        // UI elements
         private Button button1, button2, button3, button4;
         private TextBlock valueDisplay;
-        private Panel mainPanel;
 
         public GraticuleArrowControl()
         {
             InitializeComponent();
-            CreateUI();
-            SetupEventHandlers();
-            UpdateDisplay();
+            LoadedControls();
         }
 
         private static void OnOrientationChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            var control = (GraticuleArrowControl)d;
-            control.CreateUI();
-            control.SetupEventHandlers();
-            control.UpdateDisplay();
+            var control = d as GraticuleArrowControl;
+            control?.UpdateButtonLayout();
         }
 
-        private void CreateUI()
+        private void LoadedControls()
         {
-            // Clear existing content
-            this.Content = null;
+            // Find controls in the template
+            button1 = FindName("Button1") as Button;
+            button2 = FindName("Button2") as Button;
+            button3 = FindName("Button3") as Button;
+            button4 = FindName("Button4") as Button;
+            valueDisplay = FindName("ValueDisplay") as TextBlock;
 
+            UpdateButtonLayout();
+            UpdateDisplay();
+        }
+
+        private void UpdateButtonLayout()
+        {
             if (Orientation == ArrowControlOrientation.Vertical)
             {
-                CreateVerticalUI();
-            }
-            else
-            {
-                CreateHorizontalUI();
-            }
-        }
-
-        private void CreateVerticalUI()
-        {
-            var stackPanel = new StackPanel { Orientation = System.Windows.Controls.Orientation.Vertical };
-
-            // Double Up Arrow (1 graticule)
-            button1 = new Button
-            {
-                Width = 40,
-                Height = 25,
-                Margin = new Thickness(2),
-                Content = "⇈",
-                FontSize = 16,
-                FontWeight = FontWeights.Bold,
-                ToolTip = "Move up 1 graticule"
-            };
-
-            // Single Up Arrow (0.1 graticule)
-            button2 = new Button
-            {
-                Width = 40,
-                Height = 20,
-                Margin = new Thickness(2),
-                Content = "↑",
-                FontSize = 12,
-                ToolTip = "Move up 0.1 graticule"
-            };
-
-            // Value Display
-            valueDisplay = new TextBlock
-            {
-                Width = 40,
-                Height = 20,
-                Margin = new Thickness(2),
-                Text = "0.000V",
-                FontSize = 10,
-                TextAlignment = TextAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center,
-                Background = System.Windows.Media.Brushes.LightGray
-            };
-
-            // Single Down Arrow (0.1 graticule)
-            button3 = new Button
-            {
-                Width = 40,
-                Height = 20,
-                Margin = new Thickness(2),
-                Content = "↓",
-                FontSize = 12,
-                ToolTip = "Move down 0.1 graticule"
-            };
-
-            // Double Down Arrow (1 graticule)
-            button4 = new Button
-            {
-                Width = 40,
-                Height = 25,
-                Margin = new Thickness(2),
-                Content = "⇊",
-                FontSize = 16,
-                FontWeight = FontWeights.Bold,
-                ToolTip = "Move down 1 graticule"
-            };
-
-            stackPanel.Children.Add(button1);
-            stackPanel.Children.Add(button2);
-            stackPanel.Children.Add(valueDisplay);
-            stackPanel.Children.Add(button3);
-            stackPanel.Children.Add(button4);
-
-            mainPanel = stackPanel;
-            this.Content = stackPanel;
-        }
-
-        private void CreateHorizontalUI()
-        {
-            var stackPanel = new StackPanel { Orientation = System.Windows.Controls.Orientation.Horizontal };
-
-            // Rewind Button (1 graticule backward)
-            button1 = new Button
-            {
-                Width = 30,
-                Height = 40,
-                Margin = new Thickness(2),
-                Content = "⏪",
-                FontSize = 16,
-                FontWeight = FontWeights.Bold,
-                ToolTip = "Rewind 1 graticule in time"
-            };
-
-            // Previous Button (0.1 graticule backward)
-            button2 = new Button
-            {
-                Width = 25,
-                Height = 40,
-                Margin = new Thickness(2),
-                Content = "◀️",
-                FontSize = 14,
-                ToolTip = "Step backward 0.1 graticule in time"
-            };
-
-            // Value Display
-            valueDisplay = new TextBlock
-            {
-                Width = 60,
-                Height = 40,
-                Margin = new Thickness(2),
-                Text = "0.000s",
-                FontSize = 10,
-                TextAlignment = TextAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center,
-                Background = System.Windows.Media.Brushes.LightGray
-            };
-
-            // Next Button (0.1 graticule forward)
-            button3 = new Button
-            {
-                Width = 25,
-                Height = 40,
-                Margin = new Thickness(2),
-                Content = "▶️",
-                FontSize = 14,
-                ToolTip = "Step forward 0.1 graticule in time"
-            };
-
-            // Fast Forward Button (1 graticule forward)
-            button4 = new Button
-            {
-                Width = 30,
-                Height = 40,
-                Margin = new Thickness(2),
-                Content = "⏩",
-                FontSize = 16,
-                FontWeight = FontWeights.Bold,
-                ToolTip = "Fast forward 1 graticule in time"
-            };
-
-            stackPanel.Children.Add(button1);
-            stackPanel.Children.Add(button2);
-            stackPanel.Children.Add(valueDisplay);
-            stackPanel.Children.Add(button3);
-            stackPanel.Children.Add(button4);
-
-            mainPanel = stackPanel;
-            this.Content = stackPanel;
-        }
-
-        private void SetupEventHandlers()
-        {
-            if (button1 != null) button1.Click -= Button_Click;
-            if (button2 != null) button2.Click -= Button_Click;
-            if (button3 != null) button3.Click -= Button_Click;
-            if (button4 != null) button4.Click -= Button_Click;
-
-            if (Orientation == ArrowControlOrientation.Vertical)
-            {
-                // Vertical: button1=up1, button2=up0.1, button3=down0.1, button4=down1
-                if (button1 != null) button1.Click += (s, e) => MoveByGraticule(1.0);
-                if (button2 != null) button2.Click += (s, e) => MoveByGraticule(0.1);
-                if (button3 != null) button3.Click += (s, e) => MoveByGraticule(-0.1);
-                if (button4 != null) button4.Click += (s, e) => MoveByGraticule(-1.0);
+                // FIXED: Wire up buttons with proper MovementType mapping
+                // Vertical: button1=LargeUp, button2=SmallUp, button3=SmallDown, button4=LargeDown
+                if (button1 != null) button1.Click += (s, e) => MoveByGraticule(1.0, GraticuleMovementType.LargeUp);
+                if (button2 != null) button2.Click += (s, e) => MoveByGraticule(0.1, GraticuleMovementType.SmallUp);
+                if (button3 != null) button3.Click += (s, e) => MoveByGraticule(-0.1, GraticuleMovementType.SmallDown);
+                if (button4 != null) button4.Click += (s, e) => MoveByGraticule(-1.0, GraticuleMovementType.LargeDown);
             }
             else
             {
                 // Horizontal: button1=back1, button2=back0.1, button3=forward0.1, button4=forward1
-                if (button1 != null) button1.Click += (s, e) => MoveByGraticule(-1.0);
-                if (button2 != null) button2.Click += (s, e) => MoveByGraticule(-0.1);
-                if (button3 != null) button3.Click += (s, e) => MoveByGraticule(0.1);
-                if (button4 != null) button4.Click += (s, e) => MoveByGraticule(1.0);
+                if (button1 != null) button1.Click += (s, e) => MoveByGraticule(-1.0, GraticuleMovementType.HorizontalLeft);
+                if (button2 != null) button2.Click += (s, e) => MoveByGraticule(-0.1, GraticuleMovementType.HorizontalLeft);
+                if (button3 != null) button3.Click += (s, e) => MoveByGraticule(0.1, GraticuleMovementType.HorizontalRight);
+                if (button4 != null) button4.Click += (s, e) => MoveByGraticule(1.0, GraticuleMovementType.HorizontalRight);
             }
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            // This is just to remove old handlers
-        }
-
-        private void MoveByGraticule(double graticuleMultiplier)
+        // FIXED: Updated to include MovementType parameter
+        private void MoveByGraticule(double graticuleMultiplier, GraticuleMovementType movementType)
         {
             double increment = GraticuleSize * graticuleMultiplier;
             double newValue = CurrentValue + increment;
@@ -305,12 +146,38 @@ namespace DS1000Z_E_USB_Control.Controls
                 CurrentValue = newValue;
                 UpdateDisplay();
 
-                // Fire event
+                // FIXED: Fire event with MovementType property set
                 GraticuleMovement?.Invoke(this, new GraticuleMovementEventArgs
                 {
                     NewValue = newValue,
                     Increment = increment,
-                    GraticuleMultiplier = graticuleMultiplier
+                    GraticuleMultiplier = graticuleMultiplier,
+                    MovementType = movementType  // ADDED: This was missing
+                });
+            }
+        }
+
+        // ADDED: Method to trigger zero movement
+        public void TriggerZeroMovement()
+        {
+            double newValue = 0.0;
+
+            // Clamp to valid range
+            newValue = Math.Max(MinValue, Math.Min(MaxValue, newValue));
+
+            if (Math.Abs(CurrentValue - newValue) > 1e-12)
+            {
+                double increment = newValue - CurrentValue;
+                CurrentValue = newValue;
+                UpdateDisplay();
+
+                // Fire event with Zero movement type
+                GraticuleMovement?.Invoke(this, new GraticuleMovementEventArgs
+                {
+                    NewValue = newValue,
+                    Increment = increment,
+                    GraticuleMultiplier = 0.0,
+                    MovementType = GraticuleMovementType.Zero
                 });
             }
         }
@@ -335,8 +202,6 @@ namespace DS1000Z_E_USB_Control.Controls
             {
                 string formattedValue = FormatValue(CurrentValue);
                 valueDisplay.Text = formattedValue;
-
-                // Update button states based on range and orientation
                 UpdateButtonStates();
             }
         }
@@ -393,13 +258,5 @@ namespace DS1000Z_E_USB_Control.Controls
                 return $"{value:F3}{Units}";
             }
         }
-    }
-
-    // Event args for graticule movement (same as before)
-    public class GraticuleMovementEventArgs : EventArgs
-    {
-        public double NewValue { get; set; }
-        public double Increment { get; set; }
-        public double GraticuleMultiplier { get; set; }
     }
 }

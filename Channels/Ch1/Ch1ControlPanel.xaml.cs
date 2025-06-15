@@ -41,7 +41,7 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
             controller.VerticalScaleComboBox = VerticalScaleComboBox;
             controller.CouplingComboBox = CouplingComboBox;
             controller.CurrentSettingsTextBlock = CurrentSettingsText;
-            controller.SliderValueText = SliderValueText;
+            // Note: Removed SliderValueText - we're not displaying current offset value
 
             // Wire up additional enhanced UI elements
             controller.MaxValueDisplay = MaxValueDisplay;
@@ -105,9 +105,6 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
             {
                 // Update the controller with the new offset value
                 controller.HandleVerticalOffsetChanged(e.NewValue);
-
-                // Update the display
-                UpdateSliderValueDisplay();
 
                 string movementDescription = GetMovementDescription(e.MovementType, e.GraticuleMultiplier);
                 LogEvent?.Invoke(this, $"CH1 vertical offset {movementDescription} to {FormatVoltage(e.NewValue)}");
@@ -227,27 +224,6 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
         }
 
         /// <summary>
-        /// Update the slider value display
-        /// </summary>
-        private void UpdateSliderValueDisplay()
-        {
-            if (SliderValueText == null || VerticalOffsetArrows == null) return;
-
-            double value = VerticalOffsetArrows.CurrentValue;
-            SliderValueText.Text = FormatVoltage(value);
-
-            // Update percentage display
-            if (PercentageDisplay != null && controller != null)
-            {
-                var settings = controller.GetSettings();
-                var (minOffset, maxOffset) = settings.GetOffsetRange();
-                double range = maxOffset - minOffset;
-                double percentage = range > 0 ? (value / (range / 2.0)) * 100 : 0;
-                PercentageDisplay.Text = $"({percentage:F0}%)";
-            }
-        }
-
-        /// <summary>
         /// Update the min/max range displays
         /// </summary>
         public void UpdateRangeDisplays()
@@ -330,7 +306,6 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
             {
                 UpdateOffsetArrowControl();
                 UpdateRangeDisplays();
-                UpdateSliderValueDisplay();
             }
         }
 

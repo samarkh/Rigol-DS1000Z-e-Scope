@@ -23,7 +23,7 @@ namespace DS1000Z_E_USB_Control
         #region Settings Properties
         public Ch1Settings Channel1Settings { get; private set; }
         public Ch2Settings Channel2Settings { get; private set; }
-        public TriggerSettings TriggerSettings { get; private set; }
+        public TriggerSettings TriggerSettings { get; set; }
         public TimeBaseSettings TimeBaseSettings { get; private set; }
         #endregion
 

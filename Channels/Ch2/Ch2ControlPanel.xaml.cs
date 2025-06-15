@@ -55,6 +55,16 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
             LogEvent?.Invoke(this, "Channel 2 control panel initialized");
         }
 
+
+        /// <summary>
+        /// Get the controller for external access
+        /// </summary>
+        public Ch2Controller GetController()
+        {
+            return controller;
+        }
+
+
         /// <summary>
         /// Wire up additional controls not handled by the base controller
         /// </summary>

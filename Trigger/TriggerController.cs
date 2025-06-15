@@ -1,8 +1,9 @@
-﻿using System;
-using System.Globalization;
-using System.Windows.Controls;
+﻿using DS1000Z_E_USB_Control.Controls;
 using Rigol_DS1000Z_E_Control;
-using DS1000Z_E_USB_Control.Controls;
+using System;
+using System.Globalization;
+using System.Windows;
+using System.Windows.Controls;
 
 namespace DS1000Z_E_USB_Control.Trigger
 {
@@ -104,6 +105,38 @@ namespace DS1000Z_E_USB_Control.Trigger
                 UpdateSliderFromSettings();
             }
         }
+
+
+        /*Fix 2: TriggerController.cs(CS1061 error)
+          Add this method anywhere in the TriggerController class: */
+        /// <summary>
+        /// Set trigger settings (sends commands to oscilloscope)
+        /// </summary>
+        public void SetSettings(TriggerSettings newSettings)
+        {
+            if (newSettings == null) return;
+
+            try
+            {
+                Log("Applying trigger settings to oscilloscope...");
+
+                SetMode(newSettings.Mode);
+                SetSweep(newSettings.Sweep);
+                SetSource(newSettings.EdgeSource);
+                SetSlope(newSettings.EdgeSlope);
+                SetEdgeLevel(newSettings.EdgeLevel);
+                SetCoupling(newSettings.Coupling);
+                SetHoldoff(newSettings.Holdoff);
+                SetNoiseReject(newSettings.NoiseReject);
+
+                Log("Trigger settings applied successfully");
+            }
+            catch (Exception ex)
+            {
+                Log($"Error applying trigger settings: {ex.Message}");
+            }
+        }
+
 
         /// <summary>
         /// ADDED: Missing ForceTrigger method - CS1061 fix
@@ -734,11 +767,14 @@ namespace DS1000Z_E_USB_Control.Trigger
             UpdateSliderValueDisplay();
         }
 
-        private void OnHoldoffTextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        /// <summary>
+        /// Handle holdoff text changes
+        /// </summary>
+        private void OnHoldoffTextChanged(object sender, RoutedEventArgs e)
         {
             if (isUpdating) return;
 
-            if (double.TryParse(HoldoffTextBox?.Text, out double holdoff))
+            if (HoldoffTextBox != null && double.TryParse(HoldoffTextBox.Text, out double holdoff))
             {
                 SetHoldoff(holdoff);
             }

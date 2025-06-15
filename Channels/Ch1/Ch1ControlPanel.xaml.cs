@@ -408,7 +408,7 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
         /// <summary>
         /// Check if the panel is properly initialized
         /// </summary>
-        public bool IsInitialized => isInitialized;
+        public new bool IsInitialized => isInitialized;
 
         /// <summary>
         /// Force update of all displays

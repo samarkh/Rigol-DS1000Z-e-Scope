@@ -317,9 +317,9 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
         }
 
         /// <summary>
-        /// Check if the panel is properly initialized
+        /// Check if the panel is properly initialized (using 'new' to avoid CS0108 warning)
         /// </summary>
-        public bool IsInitialized => isInitialized;
+        public new bool IsInitialized => isInitialized;
 
         /// <summary>
         /// Force update of all displays
@@ -381,6 +381,32 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
         public bool IsChannelEnabled()
         {
             return EnableCheckBox?.IsChecked ?? false;
+        }
+
+        /// <summary>
+        /// Enable or disable the entire control panel (for MainWindow compatibility)
+        /// </summary>
+        public void SetEnabled(bool enabled)
+        {
+            this.IsEnabled = enabled;
+
+            // Also update the controller if available
+            if (controller != null && EnableCheckBox != null)
+            {
+                EnableCheckBox.IsChecked = enabled;
+                controller.SetEnabled(enabled);
+            }
+        }
+
+        /// <summary>
+        /// Enable or disable just the channel (not the entire panel)
+        /// </summary>
+        public void SetChannelEnabled(bool enabled)
+        {
+            if (controller != null)
+            {
+                controller.SetEnabled(enabled);
+            }
         }
     }
 }

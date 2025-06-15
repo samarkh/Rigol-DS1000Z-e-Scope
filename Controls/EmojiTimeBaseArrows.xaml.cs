@@ -138,7 +138,7 @@ namespace DS1000Z_E_USB_Control.Controls
                     OrientationTransform.Angle = 0;
                     break;
                 case ArrowOrientation.Vertical:
-                    OrientationTransform.Angle = 90;
+                    OrientationTransform.Angle = 270; // Fixed: 270° instead of 90° for correct direction
                     break;
             }
         }

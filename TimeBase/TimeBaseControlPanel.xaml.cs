@@ -423,7 +423,7 @@ namespace DS1000Z_E_USB_Control.TimeBase
         /// <summary>
         /// Check if the panel is properly initialized
         /// </summary>
-        public bool IsInitialized => isInitialized;
+        public new bool IsInitialized => isInitialized;
 
         /// <summary>
         /// Get the current controller (for external access)

@@ -343,30 +343,6 @@ namespace DS1000Z_E_USB_Control.Controls
         #endregion
     }
 
-    #region Supporting Classes
-
-    /// <summary>
-    /// Event arguments for graticule movement events
-    /// </summary>
-    public class GraticuleMovementEventArgs : EventArgs
-    {
-        public double NewValue { get; set; }
-        public double Increment { get; set; }
-        public double GraticuleMultiplier { get; set; }
-        public GraticuleMovementType MovementType { get; set; }
-    }
-
-    /// <summary>
-    /// Types of graticule movement
-    /// </summary>
-    public enum GraticuleMovementType
-    {
-        HorizontalLeft,
-        HorizontalRight,
-        VerticalUp,
-        VerticalDown,
-        Zero
-    }
-
-    #endregion
+    // Note: Using existing GraticuleMovementEventArgs and GraticuleMovementType 
+    // from Controls/GraticuleMovementEventArgs.cs
 }

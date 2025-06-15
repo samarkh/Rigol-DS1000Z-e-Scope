@@ -74,11 +74,11 @@
             <Label Grid.Row="3" Grid.Column="0" Content="Vertical Offset:" VerticalAlignment="Center" Margin="5"/>
 
             <!-- Central Offset Control Area -->
-            <Grid Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3" HorizontalAlignment="Center" Margin="10">
+            <Grid Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3" HorizontalAlignment="Center" Margin="5">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <!-- Max Value -->
-                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
                     <!-- Arrow Control -->
                     <RowDefinition Height="Auto"/>
                     <!-- Min Value -->
@@ -88,9 +88,9 @@
 
                 <!-- Max Value Display -->
                 <TextBlock Grid.Row="0" x:Name="MaxValueDisplay" Text="+100V" FontSize="8" Foreground="Gray" 
-                           HorizontalAlignment="Center" Margin="0,0,0,5"/>
+                           HorizontalAlignment="Center" Margin="0,0,0,2"/>
 
-                <!-- Rotated Multimedia Arrow Control (90 degrees for vertical movement) -->
+                <!-- Rotated Multimedia Arrow Control (270 degrees for correct vertical movement) -->
                 <local:EmojiTimeBaseArrows x:Name="VerticalOffsetArrows"
                           Grid.Row="1"
                           Orientation="Vertical"
@@ -101,14 +101,16 @@
                           MaxValue="20"
                           HorizontalAlignment="Center" 
                           VerticalAlignment="Center"
-                          Margin="5"/>
+                          Height="80"
+                          Width="180"
+                          Margin="0,2,0,2"/>
 
                 <!-- Min Value Display -->
                 <TextBlock Grid.Row="2" x:Name="MinValueDisplay" Text="-100V" FontSize="8" Foreground="Gray" 
-                           HorizontalAlignment="Center" Margin="0,5,0,0"/>
+                           HorizontalAlignment="Center" Margin="0,2,0,0"/>
 
                 <!-- Current Value and Percentage Display -->
-                <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
+                <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,5,0,0">
                     <TextBlock x:Name="SliderValueText" Text="0.000V" FontSize="12" FontWeight="Bold" 
                                Foreground="#4169E1" Margin="0,0,5,0"/>
                     <TextBlock x:Name="PercentageDisplay" Text="(0%)" FontSize="10" 

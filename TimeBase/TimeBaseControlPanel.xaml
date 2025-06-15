@@ -70,12 +70,14 @@
                 <TextBlock x:Name="OffsetRangeDisplay" Text="Range: ±50ms" FontSize="8" Foreground="Gray" 
                            HorizontalAlignment="Center" Margin="2"/>
 
-                <!-- FIXED: Use unified GraticuleArrowControl with Horizontal orientation -->
-                <local:EmojiTimeBaseArrows x:Name="HorizontalOffsetArrows"
-                          Units="s"
-                          HorizontalAlignment="Center" 
-                          VerticalAlignment="Center"
-                          Margin="10"/>
+                <!-- In TriggerControlPanel.xaml -->
+                <local:EmojiTimeBaseArrows x:Name="TriggerLevelArrows"
+                          Orientation="Vertical"
+                          Units="V"
+                          CurrentValue="0"
+                          GraticuleSize="0.5"
+                          MinValue="-5"
+                          MaxValue="5"/>
 
                 <!-- Min/Max Value Displays -->
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="2">

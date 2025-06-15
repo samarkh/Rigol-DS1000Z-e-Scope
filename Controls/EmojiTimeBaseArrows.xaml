@@ -1,7 +1,7 @@
-﻿<!-- File: Controls/MediaPlayerArrows.xaml -->
-<!-- UNIFIED: Media player style for ALL controls (TimeBase, Ch1, Ch2, Trigger) -->
+﻿<!-- File: Controls/EmojiTimeBaseArrows.xaml -->
+<!-- Enhanced with Orientation Support - can be Horizontal or Vertical -->
 
-<UserControl x:Class="DS1000Z_E_USB_Control.Controls.MediaPlayerArrows"
+<UserControl x:Class="DS1000Z_E_USB_Control.Controls.EmojiTimeBaseArrows"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
@@ -15,22 +15,31 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
 
         <!-- Current Value Display -->
-        <TextBlock x:Name="ValueDisplay" Grid.Row="0"
-                   Text="0.000V" FontSize="12" FontWeight="Bold"
+        <TextBlock x:Name="ValueDisplay" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="6"
+                   Text="0.000s" FontSize="12" FontWeight="Bold"
                    HorizontalAlignment="Center" Margin="5"
                    Foreground="#9370DB"/>
 
-        <!-- Media Player Style Controls with Optional Rotation -->
-        <StackPanel x:Name="ButtonPanel" Grid.Row="1"
+        <!-- Multimedia Style Arrow Controls with Orientation Support -->
+        <StackPanel x:Name="ButtonContainer" 
+                    Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="4" 
                     Orientation="Horizontal" 
                     HorizontalAlignment="Center" 
                     VerticalAlignment="Center">
 
-            <!-- Transform for rotation (controlled by Orientation property) -->
+            <!-- Single RenderTransform for the entire container -->
             <StackPanel.RenderTransform>
-                <RotateTransform x:Name="ButtonRotation" Angle="0"/>
+                <RotateTransform x:Name="OrientationTransform" Angle="0"/>
             </StackPanel.RenderTransform>
 
             <!-- Fast Rewind/Down (Large Step) -->
@@ -42,7 +51,7 @@
                 <TextBlock Text="⏪" FontSize="24" Foreground="#4169E1"/>
             </Button>
 
-            <!-- Single Play Left/Down (Small Step) -->
+            <!-- Rewind (Small Step Back) -->
             <Button x:Name="SmallBackButton" 
                     Background="Transparent" BorderBrush="Transparent" 
                     Margin="5" Padding="8"
@@ -81,13 +90,13 @@
         </StackPanel>
 
         <!-- Range Display -->
-        <TextBlock x:Name="RangeDisplay" Grid.Row="2"
-                   Text="Range: ±5.0V" FontSize="10" Foreground="Gray"
+        <TextBlock x:Name="RangeDisplay" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="6"
+                   Text="Range: ±50ms" FontSize="10" Foreground="Gray"
                    HorizontalAlignment="Center" Margin="5"/>
 
     </Grid>
 
-    <!-- Hover Effects for Buttons -->
+    <!-- Enhanced Hover Effects for Buttons -->
     <UserControl.Resources>
         <Style TargetType="Button">
             <Setter Property="Template">

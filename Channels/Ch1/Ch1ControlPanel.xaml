@@ -82,9 +82,14 @@
                 <TextBlock Grid.Column="0" x:Name="MinValueDisplay" Text="-100V" FontSize="8" Foreground="Gray" 
                            VerticalAlignment="Center" HorizontalAlignment="Center" Margin="2"/>
 
-                <!-- Arrow Control -->
-                <local:GraticuleArrowControl Grid.Column="1" x:Name="VerticalOffsetArrows"
-                                           HorizontalAlignment="Center" />
+                <!-- In Ch1ControlPanel.xaml -->
+                <local:EmojiTimeBaseArrows x:Name="VerticalOffsetArrows"
+                          Orientation="Vertical"
+                          Units="V"
+                          CurrentValue="0"
+                          GraticuleSize="1.0"
+                          MinValue="-20"
+                          MaxValue="20"/>
 
                 <!-- Max Value Display -->
                 <TextBlock Grid.Column="2" x:Name="MaxValueDisplay" Text="+100V" FontSize="8" Foreground="Gray" 

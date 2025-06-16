@@ -304,6 +304,17 @@ namespace DS1000Z_E_USB_Control.Trigger
         }
 
         /// <summary>
+        /// Update from settings with TriggerSettings parameter (for MainWindow compatibility)
+        /// </summary>
+        public void UpdateFromSettings(object triggerSettings)
+        {
+            // For now, just refresh from oscilloscope instead of using the passed settings
+            // This maintains compatibility while using our simplified approach
+            controller?.RefreshSettings();
+            LogEvent?.Invoke(this, "Trigger panel updated from settings");
+        }
+
+        /// <summary>
         /// Set enabled state (for MainWindow compatibility)
         /// </summary>
         public void SetEnabled(bool enabled)

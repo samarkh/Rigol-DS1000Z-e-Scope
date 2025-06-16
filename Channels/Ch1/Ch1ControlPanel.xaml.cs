@@ -9,12 +9,14 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
     /// <summary>
     /// Simplified Ch1ControlPanel with multimedia arrow controls
     /// Clean implementation focused on voltage controls only (no time data)
+    /// Updated to use EnableChannelButton instead of EnableCheckBox
     /// </summary>
     public partial class Ch1ControlPanel : UserControl
     {
         private Ch1Controller controller;
         private bool isUpdating = false;
         private bool isInitialized = false;
+        private bool isChannelEnabled = false;
 
         public event EventHandler<string> LogEvent;
 
@@ -35,62 +37,118 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
             controller.LogEvent += (sender, message) => LogEvent?.Invoke(this, message);
             controller.SettingsChanged += (sender, e) => LogEvent?.Invoke(this, "Channel 1 settings changed");
 
-            // Wire up basic UI controls to the controller
-            controller.EnableCheckBox = EnableCheckBox;
+            // Wire up basic UI controls to the controller (removing EnableCheckBox reference)
             controller.ProbeRatioComboBox = ProbeRatioComboBox;
             controller.VerticalScaleComboBox = VerticalScaleComboBox;
             controller.CouplingComboBox = CouplingComboBox;
             controller.CurrentSettingsTextBlock = CurrentSettingsText;
 
-            // Set up event handlers
-            WireUpEventHandlers();
+            // Wire up offset arrows control
+            if (VerticalOffsetArrows != null)
+            {
+                VerticalOffsetArrows.GraticuleMovement += VerticalOffsetArrows_GraticuleMovement;
+                controller.OffsetArrowsControl = VerticalOffsetArrows;
+            }
 
             // Initialize the controller
             controller.InitializeControls();
 
-            // Update displays
-            UpdateDisplays();
+            // Update offset control
+            UpdateOffsetControl();
+
+            // Update button appearance based on current state
+            UpdateButtonAppearance();
 
             isInitialized = true;
-            LogEvent?.Invoke(this, "Channel 1 control panel initialized (simplified)");
+            LogEvent?.Invoke(this, "Channel 1 control panel initialized");
         }
 
         /// <summary>
-        /// Wire up event handlers for controls
+        /// Handle the EnableChannelButton click event
         /// </summary>
-        private void WireUpEventHandlers()
-        {
-            // Arrow control for vertical offset
-            if (VerticalOffsetArrows != null)
-            {
-                VerticalOffsetArrows.GraticuleMovement += VerticalOffsetArrows_GraticuleMovement;
-            }
-
-            // Subscribe to controller events for UI updates
-            if (controller != null)
-            {
-                controller.SettingsChanged += (sender, e) => UpdateOffsetControl();
-            }
-        }
-
-        /// <summary>
-        /// Handle vertical offset arrow control movements
-        /// </summary>
-        private void VerticalOffsetArrows_GraticuleMovement(object sender, GraticuleMovementEventArgs e)
+        private void EnableChannelButton_Click(object sender, RoutedEventArgs e)
         {
             if (controller == null || isUpdating) return;
 
-            isUpdating = true;
-            try
-            {
-                // Update the controller with the new offset value
-                controller.HandleVerticalOffsetChanged(e.NewValue);
+            // Toggle the channel enabled state
+            isChannelEnabled = !isChannelEnabled;
 
-                LogEvent?.Invoke(this, $"CH1 offset: {FormatVoltage(e.NewValue)}");
-            }
-            finally
+            // Send command to oscilloscope
+            bool success = controller.SetEnabled(isChannelEnabled);
+
+            if (success)
             {
-                isUpdating = false;
+                UpdateButtonAppearance();
+                LogEvent?.Invoke(this, $"Channel 1 {(isChannelEnabled ? "enabled" : "disabled")}");
+            }
+            else
+            {
+                // Revert the state if command failed
+                isChannelEnabled = !isChannelEnabled;
+                LogEvent?.Invoke(this, "Failed to change Channel 1 state");
+            }
+        }
+
+        /// <summary>
+        /// Update the button appearance based on channel state
+        /// </summary>
+        private void UpdateButtonAppearance()
+        {
+            if (EnableChannelButton != null)
+            {
+                if (isChannelEnabled)
+                {
+                    EnableChannelButton.Content = "Disable CH1";
+                    EnableChannelButton.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xFF, 0x44, 0x44)); // Red text
+                    EnableChannelButton.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xFF, 0xE6, 0xE6)); // Light red background
+                    EnableChannelButton.BorderBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xFF, 0x44, 0x44)); // Red border
+                }
+                else
+                {
+                    EnableChannelButton.Content = "Enable CH1";
+                    EnableChannelButton.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x41, 0x69, 0xE1)); // Blue text
+                    EnableChannelButton.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xE8, 0xF4, 0xFD)); // Light blue background
+                    EnableChannelButton.BorderBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x41, 0x69, 0xE1)); // Blue border
+                }
+            }
+        }
+
+        /// <summary>
+        /// Handle offset arrows movement
+        /// </summary>
+        private void VerticalOffsetArrows_GraticuleMovement(object sender, double offsetChange)
+        {
+            if (controller != null && !isUpdating)
+            {
+                var currentSettings = controller.GetSettings();
+                double newOffset = currentSettings.VerticalOffset + offsetChange;
+
+                // Apply the new offset
+                controller.SetVerticalOffset(newOffset);
+
+                // Update displays
+                UpdateDisplays();
+
+                LogEvent?.Invoke(this, $"CH1 offset changed by {offsetChange:F3}V to {newOffset:F3}V");
+            }
+        }
+
+        /// <summary>
+        /// Handle when controller settings change
+        /// </summary>
+        private void OnControllerSettingsChanged()
+        {
+            if (!isUpdating)
+            {
+                isUpdating = true;
+                try
+                {
+                    UpdateDisplays();
+                }
+                finally
+                {
+                    isUpdating = false;
+                }
             }
         }
 
@@ -108,7 +166,6 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
             VerticalOffsetArrows.GraticuleSize = settings.VerticalScale;
             VerticalOffsetArrows.UpdateRange(minOffset, maxOffset);
             VerticalOffsetArrows.SetValue(settings.VerticalOffset);
-
         }
 
         /// <summary>
@@ -173,12 +230,18 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
         {
             this.IsEnabled = enabled;
 
-            if (controller != null && EnableCheckBox != null)
+            if (controller != null)
             {
-                EnableCheckBox.IsChecked = enabled;
+                isChannelEnabled = enabled;
                 controller.SetEnabled(enabled);
+                UpdateButtonAppearance();
             }
         }
+
+        /// <summary>
+        /// Get the current channel enabled state
+        /// </summary>
+        public bool IsChannelEnabled => isChannelEnabled;
 
         /// <summary>
         /// Force update of all displays
@@ -199,9 +262,6 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
             if (VerticalOffsetArrows != null)
                 VerticalOffsetArrows.GraticuleMovement -= VerticalOffsetArrows_GraticuleMovement;
 
-            //if (QuickZeroButton != null)
-            //    QuickZeroButton.Click -= QuickZero_Click;
-
             if (controller != null)
             {
                 controller.SettingsChanged -= (sender, e) => UpdateOffsetControl();
@@ -213,10 +273,5 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
         }
 
         #endregion
-
-        private void EnableCheckBox_Checked(object sender, RoutedEventArgs e)
-        {
-
-        }
     }
 }

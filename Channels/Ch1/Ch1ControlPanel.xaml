@@ -17,9 +17,9 @@
             <!-- Columns: Label | Control | Unit | Multimedia -->
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="70"/>
-                <ColumnDefinition Width="130"/>
-                
-                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="128"/>
+
+                <ColumnDefinition Width="152"/>
             </Grid.ColumnDefinitions>
 
             <!-- Rows -->
@@ -39,11 +39,10 @@
             <!-- Row 0 Channel Enable -->
             <Button x:Name="EnableChannelButton" Grid.Column="1"
         VerticalAlignment="Center"
-        Margin="0,0,50,0"
+        Margin="0,0,39,0"
         FontWeight="Bold"
         Foreground="#4169E1"
         Height="26"
-        Width="100"
         Content="Enable CH1"
         Click="EnableChannelButton_Click">
                 <Button.Template>
@@ -69,9 +68,9 @@
             <Label Content="Scale:"
                    Grid.Row="1" Grid.Column="0"
                    VerticalAlignment="Center"
-                   HorizontalAlignment="Right"
-                   Height="26"/>
-            
+                   HorizontalAlignment="Left"
+                   Height="26" Margin="30,0,0,0" Width="40"/>
+
             <ComboBox x:Name="VerticalScaleComboBox"
                       Grid.Row="1" Grid.Column="1"
                       VerticalAlignment="Center"
@@ -82,8 +81,8 @@
             <Label Content="Coupling:"
                    Grid.Row="2" Grid.Column="0"
                    VerticalAlignment="Center"
-                   HorizontalAlignment="Right"
-                   Height="26"/>
+                   HorizontalAlignment="Left"
+                   Height="26" Margin="9,0,0,0" Width="61"/>
             <ComboBox x:Name="CouplingComboBox"
                       Grid.Row="2" Grid.Column="1"
                       VerticalAlignment="Center"
@@ -97,8 +96,8 @@
             <Label Content="Probe:"
                    Grid.Row="3" Grid.Column="0"
                    VerticalAlignment="Center"
-                   HorizontalAlignment="Right"
-                   Height="26"/>
+                   HorizontalAlignment="Left"
+                   Height="26" Margin="26,0,0,0" Width="44"/>
             <ComboBox x:Name="ProbeRatioComboBox"
                       Grid.Row="3" Grid.Column="1"
                       VerticalAlignment="Center"
@@ -122,7 +121,7 @@
                        TextWrapping="Wrap"/>
 
             <!-- Multimedia Controls on Right (Spanning All Rows) -->
-            <Border Grid.Row="0" Grid.Column="3" Grid.RowSpan="5"
+            <Border Grid.Row="0" Grid.Column="2" Grid.RowSpan="5"
                     Background="#FFFEF7"
                     BorderBrush="#E6D700"
                     BorderThickness="1"

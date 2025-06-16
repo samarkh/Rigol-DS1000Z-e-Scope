@@ -120,8 +120,8 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
         {
             if (controller != null && !isUpdating)
             {
-                var currentSettings = controller.GetSettings();
-                double newOffset = currentSettings.VerticalOffset + offsetChange;
+                // Use the new value from the event args directly
+                double newOffset = e.NewValue;
 
                 // Apply the new offset
                 controller.SetVerticalOffset(newOffset);
@@ -129,7 +129,7 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
                 // Update displays
                 UpdateDisplays();
 
-                LogEvent?.Invoke(this, $"CH1 offset changed by {offsetChange:F3}V to {newOffset:F3}V");
+                LogEvent?.Invoke(this, $"CH1 offset changed by {e.Increment:F3}V to {newOffset:F3}V (Movement: {e.MovementType})");
             }
         }
 

@@ -2,17 +2,21 @@
 using System.Windows;
 using System.Windows.Controls;
 using Rigol_DS1000Z_E_Control;
+using DS1000Z_E_USB_Control.Controls;
 
 namespace DS1000Z_E_USB_Control.Channels.Ch2
 {
     /// <summary>
-    /// Interaction logic for Ch2ControlPanel.xaml
-    /// Channel 2 UI UserControl
+    /// Simplified Ch2ControlPanel with multimedia arrow controls
+    /// Clean implementation focused on voltage controls only (no time data)
+    /// Updated to use EnableChannelButton instead of EnableCheckBox
     /// </summary>
     public partial class Ch2ControlPanel : UserControl
     {
         private Ch2Controller controller;
+        private bool isUpdating = false;
         private bool isInitialized = false;
+        private bool isChannelEnabled = false;
 
         public event EventHandler<string> LogEvent;
 
@@ -21,233 +25,186 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
             InitializeComponent();
         }
 
-        /// <summary>
-        /// Initialize the control panel with the oscilloscope controller
-        /// </summary>
         public void Initialize(RigolDS1000ZE oscilloscope)
         {
             if (isInitialized) return;
 
-            // Create the controller
             controller = new Ch2Controller(oscilloscope);
             controller.LogEvent += (sender, message) => LogEvent?.Invoke(this, message);
             controller.SettingsChanged += (sender, e) => LogEvent?.Invoke(this, "Channel 2 settings changed");
 
-            // Wire up UI controls to the controller
-            controller.EnableCheckBox = EnableCheckBox;
             controller.ProbeRatioComboBox = ProbeRatioComboBox;
             controller.VerticalScaleComboBox = VerticalScaleComboBox;
-            controller.CouplingComboBox = CouplingComboBox;  // Changed from UnitsComboBox
+            controller.CouplingComboBox = CouplingComboBox;
             controller.CurrentSettingsTextBlock = CurrentSettingsText;
-            controller.VerticalOffsetSlider = VerticalOffsetSlider;
-            controller.SliderValueText = SliderValueText;
 
-            // Wire up additional UI elements specific to this UserControl
-            WireUpAdditionalControls();
+            if (VerticalOffsetArrows != null)
+            {
+                VerticalOffsetArrows.GraticuleMovement += VerticalOffsetArrows_GraticuleMovement;
+                controller.OffsetArrowsControl = VerticalOffsetArrows;
+            }
 
-            // Initialize the controller
             controller.InitializeControls();
-
-            // Set up additional UI elements
-            SetupEnhancedUI();
+            UpdateOffsetControl();
+            UpdateButtonAppearance();
 
             isInitialized = true;
             LogEvent?.Invoke(this, "Channel 2 control panel initialized");
         }
 
-
-        /// <summary>
-        /// Get the controller for external access
-        /// </summary>
-        public Ch2Controller GetController()
+        private void EnableChannelButton_Click(object sender, RoutedEventArgs e)
         {
-            return controller;
-        }
+            if (controller == null || isUpdating) return;
 
+            isChannelEnabled = !isChannelEnabled;
+            bool success = controller.SetEnabled(isChannelEnabled);
 
-        /// <summary>
-        /// Wire up additional controls not handled by the base controller
-        /// </summary>
-        private void WireUpAdditionalControls()
-        {
-            if (QuickZeroButton != null)
+            if (success)
             {
-                QuickZeroButton.Click += QuickZero_Click;
+                UpdateButtonAppearance();
+                LogEvent?.Invoke(this, $"Channel 2 {(isChannelEnabled ? "enabled" : "disabled")}");
             }
-
-            if (VerticalOffsetSlider != null)
+            else
             {
-                VerticalOffsetSlider.ValueChanged += VerticalOffsetSlider_ValueChanged;
-            }
-
-            // Subscribe to settings changes to update range displays
-            if (controller != null)
-            {
-                controller.SettingsChanged += (sender, e) => UpdateRangeDisplays();
+                isChannelEnabled = !isChannelEnabled;
+                LogEvent?.Invoke(this, "Failed to change Channel 2 state");
             }
         }
 
-        /// <summary>
-        /// Set up enhanced UI elements
-        /// </summary>
-        private void SetupEnhancedUI()
+        private void UpdateButtonAppearance()
         {
-            UpdateRangeDisplays();
-        }
-
-        /// <summary>
-        /// Handle vertical offset slider changes
-        /// </summary>
-        private void VerticalOffsetSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            if (controller == null) return;
-
-            UpdateSliderValueDisplay();
-            controller.HandleVerticalOffsetChanged(e.NewValue);
-        }
-
-        /// <summary>
-        /// Quick zero button handler
-        /// </summary>
-        private void QuickZero_Click(object sender, RoutedEventArgs e)
-        {
-            controller?.SetVerticalOffset(0);
-            LogEvent?.Invoke(this, "Channel 2 offset zeroed");
-        }
-
-        /// <summary>
-        /// Update the enhanced slider value display
-        /// </summary>
-        private void UpdateSliderValueDisplay()
-        {
-            if (SliderValueText == null || VerticalOffsetSlider == null) return;
-
-            double value = VerticalOffsetSlider.Value;
-            SliderValueText.Text = FormatVoltage(value);
-
-            // Update percentage display
-            if (PercentageDisplay != null && controller != null)
+            if (EnableChannelButton != null)
             {
-                var settings = controller.GetSettings();
-                var (minOffset, maxOffset) = settings.GetOffsetRange();
-                double range = maxOffset - minOffset;
-                double percentage = range > 0 ? (value / (range / 2.0)) * 100 : 0;
-                PercentageDisplay.Text = $"({percentage:F0}%)";
+                if (isChannelEnabled)
+                {
+                    EnableChannelButton.Content = "Disable CH2";
+                    EnableChannelButton.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xFF, 0x44, 0x44));
+                    EnableChannelButton.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xFF, 0xE6, 0xE6));
+                    EnableChannelButton.BorderBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xFF, 0x44, 0x44));
+                }
+                else
+                {
+                    EnableChannelButton.Content = "Enable CH2";
+                    EnableChannelButton.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x41, 0x69, 0xE1));
+                    EnableChannelButton.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xE8, 0xF4, 0xFD));
+                    EnableChannelButton.BorderBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x41, 0x69, 0xE1));
+                }
             }
         }
 
-        /// <summary>
-        /// Update the min/max range displays
-        /// </summary>
-        public void UpdateRangeDisplays()
+        private void VerticalOffsetArrows_GraticuleMovement(object sender, GraticuleMovementEventArgs e)
         {
-            if (controller == null) return;
+            if (controller != null && !isUpdating)
+            {
+                double newOffset = e.NewValue;
+                controller.SetVerticalOffset(newOffset);
+                UpdateDisplays();
+                LogEvent?.Invoke(this, $"CH2 offset changed by {e.Increment:F3}V to {newOffset:F3}V (Movement: {e.MovementType})");
+            }
+        }
+
+        private void OnControllerSettingsChanged()
+        {
+            if (!isUpdating)
+            {
+                isUpdating = true;
+                try
+                {
+                    UpdateDisplays();
+                }
+                finally
+                {
+                    isUpdating = false;
+                }
+            }
+        }
+
+        public void UpdateOffsetControl()
+        {
+            if (VerticalOffsetArrows == null || controller == null || isUpdating) return;
 
             var settings = controller.GetSettings();
             var (minOffset, maxOffset) = settings.GetOffsetRange();
 
-            if (MaxValueDisplay != null)
-            {
-                MaxValueDisplay.Text = FormatVoltage(maxOffset);
-            }
+            VerticalOffsetArrows.GraticuleSize = settings.VerticalScale;
+            VerticalOffsetArrows.UpdateRange(minOffset, maxOffset);
+            VerticalOffsetArrows.SetValue(settings.VerticalOffset);
+        }
 
-            if (MinValueDisplay != null)
+        private void UpdateDisplays()
+        {
+            if (controller != null)
             {
-                MinValueDisplay.Text = FormatVoltage(minOffset);
-            }
-
-            if (OffsetRangeText != null)
-            {
-                string rangeText;
-                if (Math.Abs(minOffset) == Math.Abs(maxOffset))
-                {
-                    rangeText = $"Range: ±{FormatVoltage(maxOffset).Replace("+", "")}";
-                }
-                else
-                {
-                    rangeText = $"Range: {FormatVoltage(minOffset)} to {FormatVoltage(maxOffset)}";
-                }
-                OffsetRangeText.Text = rangeText;
+                UpdateOffsetControl();
             }
         }
 
-        /// <summary>
-        /// Smart voltage formatting
-        /// </summary>
+        private void QuickZero_Click(object sender, RoutedEventArgs e)
+        {
+            if (controller != null)
+            {
+                controller.SetVerticalOffset(0);
+                LogEvent?.Invoke(this, "CH2 offset reset to zero");
+            }
+        }
+
         private string FormatVoltage(double voltage)
         {
+            string sign = voltage >= 0 ? "+" : "";
+
             if (Math.Abs(voltage) >= 1000)
-                return $"{voltage / 1000:F1}kV";
-            else if (Math.Abs(voltage) >= 1)
-                return $"{voltage:F1}V";
+                return $"{sign}{voltage / 1000:F2}kV";
+            else if (Math.Abs(voltage) >= 1.0)
+                return $"{sign}{voltage:F3}V";
             else if (Math.Abs(voltage) >= 0.001)
-                return $"{voltage * 1000:F0}mV";
+                return $"{sign}{voltage * 1000:F1}mV";
             else
-                return $"{voltage * 1000000:F0}µV";
+                return $"{sign}{voltage * 1000000:F1}μV";
         }
 
-        /// <summary>
-        /// Enable or disable the control panel
-        /// </summary>
+        #region Public API for MainWindow Compatibility
+
+        public Ch2Controller GetController() => controller;
+
+        public new bool IsInitialized => isInitialized;
+
         public void SetEnabled(bool enabled)
         {
             this.IsEnabled = enabled;
+
+            if (controller != null)
+            {
+                isChannelEnabled = enabled;
+                controller.SetEnabled(enabled);
+                UpdateButtonAppearance();
+            }
         }
 
-        /// <summary>
-        /// Query and update settings from oscilloscope
-        /// </summary>
-        public void QueryAndUpdateSettings()
+        public bool IsChannelEnabled => isChannelEnabled;
+
+        public void RefreshDisplays()
         {
-            controller?.QueryAndUpdateSettings();
-            UpdateRangeDisplays();
-            UpdateSliderValueDisplay();
+            if (isInitialized && !isUpdating)
+            {
+                UpdateDisplays();
+            }
         }
 
-        /// <summary>
-        /// Get current channel settings
-        /// </summary>
-        public Ch2Settings GetSettings()
-        {
-            return controller?.GetSettings();
-        }
-
-        /// <summary>
-        /// Set channel settings (sends commands to oscilloscope)
-        /// </summary>
-        public void SetSettings(Ch2Settings settings)
-        {
-            controller?.SetSettings(settings);
-            UpdateRangeDisplays();
-            UpdateSliderValueDisplay();
-        }
-
-        /// <summary>
-        /// Update UI from settings (does NOT send commands to oscilloscope)
-        /// </summary>
-        public void UpdateFromSettings(Ch2Settings settings)
-        {
-            controller?.UpdateFromSettings(settings);
-            UpdateRangeDisplays();
-            UpdateSliderValueDisplay();
-        }
-
-        /// <summary>
-        /// Apply a preset configuration
-        /// </summary>
-        public void ApplyPreset(Ch2Settings preset)
-        {
-            SetSettings(preset);
-            LogEvent?.Invoke(this, $"Applied Channel 2 preset: {preset}");
-        }
-
-        /// <summary>
-        /// Clean up resources
-        /// </summary>
         public void Cleanup()
         {
-            controller?.Dispose();
+            if (VerticalOffsetArrows != null)
+                VerticalOffsetArrows.GraticuleMovement -= VerticalOffsetArrows_GraticuleMovement;
+
+            if (controller != null)
+            {
+                controller.SettingsChanged -= (sender, e) => UpdateOffsetControl();
+                controller.Dispose();
+            }
+
             controller = null;
+            isInitialized = false;
         }
+
+        #endregion
     }
 }

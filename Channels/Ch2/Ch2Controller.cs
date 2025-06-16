@@ -479,7 +479,6 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
                 { "1X", 1.0 },
                 { "10X", 10.0 },
                 { "100X", 100.0 },
-                { "1000X", 1000.0 }
             };
 
             ProbeRatioComboBox.Items.Clear();

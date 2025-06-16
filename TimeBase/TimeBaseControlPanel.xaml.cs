@@ -159,7 +159,7 @@ namespace DS1000Z_E_USB_Control.TimeBase
 
             // Update arrow control properties
             HorizontalOffsetArrows.GraticuleSize = settings.MainScale; // 1 graticule = 1 time scale
-            HorizontalOffsetArrows.Units = "s";
+           // HorizontalOffsetArrows.Units = "s";
             HorizontalOffsetArrows.UpdateRange(minOffset, maxOffset);
             HorizontalOffsetArrows.SetValue(settings.MainOffset);
 

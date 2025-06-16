@@ -68,6 +68,7 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
 
             if (CouplingComboBox != null)
             {
+                PopulateCouplingOptions();
                 CouplingComboBox.SelectionChanged += OnCouplingChanged;
             }
 
@@ -271,6 +272,108 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
             }
         }
 
+        /// <summary>
+        /// Update settings object from provided settings and then update UI
+        /// </summary>
+        public void UpdateFromSettings(Ch1Settings newSettings)
+        {
+            if (newSettings == null) return;
+
+            // Update internal settings object
+            settings.IsEnabled = newSettings.IsEnabled;
+            settings.ProbeRatio = newSettings.ProbeRatio;
+            settings.VerticalScale = newSettings.VerticalScale;
+            settings.VerticalOffset = newSettings.VerticalOffset;
+            settings.Coupling = newSettings.Coupling;
+            settings.BandwidthLimit = newSettings.BandwidthLimit;
+            settings.Units = newSettings.Units;
+            settings.InvertEnabled = newSettings.InvertEnabled;
+            settings.VernierEnabled = newSettings.VernierEnabled;
+
+            // Update UI to reflect these settings
+            UpdateUIFromSettings();
+        }
+
+        /// <summary>
+        /// Update UI controls from current settings WITHOUT sending commands to oscilloscope
+        /// </summary>
+        public void UpdateUIFromSettings()
+        {
+            if (isUpdating) return;
+
+            try
+            {
+                isUpdating = true;
+                DisableEventHandlers();
+
+                // Update probe ratio combo box
+                if (ProbeRatioComboBox != null)
+                {
+                    foreach (ComboBoxItem item in ProbeRatioComboBox.Items)
+                    {
+                        if (item.Tag != null && double.TryParse(item.Tag.ToString(), out double ratio))
+                        {
+                            if (Math.Abs(ratio - settings.ProbeRatio) < 0.01)
+                            {
+                                ProbeRatioComboBox.SelectedItem = item;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // Update vertical scale combo box
+                if (VerticalScaleComboBox != null)
+                {
+                    foreach (ComboBoxItem item in VerticalScaleComboBox.Items)
+                    {
+                        if (item.Tag != null && double.TryParse(item.Tag.ToString(), out double scale))
+                        {
+                            if (Math.Abs(scale - settings.VerticalScale) < 0.0001)
+                            {
+                                VerticalScaleComboBox.SelectedItem = item;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // Update coupling combo box
+                if (CouplingComboBox != null)
+                {
+                    foreach (ComboBoxItem item in CouplingComboBox.Items)
+                    {
+                        if (item.Tag != null && item.Tag.ToString().Equals(settings.Coupling, StringComparison.OrdinalIgnoreCase))
+                        {
+                            CouplingComboBox.SelectedItem = item;
+                            break;
+                        }
+                    }
+                }
+
+                // Update vertical offset slider
+                UpdateSliderRange();
+                if (VerticalOffsetSlider != null)
+                {
+                    VerticalOffsetSlider.Value = settings.VerticalOffset;
+                }
+
+                // Update current settings display
+                UpdateCurrentSettingsDisplay();
+
+                Log($"Updated Ch1 UI from settings: {settings}");
+            }
+            catch (Exception ex)
+            {
+                Log($"Error updating Ch1 UI: {ex.Message}");
+            }
+            finally
+            {
+                EnableEventHandlers();
+                isUpdating = false;
+            }
+        }
+
         #endregion
 
         #region Private Event Handlers
@@ -381,6 +484,34 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
             }
         }
 
+        private void PopulateCouplingOptions()
+        {
+            if (CouplingComboBox == null) return;
+
+            var couplings = new Dictionary<string, string>
+            {
+                { "DC", "DC" },
+                { "AC", "AC" },
+                { "GND", "GND" }
+            };
+
+            CouplingComboBox.Items.Clear();
+            foreach (var coupling in couplings)
+            {
+                var item = new ComboBoxItem
+                {
+                    Content = coupling.Key,
+                    Tag = coupling.Value
+                };
+                CouplingComboBox.Items.Add(item);
+
+                if (string.Equals(coupling.Value, settings.Coupling, StringComparison.OrdinalIgnoreCase))
+                {
+                    CouplingComboBox.SelectedItem = item;
+                }
+            }
+        }
+
         private string FormatVoltageScale(double scale)
         {
             if (scale >= 1.0)
@@ -487,6 +618,30 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
             LogEvent?.Invoke(this, message);
         }
 
+        private void DisableEventHandlers()
+        {
+            if (ProbeRatioComboBox != null)
+                ProbeRatioComboBox.SelectionChanged -= OnProbeRatioChanged;
+            if (VerticalScaleComboBox != null)
+                VerticalScaleComboBox.SelectionChanged -= OnVerticalScaleChanged;
+            if (CouplingComboBox != null)
+                CouplingComboBox.SelectionChanged -= OnCouplingChanged;
+            if (VerticalOffsetSlider != null)
+                VerticalOffsetSlider.ValueChanged -= OnVerticalOffsetSliderChanged;
+        }
+
+        private void EnableEventHandlers()
+        {
+            if (ProbeRatioComboBox != null)
+                ProbeRatioComboBox.SelectionChanged += OnProbeRatioChanged;
+            if (VerticalScaleComboBox != null)
+                VerticalScaleComboBox.SelectionChanged += OnVerticalScaleChanged;
+            if (CouplingComboBox != null)
+                CouplingComboBox.SelectionChanged += OnCouplingChanged;
+            if (VerticalOffsetSlider != null)
+                VerticalOffsetSlider.ValueChanged += OnVerticalOffsetSliderChanged;
+        }
+
         #endregion
 
         #region IDisposable Implementation
@@ -504,14 +659,7 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
                 if (disposing)
                 {
                     // Clean up event handlers
-                    if (ProbeRatioComboBox != null)
-                        ProbeRatioComboBox.SelectionChanged -= OnProbeRatioChanged;
-                    if (VerticalScaleComboBox != null)
-                        VerticalScaleComboBox.SelectionChanged -= OnVerticalScaleChanged;
-                    if (CouplingComboBox != null)
-                        CouplingComboBox.SelectionChanged -= OnCouplingChanged;
-                    if (VerticalOffsetSlider != null)
-                        VerticalOffsetSlider.ValueChanged -= OnVerticalOffsetSliderChanged;
+                    DisableEventHandlers();
                     if (QuickZeroButton != null)
                         QuickZeroButton.Click -= QuickZeroButton_Click;
                 }

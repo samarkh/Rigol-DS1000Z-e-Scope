@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:DS1000Z_E_USB_Control.Controls"
              mc:Ignorable="d" 
-             d:DesignHeight="400" d:DesignWidth="380">
+             d:DesignHeight="400" d:DesignWidth="350">
 
     <!-- Channel 1 Controls (Light Blue Background) -->
     <GroupBox Header="Channel 1 Controls" 
@@ -17,43 +17,41 @@
                 <RowDefinition Height="Auto"/>
                 <!-- Enable/Probe -->
                 <RowDefinition Height="Auto"/>
-                <!-- Scale/Coupling -->
+                <!-- Scale-->
                 <RowDefinition Height="Auto"/>
-                <!-- Offset Controls -->
+                <!-- Coupling -->
                 <RowDefinition Height="Auto"/>
-                <!-- Quick Actions -->
+                <!-- Coupling -->
                 <RowDefinition Height="Auto"/>
+                <!-- Coupling -->
+
+                <RowDefinition Height="Auto" MinHeight="84.77"/>
                 <!-- Settings -->
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
+
+                <ColumnDefinition Width="Auto" MinWidth="80.226"/>
+               
+                <ColumnDefinition Width="131"/>
+                <!-- Spacer -->
+
+                <!-- NEW: Right column for multimedia controls -->
             </Grid.ColumnDefinitions>
 
-            <!-- Row 0: Enable and Probe Ratio -->
-            <CheckBox x:Name="EnableCheckBox" Grid.Row="0" Grid.Column="0" 
+            <!-- Row 3: Enable and Probe Ratio -->
+            <CheckBox x:Name="EnableCheckBox" Grid.Column="0" 
                       Content="Enable CH1" 
                       VerticalAlignment="Center" 
-                      Margin="5" 
+                      Margin="5,0,5,0" 
                       FontWeight="Bold"
-                      Foreground="#4169E1"/>
+                      Foreground="#4169E1" Height="15"/>
 
-            <StackPanel Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="3" 
-                        Orientation="Horizontal" HorizontalAlignment="Right" Margin="5">
-                <Label Content="Probe:" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                <ComboBox x:Name="ProbeRatioComboBox" Width="60" VerticalAlignment="Center">
-                    <ComboBoxItem Content="1X" Tag="1" IsSelected="True"/>
-                    <ComboBoxItem Content="10X" Tag="10"/>
-                    <ComboBoxItem Content="100X" Tag="100"/>
-                    <ComboBoxItem Content="1000X" Tag="1000"/>
-                </ComboBox>
-            </StackPanel>
+
 
             <!-- Row 1: Vertical Scale and Coupling -->
             <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" 
-                        Orientation="Horizontal" VerticalAlignment="Center" Margin="5">
+                        Orientation="Horizontal" VerticalAlignment="Center" Margin="5,0,5,0" Height="26">
                 <Label Content="Scale:" VerticalAlignment="Center" Margin="0,0,5,0"/>
                 <ComboBox x:Name="VerticalScaleComboBox" Width="80" VerticalAlignment="Center" Margin="0,0,5,0">
                     <!-- Values populated programmatically -->
@@ -61,8 +59,8 @@
                 <Label Content="V/div" VerticalAlignment="Center"/>
             </StackPanel>
 
-            <StackPanel Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="2" 
-                        Orientation="Horizontal" HorizontalAlignment="Right" Margin="5">
+            <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" 
+                        Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,5,0,5" Width="126">
                 <Label Content="Coupling:" VerticalAlignment="Center" Margin="0,0,5,0"/>
                 <ComboBox x:Name="CouplingComboBox" Width="60" VerticalAlignment="Center">
                     <ComboBoxItem Content="DC" Tag="DC" IsSelected="True"/>
@@ -71,63 +69,63 @@
                 </ComboBox>
             </StackPanel>
 
-            <!-- Row 2: Vertical Offset Controls -->
-            <Label Grid.Row="2" Grid.Column="0" Content="Offset:" VerticalAlignment="Center" Margin="5"/>
 
-            <StackPanel Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3" 
-                        Orientation="Horizontal" HorizontalAlignment="Center" 
-                        VerticalAlignment="Center" Margin="5">
-
-                <!-- Range Display -->
-                <TextBlock x:Name="OffsetRangeText" Text="±5V" FontSize="8" Foreground="Gray" 
-                           VerticalAlignment="Center" Margin="0,0,5,0"/>
-
-                <!-- Min Value -->
-                <TextBlock x:Name="MinValueDisplay" Text="-5V" FontSize="8" Foreground="Gray" 
-                           VerticalAlignment="Center" Margin="0,0,5,0"/>
-
-                <!-- Multimedia Arrow Control -->
-                <local:EmojiArrows x:Name="VerticalOffsetArrows"
-                          RotationAngle="270"
-                          CurrentValue="0"
-                          GraticuleSize="1.0"
-                          MinValue="-5"
-                          MaxValue="5"
-                          VerticalAlignment="Center"
-                          Margin="5,0"/>
-
-                <!-- Max Value -->
-                <TextBlock x:Name="MaxValueDisplay" Text="+5V" FontSize="8" Foreground="Gray" 
-                           VerticalAlignment="Center" Margin="5,0,0,0"/>
-
+            <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" 
+                        Orientation="Horizontal" HorizontalAlignment="Left" Margin="22,5,0,5" Width="109">
+                <Label Content="Probe:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                <ComboBox x:Name="ProbeRatioComboBox" Width="60" VerticalAlignment="Center">
+                    <ComboBoxItem Content="1X" Tag="1" IsSelected="True"/>
+                    <ComboBoxItem Content="10X" Tag="10"/>
+                </ComboBox>
             </StackPanel>
 
-            <!-- Row 3: Quick Actions -->
-            <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="4" 
-                        Orientation="Horizontal" HorizontalAlignment="Center" Margin="5">
 
-                <Button x:Name="QuickZeroButton" Content="⌂" Width="30" Height="25"
-                        Margin="2" FontSize="12"
-                        ToolTip="Zero Offset" 
-                        Background="#F0F8FF" BorderBrush="#4169E1"/>
-
-                <Button x:Name="PresetButton1" Content="±5V" Width="35" Height="25"
-                        Margin="2" FontSize="9"
-                        ToolTip="±5V range" 
-                        Background="#F0F8FF" BorderBrush="#4169E1"/>
-
-                <Button x:Name="PresetButton2" Content="±10V" Width="35" Height="25"
-                        Margin="2" FontSize="9"
-                        ToolTip="±10V range" 
-                        Background="#F0F8FF" BorderBrush="#4169E1"/>
-            </StackPanel>
 
             <!-- Row 4: Current Settings Display -->
             <TextBlock x:Name="CurrentSettingsText" Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="4"
-                       Margin="5" VerticalAlignment="Center"
+                       Margin="5,0,5,0" VerticalAlignment="Center"
                        Text="CH1: ON, 1X, 1.000V/div, Offset=0.0V, DC"
                        FontSize="9" Foreground="#4169E1" TextWrapping="Wrap"
-                       Background="#F8F8FF" Padding="3"/>
+                       Background="#F8F8FF" Padding="3" Height="18"/>
+
+            <!-- NEW: Right Column - Multimedia Controls (spans all rows for full height) -->
+            <Border Grid.Column="2" 
+                    Background="#F0F8FF" 
+                    BorderBrush="#4169E1" 
+                    BorderThickness="1" 
+                    CornerRadius="5"
+                    Margin="6,3,1,0" Height="199" VerticalAlignment="Top" Grid.RowSpan="3">
+
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Rotated Title at top -->
+                    <TextBlock Grid.Row="1" Text="Vertical Offset" FontSize="9" Foreground="#4169E1" 
+                               HorizontalAlignment="Left" Margin="34,66,0,116">
+                        <TextBlock.RenderTransform>
+                            <RotateTransform Angle="90"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+
+                    <!-- Multimedia Controls centered in middle row -->
+                    <local:EmojiArrows Grid.Row="1" x:Name="VerticalOffsetArrows"
+                                      RotationAngle="270"
+                                      CurrentValue="0"
+                                      GraticuleSize="1.0"
+                                      MinValue="-5"
+                                      MaxValue="5"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"/>
+
+                    <!-- Empty bottom row for spacing -->
+
+                </Grid>
+            </Border>
+
         </Grid>
     </GroupBox>
 </UserControl>

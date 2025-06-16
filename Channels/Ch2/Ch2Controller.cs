@@ -1,4 +1,4 @@
-﻿using DS1000Z_E_USB_Control.Channels.Ch2;
+﻿using DS1000Z_E_USB_Control.Channels.Ch1;
 using DS1000Z_E_USB_Control.Controls;
 using Rigol_DS1000Z_E_Control;
 using System;
@@ -10,7 +10,7 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
 {
     /// <summary>
     /// Controller class for Channel 2 operations and UI management
-    /// Updated to work with button instead of checkbox
+    /// Complete implementation with all required methods
     /// </summary>
     public class Ch2Controller : IDisposable
     {
@@ -22,27 +22,45 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
         public event EventHandler<string> LogEvent;
         public event EventHandler SettingsChanged;
 
-        // UI Control references
+        #region UI Control References
+        // Basic UI Control references
+        public CheckBox EnableCheckBox { get; set; }
         public ComboBox ProbeRatioComboBox { get; set; }
         public ComboBox VerticalScaleComboBox { get; set; }
         public ComboBox CouplingComboBox { get; set; }
         public TextBlock CurrentSettingsTextBlock { get; set; }
         public Slider VerticalOffsetSlider { get; set; }
         public TextBlock SliderValueText { get; set; }
+
+        // Enhanced UI Control References
         public TextBlock MaxValueDisplay { get; set; }
         public TextBlock MinValueDisplay { get; set; }
         public TextBlock OffsetRangeText { get; set; }
         public Button QuickZeroButton { get; set; }
         public EmojiArrows OffsetArrowsControl { get; set; }
+        #endregion
 
+        #region Constructor
         public Ch2Controller(RigolDS1000ZE oscilloscope)
         {
             this.oscilloscope = oscilloscope ?? throw new ArgumentNullException(nameof(oscilloscope));
             this.settings = new Ch2Settings();
         }
+        #endregion
 
+        #region Public Control Methods
+
+        /// <summary>
+        /// Initialize UI controls and set up event handlers
+        /// </summary>
         public void InitializeControls()
         {
+            if (EnableCheckBox != null)
+            {
+                EnableCheckBox.Checked += OnEnableChanged;
+                EnableCheckBox.Unchecked += OnEnableChanged;
+            }
+
             if (ProbeRatioComboBox != null)
             {
                 PopulateProbeRatioOptions();
@@ -64,7 +82,7 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
             if (VerticalOffsetSlider != null)
             {
                 VerticalOffsetSlider.ValueChanged += OnVerticalOffsetSliderChanged;
-                UpdateSliderRange();
+                UpdateSliderRangeEnhanced();
             }
 
             if (QuickZeroButton != null)
@@ -76,6 +94,9 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
             UpdateCurrentSettingsDisplay();
         }
 
+        /// <summary>
+        /// Enable or disable Channel 2
+        /// </summary>
         public bool SetEnabled(bool enabled)
         {
             if (!oscilloscope.IsConnected) return false;
@@ -98,6 +119,9 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
             return success;
         }
 
+        /// <summary>
+        /// Set the probe ratio for Channel 2
+        /// </summary>
         public bool SetProbeRatio(double ratio)
         {
             if (!oscilloscope.IsConnected) return false;
@@ -108,7 +132,9 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
             if (success)
             {
                 settings.ProbeRatio = ratio;
-                Log($"Channel 2 probe ratio set to {ratio}X");
+                Log($"Channel 2 probe ratio set to {ratio}×");
+                UpdateVerticalScaleOptions();
+                UpdateSliderRangeEnhanced();
                 UpdateCurrentSettingsDisplay();
                 SettingsChanged?.Invoke(this, EventArgs.Empty);
             }
@@ -120,6 +146,9 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
             return success;
         }
 
+        /// <summary>
+        /// Set the vertical scale for Channel 2
+        /// </summary>
         public bool SetVerticalScale(double scale)
         {
             if (!oscilloscope.IsConnected) return false;
@@ -130,9 +159,9 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
             if (success)
             {
                 settings.VerticalScale = scale;
-                Log($"Channel 2 vertical scale set to {scale:F3}V/div");
+                Log($"Channel 2 vertical scale set to {FormatVoltageScale(scale)}");
+                UpdateSliderRangeEnhanced();
                 UpdateCurrentSettingsDisplay();
-                UpdateSliderRange();
                 SettingsChanged?.Invoke(this, EventArgs.Empty);
             }
             else
@@ -143,6 +172,9 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
             return success;
         }
 
+        /// <summary>
+        /// Set the coupling for Channel 2
+        /// </summary>
         public bool SetCoupling(string coupling)
         {
             if (!oscilloscope.IsConnected) return false;
@@ -165,6 +197,9 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
             return success;
         }
 
+        /// <summary>
+        /// Set the vertical offset for Channel 2
+        /// </summary>
         public bool SetVerticalOffset(double offset)
         {
             if (!oscilloscope.IsConnected) return false;
@@ -175,7 +210,7 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
             if (success)
             {
                 settings.VerticalOffset = offset;
-                Log($"Channel 2 vertical offset set to {offset:F3}V");
+                Log($"Channel 2 vertical offset set to {FormatVoltage(offset)}");
                 UpdateCurrentSettingsDisplay();
                 UpdateSliderFromSettings();
                 SettingsChanged?.Invoke(this, EventArgs.Empty);
@@ -188,14 +223,53 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
             return success;
         }
 
-        public Ch2Settings GetSettings() => settings;
+        /// <summary>
+        /// Handle vertical offset changes from slider or other sources
+        /// </summary>
+        public void HandleVerticalOffsetChanged(double offset)
+        {
+            if (!oscilloscope.IsConnected) return;
 
+            string command = $":CHANnel2:OFFSet {offset.ToString(CultureInfo.InvariantCulture)}";
+
+            if (oscilloscope.SendCommand(command))
+            {
+                settings.VerticalOffset = offset;
+                Log($"Channel 2 vertical offset set to {FormatVoltage(offset)}");
+                UpdateCurrentSettingsDisplay();
+                SettingsChanged?.Invoke(this, EventArgs.Empty);
+            }
+            else
+            {
+                Log("Failed to set Channel 2 vertical offset");
+                UpdateSliderFromSettings();
+            }
+        }
+
+        #endregion
+
+        #region Settings Management
+
+        /// <summary>
+        /// Get current settings (returns a copy)
+        /// </summary>
+        public Ch2Settings GetSettings()
+        {
+            return settings.Clone();
+        }
+
+        /// <summary>
+        /// Refresh settings from oscilloscope
+        /// </summary>
         public void RefreshSettings()
         {
             if (!oscilloscope.IsConnected) return;
 
             try
             {
+                isUpdating = true;
+                DisableEventHandlers();
+
                 var enableResponse = oscilloscope.SendQuery(":CHANnel2:DISPlay?");
                 if (int.TryParse(enableResponse?.Trim(), out int enableValue))
                 {
@@ -226,19 +300,28 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
                     settings.VerticalOffset = offsetValue;
                 }
 
-                UpdateCurrentSettingsDisplay();
-                UpdateSliderFromSettings();
+                UpdateUIFromSettings();
+                Log("Channel 2 settings updated from oscilloscope");
             }
             catch (Exception ex)
             {
-                Log($"Error refreshing Channel 2 settings: {ex.Message}");
+                Log($"Error querying Channel 2 settings: {ex.Message}");
+            }
+            finally
+            {
+                EnableEventHandlers();
+                isUpdating = false;
             }
         }
 
+        /// <summary>
+        /// Update settings object from provided settings and then update UI
+        /// </summary>
         public void UpdateFromSettings(Ch2Settings newSettings)
         {
             if (newSettings == null) return;
 
+            // Update internal settings object
             settings.IsEnabled = newSettings.IsEnabled;
             settings.ProbeRatio = newSettings.ProbeRatio;
             settings.VerticalScale = newSettings.VerticalScale;
@@ -249,9 +332,13 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
             settings.InvertEnabled = newSettings.InvertEnabled;
             settings.VernierEnabled = newSettings.VernierEnabled;
 
+            // Update UI to reflect these settings
             UpdateUIFromSettings();
         }
 
+        /// <summary>
+        /// Update UI controls from current settings WITHOUT sending commands to oscilloscope
+        /// </summary>
         public void UpdateUIFromSettings()
         {
             if (isUpdating) return;
@@ -261,6 +348,13 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
                 isUpdating = true;
                 DisableEventHandlers();
 
+                // Update enable checkbox
+                if (EnableCheckBox != null)
+                {
+                    EnableCheckBox.IsChecked = settings.IsEnabled;
+                }
+
+                // Update probe ratio
                 if (ProbeRatioComboBox != null)
                 {
                     foreach (ComboBoxItem item in ProbeRatioComboBox.Items)
@@ -274,6 +368,7 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
                     }
                 }
 
+                // Update vertical scale
                 if (VerticalScaleComboBox != null)
                 {
                     foreach (ComboBoxItem item in VerticalScaleComboBox.Items)
@@ -287,6 +382,7 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
                     }
                 }
 
+                // Update coupling
                 if (CouplingComboBox != null)
                 {
                     foreach (ComboBoxItem item in CouplingComboBox.Items)
@@ -299,7 +395,7 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
                     }
                 }
 
-                UpdateSliderRange();
+                UpdateSliderRangeEnhanced();
                 if (VerticalOffsetSlider != null)
                 {
                     VerticalOffsetSlider.Value = settings.VerticalOffset;
@@ -310,7 +406,7 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
             }
             catch (Exception ex)
             {
-                Log($"Error updating Ch2 UI: {ex.Message}");
+                Log($"Error updating Channel 2 UI: {ex.Message}");
             }
             finally
             {
@@ -319,12 +415,30 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
             }
         }
 
+        #endregion
+
+        #region Event Handlers
+
+        private void OnEnableChanged(object sender, System.Windows.RoutedEventArgs e)
+        {
+            if (isUpdating) return;
+
+            bool enabled = EnableCheckBox?.IsChecked ?? false;
+            if (!SetEnabled(enabled))
+            {
+                isUpdating = true;
+                if (EnableCheckBox != null)
+                    EnableCheckBox.IsChecked = !enabled;
+                isUpdating = false;
+            }
+        }
+
         private void OnProbeRatioChanged(object sender, SelectionChangedEventArgs e)
         {
             if (isUpdating) return;
 
-            if (ProbeRatioComboBox?.SelectedItem is ComboBoxItem item &&
-                double.TryParse(item.Tag.ToString(), out double ratio))
+            var selectedItem = ProbeRatioComboBox?.SelectedItem as ComboBoxItem;
+            if (selectedItem != null && double.TryParse(selectedItem.Tag.ToString(), out double ratio))
             {
                 SetProbeRatio(ratio);
             }
@@ -334,8 +448,8 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
         {
             if (isUpdating) return;
 
-            if (VerticalScaleComboBox?.SelectedItem is ComboBoxItem item &&
-                double.TryParse(item.Tag.ToString(), out double scale))
+            var selectedItem = VerticalScaleComboBox?.SelectedItem as ComboBoxItem;
+            if (selectedItem != null && double.TryParse(selectedItem.Tag.ToString(), out double scale))
             {
                 SetVerticalScale(scale);
             }
@@ -345,9 +459,10 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
         {
             if (isUpdating) return;
 
-            if (CouplingComboBox?.SelectedItem is ComboBoxItem item)
+            var selectedItem = CouplingComboBox?.SelectedItem as ComboBoxItem;
+            if (selectedItem != null)
             {
-                SetCoupling(item.Tag.ToString());
+                SetCoupling(selectedItem.Tag.ToString());
             }
         }
 
@@ -364,23 +479,36 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
             SetVerticalOffset(0);
         }
 
+        #endregion
+
+        #region Private Helper Methods
+
         private void PopulateProbeRatioOptions()
         {
             if (ProbeRatioComboBox == null) return;
 
             var ratios = new Dictionary<string, double>
             {
-                { "1X", 1.0 }, { "10X", 10.0 }, { "100X", 100.0 }, { "1000X", 1000.0 }
+                { "1X", 1.0 },
+                { "10X", 10.0 },
+                { "100X", 100.0 },
+                { "1000X", 1000.0 }
             };
 
             ProbeRatioComboBox.Items.Clear();
             foreach (var ratio in ratios)
             {
-                var item = new ComboBoxItem { Content = ratio.Key, Tag = ratio.Value };
+                var item = new ComboBoxItem
+                {
+                    Content = ratio.Key,
+                    Tag = ratio.Value
+                };
                 ProbeRatioComboBox.Items.Add(item);
 
                 if (Math.Abs(ratio.Value - settings.ProbeRatio) < 0.01)
+                {
                     ProbeRatioComboBox.SelectedItem = item;
+                }
             }
         }
 
@@ -401,7 +529,9 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
                 VerticalScaleComboBox.Items.Add(item);
 
                 if (Math.Abs(scale - settings.VerticalScale) < 0.0001)
+                {
                     VerticalScaleComboBox.SelectedItem = item;
+                }
             }
         }
 
@@ -411,7 +541,9 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
 
             var couplings = new Dictionary<string, string>
             {
-                { "DC", "DC" }, { "AC", "AC" }, { "GND", "GND" }
+                { "DC", "DC" },
+                { "AC", "AC" },
+                { "GND", "GND" }
             };
 
             CouplingComboBox.Items.Clear();
@@ -425,7 +557,9 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
                 CouplingComboBox.Items.Add(item);
 
                 if (string.Equals(coupling.Value, settings.Coupling, StringComparison.OrdinalIgnoreCase))
+                {
                     CouplingComboBox.SelectedItem = item;
+                }
             }
         }
 
@@ -440,6 +574,70 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
             string coupling = settings.Coupling;
 
             CurrentSettingsTextBlock.Text = $"CH2: {enableStatus}, {probeRatio}, {scale}, Offset={offset}, {coupling}";
+        }
+
+        /// <summary>
+        /// Enhanced UpdateSliderRange with better scaling and display updates
+        /// </summary>
+        public void UpdateSliderRangeEnhanced()
+        {
+            if (VerticalOffsetSlider == null) return;
+
+            var (minOffset, maxOffset) = settings.GetOffsetRange();
+
+            isUpdating = true;
+
+            // Set the range
+            VerticalOffsetSlider.Minimum = minOffset;
+            VerticalOffsetSlider.Maximum = maxOffset;
+
+            // Calculate smart tick frequency based on range
+            double range = maxOffset - minOffset;
+            double tickFreq;
+
+            if (range <= 4) tickFreq = 0.2;        // For ±2V range
+            else if (range <= 40) tickFreq = 2;    // For ±20V range  
+            else if (range <= 200) tickFreq = 20;  // For ±100V range
+            else tickFreq = 200;                   // For ±1000V range
+
+            VerticalOffsetSlider.TickFrequency = tickFreq;
+
+            // Clamp current value to new range
+            if (VerticalOffsetSlider.Value < minOffset)
+                VerticalOffsetSlider.Value = minOffset;
+            else if (VerticalOffsetSlider.Value > maxOffset)
+                VerticalOffsetSlider.Value = maxOffset;
+
+            // Update display elements
+            if (MaxValueDisplay != null)
+                MaxValueDisplay.Text = FormatVoltage(maxOffset);
+            if (MinValueDisplay != null)
+                MinValueDisplay.Text = FormatVoltage(minOffset);
+            if (OffsetRangeText != null)
+                OffsetRangeText.Text = $"Range: {FormatVoltage(minOffset)} to {FormatVoltage(maxOffset)}";
+
+            isUpdating = false;
+
+            Log($"Channel 2 slider range updated: {minOffset:F1}V to {maxOffset:F1}V (ticks: {tickFreq})");
+        }
+
+        private void UpdateSliderFromSettings()
+        {
+            if (VerticalOffsetSlider != null && !isUpdating)
+            {
+                isUpdating = true;
+                VerticalOffsetSlider.Value = settings.VerticalOffset;
+                UpdateSliderValueDisplay();
+                isUpdating = false;
+            }
+        }
+
+        private void UpdateSliderValueDisplay()
+        {
+            if (SliderValueText != null)
+            {
+                SliderValueText.Text = FormatVoltage(settings.VerticalOffset);
+            }
         }
 
         private string FormatVoltageScale(double scale)
@@ -463,68 +661,13 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
                         : $"{sign}{voltage * 1000000:F1}μV";
         }
 
-        private void UpdateSliderRange()
-        {
-            if (VerticalOffsetSlider == null) return;
-
-            var (minOffset, maxOffset) = settings.GetOffsetRange();
-            VerticalOffsetSlider.Minimum = minOffset;
-            VerticalOffsetSlider.Maximum = maxOffset;
-
-            if (MaxValueDisplay != null)
-                MaxValueDisplay.Text = FormatVoltage(maxOffset);
-            if (MinValueDisplay != null)
-                MinValueDisplay.Text = FormatVoltage(minOffset);
-            if (OffsetRangeText != null)
-                OffsetRangeText.Text = $"Range: {FormatVoltage(minOffset)} to {FormatVoltage(maxOffset)}";
-        }
-
-        private void UpdateSliderFromSettings()
-        {
-            if (VerticalOffsetSlider == null) return;
-
-            isUpdating = true;
-            try
-            {
-                VerticalOffsetSlider.Value = settings.VerticalOffset;
-                UpdateSliderValueDisplay();
-            }
-            finally
-            {
-                isUpdating = false;
-            }
-        }
-
-        private void UpdateSliderValueDisplay()
-        {
-            if (SliderValueText != null)
-                SliderValueText.Text = FormatVoltage(settings.VerticalOffset);
-        }
-
-        public void HandleVerticalOffsetChanged(double offset)
-        {
-            if (!oscilloscope.IsConnected) return;
-
-            string command = $":CHANnel2:OFFSet {offset.ToString(CultureInfo.InvariantCulture)}";
-
-            if (oscilloscope.SendCommand(command))
-            {
-                settings.VerticalOffset = offset;
-                Log($"Channel 2 vertical offset set to {offset:F3}V");
-                UpdateCurrentSettingsDisplay();
-                SettingsChanged?.Invoke(this, EventArgs.Empty);
-            }
-            else
-            {
-                Log("Failed to set Channel 2 vertical offset");
-                UpdateSliderFromSettings();
-            }
-        }
-
-        private void Log(string message) => LogEvent?.Invoke(this, message);
-
         private void DisableEventHandlers()
         {
+            if (EnableCheckBox != null)
+            {
+                EnableCheckBox.Checked -= OnEnableChanged;
+                EnableCheckBox.Unchecked -= OnEnableChanged;
+            }
             if (ProbeRatioComboBox != null)
                 ProbeRatioComboBox.SelectionChanged -= OnProbeRatioChanged;
             if (VerticalScaleComboBox != null)
@@ -537,6 +680,11 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
 
         private void EnableEventHandlers()
         {
+            if (EnableCheckBox != null)
+            {
+                EnableCheckBox.Checked += OnEnableChanged;
+                EnableCheckBox.Unchecked += OnEnableChanged;
+            }
             if (ProbeRatioComboBox != null)
                 ProbeRatioComboBox.SelectionChanged += OnProbeRatioChanged;
             if (VerticalScaleComboBox != null)
@@ -546,6 +694,15 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
             if (VerticalOffsetSlider != null)
                 VerticalOffsetSlider.ValueChanged += OnVerticalOffsetSliderChanged;
         }
+
+        private void Log(string message)
+        {
+            LogEvent?.Invoke(this, message);
+        }
+
+        #endregion
+
+        #region IDisposable Implementation
 
         public void Dispose()
         {
@@ -566,5 +723,7 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
                 disposed = true;
             }
         }
+
+        #endregion
     }
 }

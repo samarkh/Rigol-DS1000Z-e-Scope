@@ -58,6 +58,15 @@ namespace DS1000Z_E_USB_Control.Trigger
         }
 
         /// <summary>
+        /// Initialize with settings manager (overload for MainWindow compatibility)
+        /// </summary>
+        public void Initialize(RigolDS1000ZE oscilloscope, object settingsManager)
+        {
+            // Just call the main Initialize method - we don't use the settings manager
+            Initialize(oscilloscope);
+        }
+
+        /// <summary>
         /// Wire up UI controls to the controller
         /// </summary>
         private void WireUpControlsToController()
@@ -284,6 +293,31 @@ namespace DS1000Z_E_USB_Control.Trigger
         public void RefreshSettings()
         {
             controller?.RefreshSettings();
+        }
+
+        /// <summary>
+        /// Update from settings (for MainWindow compatibility)
+        /// </summary>
+        public void UpdateFromSettings()
+        {
+            controller?.RefreshSettings();
+        }
+
+        /// <summary>
+        /// Set enabled state (for MainWindow compatibility)
+        /// </summary>
+        public void SetEnabled(bool enabled)
+        {
+            this.IsEnabled = enabled;
+
+            if (enabled)
+            {
+                LogEvent?.Invoke(this, "Trigger control panel enabled");
+            }
+            else
+            {
+                LogEvent?.Invoke(this, "Trigger control panel disabled");
+            }
         }
 
         #endregion

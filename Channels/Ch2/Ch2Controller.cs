@@ -23,8 +23,7 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
         public event EventHandler SettingsChanged;
 
         #region UI Control References
-        // Basic UI Control references
-        public CheckBox EnableCheckBox { get; set; }
+        // Basic UI Control references (removed EnableCheckBox - using button instead)
         public ComboBox ProbeRatioComboBox { get; set; }
         public ComboBox VerticalScaleComboBox { get; set; }
         public ComboBox CouplingComboBox { get; set; }
@@ -55,12 +54,6 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
         /// </summary>
         public void InitializeControls()
         {
-            if (EnableCheckBox != null)
-            {
-                EnableCheckBox.Checked += OnEnableChanged;
-                EnableCheckBox.Unchecked += OnEnableChanged;
-            }
-
             if (ProbeRatioComboBox != null)
             {
                 PopulateProbeRatioOptions();
@@ -259,6 +252,20 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
         }
 
         /// <summary>
+        /// Set settings by applying them to the oscilloscope (sends commands)
+        /// </summary>
+        public void SetSettings(Ch2Settings newSettings)
+        {
+            if (newSettings == null) return;
+
+            SetEnabled(newSettings.IsEnabled);
+            SetProbeRatio(newSettings.ProbeRatio);
+            SetVerticalScale(newSettings.VerticalScale);
+            SetVerticalOffset(newSettings.VerticalOffset);
+            SetCoupling(newSettings.Coupling);
+        }
+
+        /// <summary>
         /// Refresh settings from oscilloscope
         /// </summary>
         public void RefreshSettings()
@@ -348,12 +355,6 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
                 isUpdating = true;
                 DisableEventHandlers();
 
-                // Update enable checkbox
-                if (EnableCheckBox != null)
-                {
-                    EnableCheckBox.IsChecked = settings.IsEnabled;
-                }
-
                 // Update probe ratio
                 if (ProbeRatioComboBox != null)
                 {
@@ -418,20 +419,6 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
         #endregion
 
         #region Event Handlers
-
-        private void OnEnableChanged(object sender, System.Windows.RoutedEventArgs e)
-        {
-            if (isUpdating) return;
-
-            bool enabled = EnableCheckBox?.IsChecked ?? false;
-            if (!SetEnabled(enabled))
-            {
-                isUpdating = true;
-                if (EnableCheckBox != null)
-                    EnableCheckBox.IsChecked = !enabled;
-                isUpdating = false;
-            }
-        }
 
         private void OnProbeRatioChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -663,11 +650,6 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
 
         private void DisableEventHandlers()
         {
-            if (EnableCheckBox != null)
-            {
-                EnableCheckBox.Checked -= OnEnableChanged;
-                EnableCheckBox.Unchecked -= OnEnableChanged;
-            }
             if (ProbeRatioComboBox != null)
                 ProbeRatioComboBox.SelectionChanged -= OnProbeRatioChanged;
             if (VerticalScaleComboBox != null)
@@ -680,11 +662,6 @@ namespace DS1000Z_E_USB_Control.Channels.Ch2
 
         private void EnableEventHandlers()
         {
-            if (EnableCheckBox != null)
-            {
-                EnableCheckBox.Checked += OnEnableChanged;
-                EnableCheckBox.Unchecked += OnEnableChanged;
-            }
             if (ProbeRatioComboBox != null)
                 ProbeRatioComboBox.SelectionChanged += OnProbeRatioChanged;
             if (VerticalScaleComboBox != null)

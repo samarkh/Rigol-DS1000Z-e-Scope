@@ -116,7 +116,7 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
         /// <summary>
         /// Handle offset arrows movement
         /// </summary>
-        private void VerticalOffsetArrows_GraticuleMovement(object sender, double offsetChange)
+        private void VerticalOffsetArrows_GraticuleMovement(object sender, GraticuleMovementEventArgs e)
         {
             if (controller != null && !isUpdating)
             {

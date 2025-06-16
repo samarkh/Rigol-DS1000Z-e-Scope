@@ -71,16 +71,15 @@
                            HorizontalAlignment="Center" Margin="2"/>
 
                 <!-- FIXED: Correct control name and settings for TimeBase -->
-                <local:EmojiTimeBaseArrows x:Name="HorizontalOffsetArrows"
-                          Orientation="Horizontal"
-                          Units="s"
-                          CurrentValue="0"
-                          GraticuleSize="1e-3"
-                          MinValue="-0.05"
-                          MaxValue="0.05"
-                          HorizontalAlignment="Center" 
-                          VerticalAlignment="Center"
-                          Margin="10"/>
+                <local:EmojiArrows x:Name="HorizontalOffsetArrows"
+                                  RotationAngle="0"
+                                  CurrentValue="0"
+                                  GraticuleSize="1e-3"
+                                  MinValue="-0.05"
+                                  MaxValue="0.05"
+                                  HorizontalAlignment="Center" 
+                                  VerticalAlignment="Center"
+                                  Margin="10"/>
 
                 <!-- Min/Max Value Displays -->
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="2">
@@ -89,11 +88,6 @@
                     <TextBlock x:Name="MaxOffsetDisplay" Text="+50ms" FontSize="8" Foreground="Gray"/>
                 </StackPanel>
             </StackPanel>
-
-            <!-- Quick Zero Offset Button -->
-            <Button Grid.Row="3" Grid.Column="3" x:Name="QuickZeroOffsetButton" Content="⌂" Width="25" Height="25"
-                    VerticalAlignment="Center" Margin="5" FontSize="14"
-                    ToolTip="Set Offset to Zero" Background="#F8F0FF" BorderBrush="#9370DB"/>
 
             <!-- Memory Depth Display -->
             <Label Grid.Row="4" Grid.Column="0" Content="Memory Depth:" VerticalAlignment="Center" Margin="5"/>

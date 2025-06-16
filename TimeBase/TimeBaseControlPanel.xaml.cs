@@ -54,7 +54,7 @@ namespace DS1000Z_E_USB_Control.TimeBase
             controller.OffsetRangeText = OffsetRangeText;
             controller.MinOffsetDisplay = MinOffsetDisplay;
             controller.MaxOffsetDisplay = MaxOffsetDisplay;
-            controller.QuickZeroOffsetButton = QuickZeroOffsetButton;
+
 
             // Wire up additional UI elements
             WireUpAdditionalControls();
@@ -90,10 +90,7 @@ namespace DS1000Z_E_USB_Control.TimeBase
                 HorizontalOffsetArrows.GraticuleMovement += HorizontalOffsetArrows_GraticuleMovement;
             }
 
-            if (QuickZeroOffsetButton != null)
-            {
-                QuickZeroOffsetButton.Click += QuickZeroOffset_Click;
-            }
+
 
             // Subscribe to settings changes to update arrow control
             if (controller != null)
@@ -399,8 +396,7 @@ namespace DS1000Z_E_USB_Control.TimeBase
                 HorizontalScaleComboBox.SelectionChanged -= HorizontalScale_SelectionChanged;
             if (HorizontalOffsetArrows != null)
                 HorizontalOffsetArrows.GraticuleMovement -= HorizontalOffsetArrows_GraticuleMovement;
-            if (QuickZeroOffsetButton != null)
-                QuickZeroOffsetButton.Click -= QuickZeroOffset_Click;
+
 
             if (controller != null)
             {

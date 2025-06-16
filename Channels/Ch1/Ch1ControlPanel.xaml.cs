@@ -42,12 +42,6 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
             controller.CouplingComboBox = CouplingComboBox;
             controller.CurrentSettingsTextBlock = CurrentSettingsText;
 
-            // Wire up range display controls
-            controller.MaxValueDisplay = MaxValueDisplay;
-            controller.MinValueDisplay = MinValueDisplay;
-            controller.OffsetRangeText = OffsetRangeText;
-            controller.QuickZeroButton = QuickZeroButton;
-
             // Set up event handlers
             WireUpEventHandlers();
 
@@ -71,16 +65,6 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
             {
                 VerticalOffsetArrows.GraticuleMovement += VerticalOffsetArrows_GraticuleMovement;
             }
-
-            // Quick action buttons
-            if (QuickZeroButton != null)
-                QuickZeroButton.Click += QuickZero_Click;
-
-            if (PresetButton1 != null)
-                PresetButton1.Click += (s, e) => ApplyPreset("±5V");
-
-            if (PresetButton2 != null)
-                PresetButton2.Click += (s, e) => ApplyPreset("±10V");
 
             // Subscribe to controller events for UI updates
             if (controller != null)
@@ -125,32 +109,6 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
             VerticalOffsetArrows.UpdateRange(minOffset, maxOffset);
             VerticalOffsetArrows.SetValue(settings.VerticalOffset);
 
-            // Update range displays
-            UpdateRangeDisplays(minOffset, maxOffset);
-        }
-
-        /// <summary>
-        /// Update range display elements
-        /// </summary>
-        private void UpdateRangeDisplays(double minOffset, double maxOffset)
-        {
-            if (MaxValueDisplay != null)
-                MaxValueDisplay.Text = FormatVoltage(maxOffset);
-
-            if (MinValueDisplay != null)
-                MinValueDisplay.Text = FormatVoltage(minOffset);
-
-            if (OffsetRangeText != null)
-            {
-                if (Math.Abs(minOffset) == Math.Abs(maxOffset))
-                {
-                    OffsetRangeText.Text = $"±{FormatVoltage(maxOffset).Replace("+", "")}";
-                }
-                else
-                {
-                    OffsetRangeText.Text = $"{FormatVoltage(minOffset)} to {FormatVoltage(maxOffset)}";
-                }
-            }
         }
 
         /// <summary>
@@ -173,34 +131,6 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
             {
                 controller.SetVerticalOffset(0);
                 LogEvent?.Invoke(this, "CH1 offset reset to zero");
-            }
-        }
-
-        /// <summary>
-        /// Apply simple presets
-        /// </summary>
-        private void ApplyPreset(string preset)
-        {
-            if (controller == null) return;
-
-            try
-            {
-                switch (preset)
-                {
-                    case "±5V":
-                        controller.SetVerticalScale(1.25); // 5V in 4 divisions
-                        controller.SetVerticalOffset(0);
-                        break;
-                    case "±10V":
-                        controller.SetVerticalScale(2.5); // 10V in 4 divisions  
-                        controller.SetVerticalOffset(0);
-                        break;
-                }
-                LogEvent?.Invoke(this, $"Applied {preset} preset to CH1");
-            }
-            catch (Exception ex)
-            {
-                LogEvent?.Invoke(this, $"Error applying preset: {ex.Message}");
             }
         }
 
@@ -269,8 +199,8 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
             if (VerticalOffsetArrows != null)
                 VerticalOffsetArrows.GraticuleMovement -= VerticalOffsetArrows_GraticuleMovement;
 
-            if (QuickZeroButton != null)
-                QuickZeroButton.Click -= QuickZero_Click;
+            //if (QuickZeroButton != null)
+            //    QuickZeroButton.Click -= QuickZero_Click;
 
             if (controller != null)
             {
@@ -283,5 +213,10 @@ namespace DS1000Z_E_USB_Control.Channels.Ch1
         }
 
         #endregion
+
+        private void EnableCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 }

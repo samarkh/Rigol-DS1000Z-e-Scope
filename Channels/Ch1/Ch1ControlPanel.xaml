@@ -9,8 +9,8 @@
 
     <!-- Channel 1 Controls (Light Blue Background) -->
     <GroupBox Header="Channel 1 Controls" 
-              Background="#E8F4FD"
-              BorderBrush="#4169E1"
+              Background="#FFFEF7"
+              BorderBrush="#E6D700"
               BorderThickness="2">
 
         <Grid>
@@ -36,17 +36,34 @@
                 <!-- Row 4: Settings -->
             </Grid.RowDefinitions>
 
-            <!-- Row 0  Channel Enable -->
-            <CheckBox x:Name="EnableCheckBox" Grid.Column="0"
-                      VerticalAlignment="Center"
-                      Margin="5,0,5,0"
-                      FontWeight="Bold"
-                      Foreground="#4169E1"
-                      Height="14"
-                      Checked="EnableCheckBox_Checked"/>
-            <Label Content="Enable CH1" Grid.Column="1"
-                   VerticalAlignment="Center"
-                   Foreground="#4169E1" Grid.ColumnSpan="2" Height="26"/>
+            <!-- Row 0 Channel Enable -->
+            <Button x:Name="EnableChannelButton" Grid.Column="1"
+        VerticalAlignment="Center"
+        Margin="0,0,50,0"
+        FontWeight="Bold"
+        Foreground="#4169E1"
+        Height="26"
+        Width="100"
+        Content="Enable CH1"
+        Click="EnableChannelButton_Click">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    CornerRadius="8"
+                    Padding="5">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Button.Template>
+                <Button.Background>
+                    <SolidColorBrush Color="#E8F4FD"/>
+                </Button.Background>
+                <Button.BorderBrush>
+                    <SolidColorBrush Color="#4169E1"/>
+                </Button.BorderBrush>
+            </Button>
 
             <!-- Row 1 Scale V/ Division -->
             <Label Content="Scale:"
@@ -98,7 +115,7 @@
                        VerticalAlignment="Center"
                        FontSize="9"
                        Foreground="#4169E1"
-                       Background="#F8F8FF"
+                       Background="#FFFEF7"
                        Padding="3"
                        Height="18"
                        Text="CH1: ON, 1X, 1.000V/div, Offset=0.0V, DC"
@@ -106,8 +123,8 @@
 
             <!-- Multimedia Controls on Right (Spanning All Rows) -->
             <Border Grid.Row="0" Grid.Column="3" Grid.RowSpan="5"
-                    Background="#F0F8FF"
-                    BorderBrush="#4169E1"
+                    Background="#FFFEF7"
+                    BorderBrush="#E6D700"
                     BorderThickness="1"
                     CornerRadius="5"
                     Margin="6,3,1,3">

@@ -236,53 +236,53 @@ namespace Rigol_DS1000Z_E_Control
             GetCurrentSettings();
         }
 
-        /// <summary>
-        /// Read all current settings from the oscilloscope and update UI
-        /// FIXED: Line 259 error - proper UpdateFromSettings calls
-        /// </summary>
-        private void GetCurrentSettings()
-        {
-            if (!isConnected)
-            {
-                Log("Cannot get settings - oscilloscope not connected");
-                return;
-            }
+        ///// <summary>
+        ///// Read all current settings from the oscilloscope and update UI
+        ///// FIXED: Line 259 error - proper UpdateFromSettings calls
+        ///// </summary>
+        //private void GetCurrentSettings()
+        //{
+        //    if (!isConnected)
+        //    {
+        //        Log("Cannot get settings - oscilloscope not connected");
+        //        return;
+        //    }
 
-            Log("Reading all current oscilloscope settings...");
+        //    Log("Reading all current oscilloscope settings...");
 
-            try
-            {
-                // Read all settings using the settings manager
-                bool success = settingsManager.ReadAllCurrentSettings();
+        //    try
+        //    {
+        //        // Read all settings using the settings manager
+        //        bool success = settingsManager.ReadAllCurrentSettings();
 
-                if (success)
-                {
-                    // Update UI with the new settings - FIXED: Use proper method calls
-                    UpdateAllPanelsFromSettings();
-                    UpdateDeviceInfo();
-                    UpdateLastUpdateTime();
+        //        if (success)
+        //        {
+        //            // Update UI with the new settings - FIXED: Use proper method calls
+        //            UpdateAllPanelsFromSettings();
+        //            UpdateDeviceInfo();
+        //            UpdateLastUpdateTime();
 
-                    Log("✅ Successfully updated UI with current oscilloscope settings");
-                }
-                else
-                {
-                    Log("⚠️ Some settings could not be read - check oscilloscope connection");
-                    MessageBox.Show("Some settings could not be read from the oscilloscope.\n" +
-                                  "Check the connection and try again.",
-                                  "Settings Read Warning",
-                                  MessageBoxButton.OK,
-                                  MessageBoxImage.Warning);
-                }
-            }
-            catch (Exception ex)
-            {
-                Log($"❌ Error reading oscilloscope settings: {ex.Message}");
-                MessageBox.Show($"Error reading oscilloscope settings:\n{ex.Message}",
-                              "Settings Read Error",
-                              MessageBoxButton.OK,
-                              MessageBoxImage.Error);
-            }
-        }
+        //            Log("✅ Successfully updated UI with current oscilloscope settings");
+        //        }
+        //        else
+        //        {
+        //            Log("⚠️ Some settings could not be read - check oscilloscope connection");
+        //            MessageBox.Show("Some settings could not be read from the oscilloscope.\n" +
+        //                          "Check the connection and try again.",
+        //                          "Settings Read Warning",
+        //                          MessageBoxButton.OK,
+        //                          MessageBoxImage.Warning);
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Log($"❌ Error reading oscilloscope settings: {ex.Message}");
+        //        MessageBox.Show($"Error reading oscilloscope settings:\n{ex.Message}",
+        //                      "Settings Read Error",
+        //                      MessageBoxButton.OK,
+        //                      MessageBoxImage.Error);
+        //    }
+        //}
 
         /// <summary>
         /// Update all control panel UIs with settings from oscilloscope
@@ -809,47 +809,127 @@ namespace Rigol_DS1000Z_E_Control
         /// <summary>
         /// UPDATED: GetCurrentSettings with trigger step size update
         /// </summary>
-        //private void GetCurrentSettings()
-        //{
-        //    if (!isConnected)
-        //    {
-        //        MessageBox.Show("Please connect to the oscilloscope first.",
-        //                      "Get Settings",
-        //                      MessageBoxButton.OK,
-        //                      MessageBoxImage.Information);
-        //        return;
-        //    }
+        private void GetCurrentSettings()
+        {
+            if (!isConnected)
+            {
+                MessageBox.Show("Please connect to the oscilloscope first.",
+                              "Get Settings",
+                              MessageBoxButton.OK,
+                              MessageBoxImage.Information);
+                return;
+            }
 
-        //    try
-        //    {
-        //        Log("📊 Reading current oscilloscope settings...");
+            try
+            {
+                Log("📊 Reading current oscilloscope settings...");
 
-        //        // Read all current settings
-        //        bool success = settingsManager.ReadAllCurrentSettings();
+                // Read all current settings
+                bool success = settingsManager.ReadAllCurrentSettings();
 
-        //        if (success)
-        //        {
-        //            // Update all UI panels
-        //            UpdateUIFromSettings();
+                if (success)
+                {
+                    // Update all UI panels
+                    UpdateUIFromSettings();
 
-        //            // NEW: Update trigger level step sizes after reading settings
-        //            UpdateTriggerLevelStepSizes();
+                    // NEW: Update trigger level step sizes after reading settings
+                    UpdateTriggerLevelStepSizes();
 
-        //            Log("✅ Settings updated successfully with dynamic trigger steps");
-        //        }
-        //        else
-        //        {
-        //            Log("❌ Failed to read some settings from oscilloscope");
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Log($"❌ Error reading settings: {ex.Message}");
-        //    }
-        //}
+                    Log("✅ Settings updated successfully with dynamic trigger steps");
+                }
+                else
+                {
+                    Log("❌ Failed to read some settings from oscilloscope");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Error reading settings: {ex.Message}");
+            }
+        }
 
         #endregion
+        // Add these DEBUG methods to your MainWindow.xaml.cs
 
+        #region DEBUG: Test Dynamic Trigger Steps
+
+        /// <summary>
+        /// DEBUG: Test trigger step sizing manually
+        /// </summary>
+        private void TestTriggerStepSizing()
+        {
+            if (!isConnected || TriggerPanel == null)
+            {
+                Log("❌ Cannot test - not connected or no trigger panel");
+                return;
+            }
+
+            var triggerController = TriggerPanel.GetController();
+            if (triggerController == null)
+            {
+                Log("❌ Cannot get trigger controller for testing");
+                return;
+            }
+
+            Log("🧪 === TESTING DYNAMIC TRIGGER STEPS ===");
+
+            // Test 1: Force set to 1V steps
+            Log("Test 1: Setting to 1V steps");
+            triggerController.ForceUpdateStepSize(1.0);
+            System.Threading.Thread.Sleep(100);
+
+            // Test 2: Force set to 100mV steps  
+            Log("Test 2: Setting to 100mV steps");
+            triggerController.ForceUpdateStepSize(0.1);
+            System.Threading.Thread.Sleep(100);
+
+            // Test 3: Force set to 50mV steps
+            Log("Test 3: Setting to 50mV steps");
+            triggerController.ForceUpdateStepSize(0.05);
+
+            Log("🧪 Manual testing complete - try using trigger arrows now");
+        }
+
+        /// <summary>
+        /// DEBUG: Get current channel settings and test dynamic update
+        /// </summary>
+        private void TestChannelBasedStepSizing()
+        {
+            if (!isConnected)
+            {
+                Log("❌ Cannot test - not connected");
+                return;
+            }
+
+            Log("🧪 === TESTING CHANNEL-BASED TRIGGER STEPS ===");
+
+            try
+            {
+                // Get current channel settings
+                var ch1Settings = Channel1Panel?.GetController()?.GetSettings();
+                var ch2Settings = Channel2Panel?.GetController()?.GetSettings();
+
+                if (ch1Settings == null || ch2Settings == null)
+                {
+                    Log("❌ Cannot get channel settings for testing");
+                    return;
+                }
+
+                Log($"📊 CH1: Scale={ch1Settings.VerticalScale}V/div, Enabled={ch1Settings.IsEnabled}");
+                Log($"📊 CH2: Scale={ch2Settings.VerticalScale}V/div, Enabled={ch2Settings.IsEnabled}");
+
+                // Test the dynamic update
+                UpdateTriggerLevelStepSizes();
+
+                Log("🧪 Channel-based testing complete");
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Error testing channel-based steps: {ex.Message}");
+            }
+        }
+
+        #endregion
 
     }
 }

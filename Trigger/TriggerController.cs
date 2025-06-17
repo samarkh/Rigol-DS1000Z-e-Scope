@@ -68,6 +68,7 @@ namespace DS1000Z_E_USB_Control.Trigger
 
         /// <summary>
         /// Initialize UI controls with current settings
+        /// UPDATED: Add immediate dynamic step sizing
         /// </summary>
         public void InitializeControls()
         {
@@ -82,6 +83,7 @@ namespace DS1000Z_E_USB_Control.Trigger
                 UpdateCurrentSettingsDisplay();
 
                 Log("Trigger controls initialized");
+                Log("⏳ Waiting for channel settings to set dynamic trigger steps...");
             }
             catch (Exception ex)
             {
@@ -331,19 +333,22 @@ namespace DS1000Z_E_USB_Control.Trigger
 
         /// <summary>
         /// Initialize the trigger level arrow control
+        /// UPDATED: Remove fixed GraticuleSize - will be set dynamically
         /// </summary>
         private void InitializeTriggerLevelArrowControl()
         {
             if (TriggerLevelArrows == null) return;
 
-            // Set up arrow control properties
-            TriggerLevelArrows.GraticuleSize = 0.1; // 0.1V per step
+            // REMOVED: Fixed GraticuleSize setting
+            // TriggerLevelArrows.GraticuleSize = 0.1; // ❌ DELETE THIS LINE
+
+            // Set initial value
             TriggerLevelArrows.CurrentValue = settings.EdgeLevel;
 
-            // Set reasonable default range
+            // Set reasonable default range (will be updated dynamically)
             TriggerLevelArrows.UpdateRange(-5.0, 5.0);
 
-            Log("Trigger level arrow control initialized");
+            Log("Trigger level arrow control initialized (dynamic steps will be set later)");
         }
 
         /// <summary>
@@ -578,18 +583,31 @@ namespace DS1000Z_E_USB_Control.Trigger
 
         /// <summary>
         /// Update trigger level arrows step size based on trigger source channel's vertical scale
+        /// UPDATED: Added debugging and force update
         /// </summary>
         public void UpdateTriggerLevelStepSize(Ch1Settings ch1Settings, Ch2Settings ch2Settings)
         {
-            if (TriggerLevelArrows == null) return;
+            if (TriggerLevelArrows == null)
+            {
+                Log("❌ TriggerLevelArrows is null - cannot update step size");
+                return;
+            }
 
             double verticalScale = GetTriggerSourceVerticalScale(ch1Settings, ch2Settings);
+
+            // Log current and new values for debugging
+            Log($"🔍 Current GraticuleSize: {TriggerLevelArrows.GraticuleSize}");
+            Log($"🔍 New GraticuleSize: {verticalScale}");
 
             // Major step = 1 × vertical scale (1 division)
             // Minor step = 0.1 × vertical scale (0.1 division) - handled automatically by EmojiArrows
             TriggerLevelArrows.GraticuleSize = verticalScale;
 
-            Log($"🎯 Updated trigger level steps: Major={FormatVoltage(verticalScale)}, Minor={FormatVoltage(verticalScale * 0.1)}");
+            // Force display update
+            TriggerLevelArrows.SetValue(TriggerLevelArrows.CurrentValue);
+
+            Log($"✅ Updated trigger level steps: Major={FormatVoltage(verticalScale)}, Minor={FormatVoltage(verticalScale * 0.1)}");
+            Log($"🔍 Confirmed GraticuleSize after update: {TriggerLevelArrows.GraticuleSize}");
         }
 
         /// <summary>
@@ -674,5 +692,28 @@ namespace DS1000Z_E_USB_Control.Trigger
         }
 
         #endregion
+
+
+        #region 4. NEW: Add public method for immediate testing
+
+        /// <summary>
+        /// PUBLIC: Force update trigger step size for testing
+        /// Call this manually to test dynamic step sizing
+        /// </summary>
+        public void ForceUpdateStepSize(double testVerticalScale)
+        {
+            if (TriggerLevelArrows == null)
+            {
+                Log("❌ Cannot force update - TriggerLevelArrows is null");
+                return;
+            }
+
+            Log($"🧪 FORCE TEST: Setting step size to {testVerticalScale}V");
+            TriggerLevelArrows.GraticuleSize = testVerticalScale;
+            Log($"🧪 FORCE TEST: GraticuleSize is now {TriggerLevelArrows.GraticuleSize}");
+        }
+
+        #endregion
+
     }
 }

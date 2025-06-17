@@ -1,8 +1,10 @@
-﻿using System;
+﻿using DS1000Z_E_USB_Control.Channels.Ch1;
+using DS1000Z_E_USB_Control.Channels.Ch2;
+using DS1000Z_E_USB_Control.Controls;
+using Rigol_DS1000Z_E_Control;
+using System;
 using System.Windows;
 using System.Windows.Controls;
-using Rigol_DS1000Z_E_Control;
-using DS1000Z_E_USB_Control.Controls;
 
 namespace DS1000Z_E_USB_Control.Trigger
 {
@@ -17,7 +19,8 @@ namespace DS1000Z_E_USB_Control.Trigger
         private bool isUpdating = false;  // 🔧 ADD THIS LINE
 
         public event EventHandler<string> LogEvent;
-
+        // Add this event to the class
+        public event EventHandler TriggerSourceChanged;
         public TriggerControlPanel()
         {
             InitializeComponent();
@@ -157,21 +160,21 @@ namespace DS1000Z_E_USB_Control.Trigger
 
         #region UI Update Methods
 
-        /// <summary>
-        /// Update the trigger level arrow control
-        /// </summary>
-        public void UpdateTriggerLevelArrowControl()
-        {
-            if (TriggerLevelArrows == null || controller == null) return;
+        ///// <summary>
+        ///// Update the trigger level arrow control
+        ///// </summary>
+        //public void UpdateTriggerLevelArrowControl()
+        //{
+        //    if (TriggerLevelArrows == null || controller == null) return;
 
-            var settings = controller.GetSettings();
-            var (minLevel, maxLevel) = GetTriggerLevelRange();
+        //    var settings = controller.GetSettings();
+        //    var (minLevel, maxLevel) = GetTriggerLevelRange();
 
-            // Update arrow control properties
-            TriggerLevelArrows.GraticuleSize = 0.1; // 0.1V per graticule step
-            TriggerLevelArrows.UpdateRange(minLevel, maxLevel);
-            TriggerLevelArrows.SetValue(settings.EdgeLevel);
-        }
+        //    // Update arrow control properties
+        //    TriggerLevelArrows.GraticuleSize = 0.1; // 0.1V per graticule step
+        //    TriggerLevelArrows.UpdateRange(minLevel, maxLevel);
+        //    TriggerLevelArrows.SetValue(settings.EdgeLevel);
+        //}
 
         /// <summary>
         /// Update the trigger level value display
@@ -433,21 +436,21 @@ namespace DS1000Z_E_USB_Control.Trigger
             }
         }
 
-        /// <summary>
-        /// Handle edge source selection changes
-        /// </summary>
-        private void EdgeSource_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (controller == null || isUpdating) return;
+        ///// <summary>
+        ///// Handle edge source selection changes
+        ///// </summary>
+        //private void EdgeSource_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        //{
+        //    if (controller == null || isUpdating) return;
 
-            var selectedItem = EdgeSourceComboBox.SelectedItem as ComboBoxItem;
-            if (selectedItem?.Tag != null)
-            {
-                string source = selectedItem.Tag.ToString();
-                controller.SetEdgeSource(source);
-                LogEvent?.Invoke(this, $"Trigger source changed to: {source}");
-            }
-        }
+        //    var selectedItem = EdgeSourceComboBox.SelectedItem as ComboBoxItem;
+        //    if (selectedItem?.Tag != null)
+        //    {
+        //        string source = selectedItem.Tag.ToString();
+        //        controller.SetEdgeSource(source);
+        //        LogEvent?.Invoke(this, $"Trigger source changed to: {source}");
+        //    }
+        //}
 
         /// <summary>
         /// Handle edge slope selection changes
@@ -483,6 +486,85 @@ namespace DS1000Z_E_USB_Control.Trigger
 
 
         #endregion
+
+        // Add these methods to your TriggerControlPanel.xaml.cs
+
+        #region Dynamic Step Integration
+
+        /// <summary>
+        /// Update trigger level control with current channel settings
+        /// Call this whenever channel settings or trigger source changes
+        /// </summary>
+        public void UpdateTriggerLevelControl(Ch1Settings ch1Settings, Ch2Settings ch2Settings)
+        {
+            if (controller == null || ch1Settings == null || ch2Settings == null) return;
+
+            try
+            {
+                controller.UpdateTriggerLevelControl(ch1Settings, ch2Settings);
+                LogEvent?.Invoke(this, "Trigger level control updated with dynamic steps");
+            }
+            catch (Exception ex)
+            {
+                LogEvent?.Invoke(this, $"Error updating trigger level control: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// UPDATED: Enhanced UpdateTriggerLevelArrowControl with dynamic steps
+        /// </summary>
+        private void UpdateTriggerLevelArrowControl()
+        {
+            if (TriggerLevelArrows == null || controller == null) return;
+
+            try
+            {
+                var settings = controller.GetSettings();
+
+                // Use default range if channel settings not available
+                var (minLevel, maxLevel) = settings.GetTriggerLevelRange();
+
+                // Try to get current channel settings from MainWindow if available
+                // This is a fallback - ideally MainWindow should call UpdateTriggerLevelControl directly
+                TriggerLevelArrows.UpdateRange(minLevel, maxLevel);
+                TriggerLevelArrows.SetValue(settings.EdgeLevel);
+
+                UpdateLevelValueDisplay();
+            }
+            catch (Exception ex)
+            {
+                LogEvent?.Invoke(this, $"Error updating trigger level arrow control: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Handle trigger source changes - update step size when source changes
+        /// UPDATED: EdgeSource_SelectionChanged with dynamic step update
+        /// </summary>
+        private void EdgeSource_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (controller == null || isUpdating) return;
+
+            var selectedItem = EdgeSourceComboBox.SelectedItem as ComboBoxItem;
+            if (selectedItem?.Tag != null)
+            {
+                string source = selectedItem.Tag.ToString();
+                bool success = controller.SetEdgeSource(source);
+
+                if (success)
+                {
+                    LogEvent?.Invoke(this, $"Trigger source changed to: {source}");
+
+                    // Request MainWindow to update trigger level control with current channel settings
+                    TriggerSourceChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+        }
+
+        #endregion
+
+
+
 
     }
 }

@@ -15,17 +15,16 @@ namespace Rigol_DS1000Z_E_Control
 {
     /// <summary>
     /// Enhanced MainWindow with comprehensive settings management including trigger control
-    /// Fixed all compilation errors (CS7036, CS1503, CS1061, CS1501)
     /// </summary>
     public partial class MainWindow : Window
     {
-        #region Private Fields
+      #region Private Fields
         private RigolDS1000ZE oscilloscope;
         private OscilloscopeSettingsManager settingsManager;
         private bool isConnected = false;
         #endregion
 
-        #region Constructor and Initialization
+      #region Constructor and Initialization
         public MainWindow()
         {
             InitializeComponent();
@@ -81,7 +80,7 @@ namespace Rigol_DS1000Z_E_Control
         }
         #endregion
 
-        #region Connection Management
+      #region Connection Management
         private void ConnectButton_Click(object sender, RoutedEventArgs e)
         {
             if (!isConnected)
@@ -228,7 +227,7 @@ namespace Rigol_DS1000Z_E_Control
         }
         #endregion
 
-        #region Settings Management
+      #region Settings Management
         /// <summary>
         /// Get Current Settings button handler
         /// </summary>
@@ -453,7 +452,7 @@ namespace Rigol_DS1000Z_E_Control
         }
         #endregion
 
-        #region Oscilloscope Control Methods
+      #region Oscilloscope Control Methods
         /// <summary>
         /// Run button handler
         /// </summary>
@@ -545,7 +544,7 @@ namespace Rigol_DS1000Z_E_Control
         }
         #endregion
 
-        #region Additional Methods
+      #region Additional Methods
         /// <summary>
         /// Trigger Control button handler
         /// </summary>
@@ -603,7 +602,7 @@ namespace Rigol_DS1000Z_E_Control
         }
         #endregion
 
-        #region Enhanced Preset Methods
+      #region Enhanced Preset Methods
         /// <summary>
         /// Apply comprehensive presets to all subsystems including trigger
         /// </summary>
@@ -655,7 +654,7 @@ namespace Rigol_DS1000Z_E_Control
         }
         #endregion
 
-        #region Event Handlers and Logging
+      #region Event Handlers and Logging
         /// <summary>
         /// Handle log events from the oscilloscope
         /// </summary>
@@ -713,5 +712,144 @@ namespace Rigol_DS1000Z_E_Control
 
 
         #endregion
+
+        // Add these methods to your MainWindow.xaml.cs
+      #region Dynamic Trigger Step Integration
+
+        /// <summary>
+        /// Update trigger level control when channel settings change
+        /// </summary>
+        private void UpdateTriggerLevelStepSizes()
+        {
+            if (!isConnected || TriggerPanel == null) return;
+
+            try
+            {
+                // Get current channel settings
+                var ch1Settings = Channel1Panel?.GetController()?.GetSettings() ?? new Ch1Settings();
+                var ch2Settings = Channel2Panel?.GetController()?.GetSettings() ?? new Ch2Settings();
+
+                // Update trigger level control with current channel settings
+                TriggerPanel.UpdateTriggerLevelControl(ch1Settings, ch2Settings);
+
+                Log("🎯 Trigger level step sizes updated based on channel settings");
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Error updating trigger level step sizes: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// UPDATED: Initialize trigger panel with dynamic step integration
+        /// </summary>
+        private void InitializeTriggerPanel()
+        {
+            if (TriggerPanel == null) return;
+
+            try
+            {
+                TriggerPanel.Initialize(oscilloscope, settingsManager);
+                TriggerPanel.LogEvent += (sender, message) => Log(message);
+
+                // NEW: Subscribe to trigger source changes
+                TriggerPanel.TriggerSourceChanged += (sender, e) => UpdateTriggerLevelStepSizes();
+
+                Log("🎯 Trigger panel initialized with dynamic step sizing");
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Error initializing trigger panel: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// UPDATED: Initialize channel panels with trigger step update integration
+        /// </summary>
+        private void InitializeChannelPanels()
+        {
+            try
+            {
+                // Initialize Channel 1
+                if (Channel1Panel != null)
+                {
+                    Channel1Panel.Initialize(oscilloscope);
+                    Channel1Panel.LogEvent += (sender, message) => Log(message);
+
+                    // NEW: Update trigger steps when Channel 1 settings change
+                    var ch1Controller = Channel1Panel.GetController();
+                    if (ch1Controller != null)
+                    {
+                        ch1Controller.SettingsChanged += (sender, e) => UpdateTriggerLevelStepSizes();
+                    }
+                }
+
+                // Initialize Channel 2  
+                if (Channel2Panel != null)
+                {
+                    Channel2Panel.Initialize(oscilloscope);
+                    Channel2Panel.LogEvent += (sender, message) => Log(message);
+
+                    // NEW: Update trigger steps when Channel 2 settings change
+                    var ch2Controller = Channel2Panel.GetController();
+                    if (ch2Controller != null)
+                    {
+                        ch2Controller.SettingsChanged += (sender, e) => UpdateTriggerLevelStepSizes();
+                    }
+                }
+
+                Log("📺 Channel panels initialized with trigger step integration");
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Error initializing channel panels: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// UPDATED: GetCurrentSettings with trigger step size update
+        /// </summary>
+        //private void GetCurrentSettings()
+        //{
+        //    if (!isConnected)
+        //    {
+        //        MessageBox.Show("Please connect to the oscilloscope first.",
+        //                      "Get Settings",
+        //                      MessageBoxButton.OK,
+        //                      MessageBoxImage.Information);
+        //        return;
+        //    }
+
+        //    try
+        //    {
+        //        Log("📊 Reading current oscilloscope settings...");
+
+        //        // Read all current settings
+        //        bool success = settingsManager.ReadAllCurrentSettings();
+
+        //        if (success)
+        //        {
+        //            // Update all UI panels
+        //            UpdateUIFromSettings();
+
+        //            // NEW: Update trigger level step sizes after reading settings
+        //            UpdateTriggerLevelStepSizes();
+
+        //            Log("✅ Settings updated successfully with dynamic trigger steps");
+        //        }
+        //        else
+        //        {
+        //            Log("❌ Failed to read some settings from oscilloscope");
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Log($"❌ Error reading settings: {ex.Message}");
+        //    }
+        //}
+
+        #endregion
+
+
     }
 }

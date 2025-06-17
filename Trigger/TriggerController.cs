@@ -1,8 +1,10 @@
-﻿using System;
+﻿using DS1000Z_E_USB_Control.Channels.Ch1;
+using DS1000Z_E_USB_Control.Channels.Ch2;
+using DS1000Z_E_USB_Control.Controls;
+using Rigol_DS1000Z_E_Control;
+using System;
 using System.Globalization;
 using System.Windows.Controls;
-using Rigol_DS1000Z_E_Control;
-using DS1000Z_E_USB_Control.Controls;
 
 namespace DS1000Z_E_USB_Control.Trigger
 {
@@ -565,6 +567,110 @@ namespace DS1000Z_E_USB_Control.Trigger
         private void Log(string message)
         {
             LogEvent?.Invoke(this, message);
+        }
+
+        #endregion
+
+
+        // Add these methods to your TriggerController.cs
+
+        #region Dynamic Step Sizing
+
+        /// <summary>
+        /// Update trigger level arrows step size based on trigger source channel's vertical scale
+        /// </summary>
+        public void UpdateTriggerLevelStepSize(Ch1Settings ch1Settings, Ch2Settings ch2Settings)
+        {
+            if (TriggerLevelArrows == null) return;
+
+            double verticalScale = GetTriggerSourceVerticalScale(ch1Settings, ch2Settings);
+
+            // Major step = 1 × vertical scale (1 division)
+            // Minor step = 0.1 × vertical scale (0.1 division) - handled automatically by EmojiArrows
+            TriggerLevelArrows.GraticuleSize = verticalScale;
+
+            Log($"🎯 Updated trigger level steps: Major={FormatVoltage(verticalScale)}, Minor={FormatVoltage(verticalScale * 0.1)}");
+        }
+
+        /// <summary>
+        /// Get the vertical scale of the current trigger source channel
+        /// </summary>
+        private double GetTriggerSourceVerticalScale(Ch1Settings ch1Settings, Ch2Settings ch2Settings)
+        {
+            // Parse trigger source to determine which channel
+            string source = settings.EdgeSource?.ToUpper() ?? "CHAN1";
+
+            if (source.Contains("CHAN1") || source.Contains("CHANNEL1"))
+            {
+                double scale = ch1Settings?.VerticalScale ?? 1.0;
+                Log($"🔍 Trigger source: Channel 1, Scale: {FormatVoltage(scale)}/div");
+                return scale;
+            }
+            else if (source.Contains("CHAN2") || source.Contains("CHANNEL2"))
+            {
+                double scale = ch2Settings?.VerticalScale ?? 1.0;
+                Log($"🔍 Trigger source: Channel 2, Scale: {FormatVoltage(scale)}/div");
+                return scale;
+            }
+            else
+            {
+                // External or unknown source - use reasonable default
+                Log($"🔍 Trigger source: External/Unknown ({source}), using default 1V/div");
+                return 1.0;
+            }
+        }
+
+        /// <summary>
+        /// Update trigger level range and step size based on current channel settings
+        /// </summary>
+        public void UpdateTriggerLevelControl(Ch1Settings ch1Settings, Ch2Settings ch2Settings)
+        {
+            if (TriggerLevelArrows == null) return;
+
+            try
+            {
+                // Update step size based on trigger source
+                UpdateTriggerLevelStepSize(ch1Settings, ch2Settings);
+
+                // Update range based on trigger source
+                var (minLevel, maxLevel) = settings.GetTriggerLevelRange(ch1Settings, ch2Settings);
+                TriggerLevelArrows.UpdateRange(minLevel, maxLevel);
+
+                // Ensure current level is within new range
+                if (settings.EdgeLevel < minLevel || settings.EdgeLevel > maxLevel)
+                {
+                    double clampedLevel = Math.Max(minLevel, Math.Min(maxLevel, settings.EdgeLevel));
+                    TriggerLevelArrows.SetValue(clampedLevel);
+                    settings.EdgeLevel = clampedLevel;
+                    Log($"⚠️ Trigger level clamped to {FormatVoltage(clampedLevel)} (range: {FormatVoltage(minLevel)} to {FormatVoltage(maxLevel)})");
+                }
+                else
+                {
+                    TriggerLevelArrows.SetValue(settings.EdgeLevel);
+                }
+
+                UpdateLevelValueDisplay();
+                Log($"✅ Trigger level control updated for {settings.EdgeSource}");
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Error updating trigger level control: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Format voltage value with appropriate units
+        /// </summary>
+        private string FormatVoltage(double voltage)
+        {
+            if (Math.Abs(voltage) >= 1000)
+                return $"{voltage / 1000:F2}kV";
+            else if (Math.Abs(voltage) >= 1.0)
+                return $"{voltage:F3}V";
+            else if (Math.Abs(voltage) >= 0.001)
+                return $"{voltage * 1000:F1}mV";
+            else
+                return $"{voltage * 1000000:F1}μV";
         }
 
         #endregion

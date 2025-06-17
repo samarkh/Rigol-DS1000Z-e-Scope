@@ -175,7 +175,7 @@
                                 HorizontalAlignment="Center" 
                                 Margin="5">
                         <TextBlock x:Name="LevelValueText" 
-                                   Text="0.0" 
+                                   Text="0.00" 
                                    FontSize="12" 
                                    FontWeight="Bold"
                                    Foreground="#32CD32" 

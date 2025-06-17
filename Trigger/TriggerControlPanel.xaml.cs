@@ -14,6 +14,7 @@ namespace DS1000Z_E_USB_Control.Trigger
     {
         private TriggerController controller;
         private bool isInitialized = false;
+        private bool isUpdating = false;  // 🔧 ADD THIS LINE
 
         public event EventHandler<string> LogEvent;
 
@@ -180,7 +181,7 @@ namespace DS1000Z_E_USB_Control.Trigger
             if (LevelValueText == null || TriggerLevelArrows == null) return;
 
             double value = TriggerLevelArrows.CurrentValue;
-            LevelValueText.Text = $"{value:F1}"; // Simple format: "0.0"
+            LevelValueText.Text = $"{value:F2}"; // Simple format: "0.00"
         }
 
         /// <summary>

@@ -90,36 +90,7 @@ namespace DS1000Z_E_USB_Control.Trigger
             controller.ForceTriggerButton = ForceTriggerButton;
         }
 
-        /// <summary>
-        /// Wire up additional controls and event handlers
-        /// </summary>
-        private void WireUpAdditionalControls()
-        {
-            // Force trigger button
-            if (ForceTriggerButton != null)
-            {
-                ForceTriggerButton.Click += ForceTrigger_Click;
-            }
 
-            // Trigger level arrows (multimedia control)
-            if (TriggerLevelArrows != null)
-            {
-                TriggerLevelArrows.GraticuleMovement += TriggerLevelArrows_GraticuleMovement;
-            }
-
-            // Holdoff text box
-            if (HoldoffTextBox != null)
-            {
-                HoldoffTextBox.TextChanged += HoldoffTextBox_TextChanged;
-                HoldoffTextBox.LostFocus += HoldoffTextBox_LostFocus;
-            }
-
-            // Subscribe to controller settings changes
-            if (controller != null)
-            {
-                controller.SettingsChanged += (sender, e) => UpdateTriggerLevelArrowControl();
-            }
-        }
 
         /// <summary>
         /// Set up UI elements
@@ -332,5 +303,185 @@ namespace DS1000Z_E_USB_Control.Trigger
         }
 
         #endregion
+
+        #region Trigger Send Methods
+
+        // ADD these methods to your TriggerControlPanel.xaml.cs
+
+        /// <summary>
+        /// Wire up additional controls and event handlers  
+        /// UPDATED VERSION - Add missing ComboBox SelectionChanged events
+        /// </summary>
+        private void WireUpAdditionalControls()
+        {
+
+            // Force trigger button
+            if (ForceTriggerButton != null)
+            {
+                ForceTriggerButton.Click += ForceTrigger_Click;
+            }
+
+            // Trigger level arrows (multimedia control)
+            if (TriggerLevelArrows != null)
+            {
+                TriggerLevelArrows.GraticuleMovement += TriggerLevelArrows_GraticuleMovement;
+            }
+
+            // Holdoff text box
+            if (HoldoffTextBox != null)
+            {
+                HoldoffTextBox.TextChanged += HoldoffTextBox_TextChanged;
+                HoldoffTextBox.LostFocus += HoldoffTextBox_LostFocus;
+            }
+
+            // Subscribe to controller settings changes
+            if (controller != null)
+            {
+                controller.SettingsChanged += (sender, e) => UpdateTriggerLevelArrowControl();
+            }
+
+            // Force trigger button
+            if (ForceTriggerButton != null)
+            {
+                ForceTriggerButton.Click += ForceTrigger_Click;
+            }
+
+            // Trigger level arrows (multimedia control)
+            if (TriggerLevelArrows != null)
+            {
+                TriggerLevelArrows.GraticuleMovement += TriggerLevelArrows_GraticuleMovement;
+            }
+
+            // Holdoff text box
+            if (HoldoffTextBox != null)
+            {
+                HoldoffTextBox.TextChanged += HoldoffTextBox_TextChanged;
+                HoldoffTextBox.LostFocus += HoldoffTextBox_LostFocus;
+            }
+
+            // 🔧 ADD MISSING COMBOBOX EVENT HANDLERS:
+
+            // Trigger Mode ComboBox
+            if (TriggerModeComboBox != null)
+            {
+                TriggerModeComboBox.SelectionChanged += TriggerMode_SelectionChanged;
+            }
+
+            // Trigger Sweep ComboBox  
+            if (TriggerSweepComboBox != null)
+            {
+                TriggerSweepComboBox.SelectionChanged += TriggerSweep_SelectionChanged;
+            }
+
+            // Edge Source ComboBox
+            if (EdgeSourceComboBox != null)
+            {
+                EdgeSourceComboBox.SelectionChanged += EdgeSource_SelectionChanged;
+            }
+
+            // Edge Slope ComboBox
+            if (EdgeSlopeComboBox != null)
+            {
+                EdgeSlopeComboBox.SelectionChanged += EdgeSlope_SelectionChanged;
+            }
+
+            // Trigger Coupling ComboBox
+            if (TriggerCouplingComboBox != null)
+            {
+                TriggerCouplingComboBox.SelectionChanged += TriggerCoupling_SelectionChanged;
+            }
+
+            // Subscribe to controller settings changes
+            if (controller != null)
+            {
+                controller.SettingsChanged += (sender, e) => UpdateTriggerLevelArrowControl();
+            }
+        }
+
+        // 🔧 ADD THESE NEW EVENT HANDLER METHODS:
+
+        /// <summary>
+        /// Handle trigger mode selection changes
+        /// </summary>
+        private void TriggerMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (controller == null || isUpdating) return;
+
+            var selectedItem = TriggerModeComboBox.SelectedItem as ComboBoxItem;
+            if (selectedItem?.Tag != null)
+            {
+                string mode = selectedItem.Tag.ToString();
+                controller.SetMode(mode);
+                LogEvent?.Invoke(this, $"Trigger mode changed to: {mode}");
+            }
+        }
+
+        /// <summary>
+        /// Handle trigger sweep selection changes  
+        /// </summary>
+        private void TriggerSweep_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (controller == null || isUpdating) return;
+
+            var selectedItem = TriggerSweepComboBox.SelectedItem as ComboBoxItem;
+            if (selectedItem?.Tag != null)
+            {
+                string sweep = selectedItem.Tag.ToString();
+                controller.SetSweep(sweep);
+                LogEvent?.Invoke(this, $"Trigger sweep changed to: {sweep}");
+            }
+        }
+
+        /// <summary>
+        /// Handle edge source selection changes
+        /// </summary>
+        private void EdgeSource_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (controller == null || isUpdating) return;
+
+            var selectedItem = EdgeSourceComboBox.SelectedItem as ComboBoxItem;
+            if (selectedItem?.Tag != null)
+            {
+                string source = selectedItem.Tag.ToString();
+                controller.SetEdgeSource(source);
+                LogEvent?.Invoke(this, $"Trigger source changed to: {source}");
+            }
+        }
+
+        /// <summary>
+        /// Handle edge slope selection changes
+        /// </summary>
+        private void EdgeSlope_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (controller == null || isUpdating) return;
+
+            var selectedItem = EdgeSlopeComboBox.SelectedItem as ComboBoxItem;
+            if (selectedItem?.Tag != null)
+            {
+                string slope = selectedItem.Tag.ToString();
+                controller.SetEdgeSlope(slope);
+                LogEvent?.Invoke(this, $"Trigger slope changed to: {slope}");
+            }
+        }
+
+        /// <summary>
+        /// Handle trigger coupling selection changes
+        /// </summary>
+        private void TriggerCoupling_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (controller == null || isUpdating) return;
+
+            var selectedItem = TriggerCouplingComboBox.SelectedItem as ComboBoxItem;
+            if (selectedItem?.Tag != null)
+            {
+                string coupling = selectedItem.Tag.ToString();
+                controller.SetCoupling(coupling);
+                LogEvent?.Invoke(this, $"Trigger coupling changed to: {coupling}");
+            }
+        }
+
+
+        #endregion
+
     }
 }

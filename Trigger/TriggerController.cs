@@ -39,7 +39,7 @@ namespace DS1000Z_E_USB_Control.Trigger
         public ComboBox TriggerCouplingComboBox { get; set; }
 
         // Text controls
-        public TextBox HoldoffTextBox { get; set; }
+        public TextBox HoldoffTextBox { get; set; } // this needs clearing up
         public TextBlock CurrentTriggerSettingsText { get; set; }
 
         // Multimedia controls (EmojiArrows instead of slider)

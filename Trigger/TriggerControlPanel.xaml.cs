@@ -428,7 +428,8 @@ namespace DS1000Z_E_USB_Control.Trigger
             {
                 // Reset to last known good value
                 var settings = controller.GetSettings();
-                HoldoffTextBox.Text = settings.Holdoff.ToString("E3");
+                double holdoffInSelectedUnits = settings.Holdoff * 1000000000; // Convert to nanoseconds
+                HoldoffTextBox.Text = holdoffInSelectedUnits.ToString("F2"); // Shows "16.00"
                 LogEvent?.Invoke(this, "Invalid holdoff value - reset to previous value");
             }
         }

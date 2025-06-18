@@ -1,27 +1,11 @@
-﻿using DS1000Z_E_USB_Control.Capture;
+﻿using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
-
-namespace DS1000Z_E_USB_Control.Capture
-{
-    internal class MemorySystemIntegration
-    {
-    }
-}
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Input;
-using Microsoft.Win32;
 
 namespace OscilloscopeControl.Capture
 {

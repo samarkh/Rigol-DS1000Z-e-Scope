@@ -473,22 +473,34 @@ namespace DS1000Z_E_USB_Control.Trigger
         /// <summary>
         /// Format time value with appropriate units
         /// </summary>
+        //private string FormatTime(double time)
+        //{
+        //    if (time == 0) return "0s";
+
+        //    double absTime = Math.Abs(time);
+        //    if (absTime >= 1.0)
+        //        return $"{time:F3}s";
+        //    else if (absTime >= 1e-3)
+        //        return $"{time * 1000:F3}ms";
+        //    else if (absTime >= 1e-6)
+        //        return $"{time * 1000000:F3}μs";
+        //    else if (absTime >= 1e-9)
+        //        return $"{time * 1000000000:F3}ns";
+        //    else
+        //        return $"{time:E2}s";
+        //}
+
+
+        // Update the existing FormatTime method to use 2 decimal places
+        /// <summary>
+        /// Format time value with appropriate units (updated for 2 decimal places)
+        /// </summary>
         private string FormatTime(double time)
         {
-            if (time == 0) return "0s";
-
-            double absTime = Math.Abs(time);
-            if (absTime >= 1.0)
-                return $"{time:F3}s";
-            else if (absTime >= 1e-3)
-                return $"{time * 1000:F3}ms";
-            else if (absTime >= 1e-6)
-                return $"{time * 1000000:F3}μs";
-            else if (absTime >= 1e-9)
-                return $"{time * 1000000000:F3}ns";
-            else
-                return $"{time:E2}s";
+            return FormatTimeAuto(time);
         }
+
+
 
         #endregion
 
@@ -543,11 +555,269 @@ namespace DS1000Z_E_USB_Control.Trigger
 
         #endregion
 
-        
+        // Add these methods to TriggerControlPanel.xaml.cs
 
-        private void HoldOff_Units(object sender, SelectionChangedEventArgs e)
+        #region HoldOff Units Handling
+
+        /// <summary>
+        /// Handle holdoff units selection changes
+        /// </summary>
+        private void HoldOff_Units_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            // populate with engineering notation for time from nS to Seconds
+            UpdateHoldoffDisplay();
         }
+
+        /// <summary>
+        /// Get the currently selected holdoff units
+        /// </summary>
+        private string GetSelectedHoldoffUnits()
+        {
+            if (HoldOffUnitsComboBox?.SelectedItem is ComboBoxItem selectedItem)
+            {
+                return selectedItem.Tag?.ToString() ?? "ns";
+            }
+            return "ns"; // Default to nanoseconds
+        }
+
+        /// <summary>
+        /// Update the holdoff display text with proper formatting
+        /// </summary>
+        private void UpdateHoldoffDisplay()
+        {
+            if (HoldoffDisplayText == null || HoldoffTextBox == null) return;
+
+            if (double.TryParse(HoldoffTextBox.Text, out double holdoff))
+            {
+                string selectedUnits = GetSelectedHoldoffUnits();
+                string formattedValue = FormatTimeWithUnits(holdoff, selectedUnits);
+                HoldoffDisplayText.Text = $"({formattedValue})";
+            }
+            else
+            {
+                HoldoffDisplayText.Text = "(Invalid)";
+            }
+        }
+
+        /// <summary>
+        /// Format time value with specified units to 2 decimal places
+        /// </summary>
+        private string FormatTimeWithUnits(double timeInSeconds, string units)
+        {
+            if (timeInSeconds == 0) return "0.00s";
+
+            double value;
+            string unitSymbol;
+
+            switch (units.ToLower())
+            {
+                case "s":
+                    value = timeInSeconds;
+                    unitSymbol = "s";
+                    break;
+                case "ms":
+                    value = timeInSeconds * 1000;
+                    unitSymbol = "ms";
+                    break;
+                case "us":
+                    value = timeInSeconds * 1000000;
+                    unitSymbol = "μs";
+                    break;
+                case "ns":
+                    value = timeInSeconds * 1000000000;
+                    unitSymbol = "ns";
+                    break;
+                default:
+                    // Auto-select best units if invalid unit specified
+                    return FormatTimeAuto(timeInSeconds);
+            }
+
+            return $"{value:F2}{unitSymbol}";
+        }
+
+        /// <summary>
+        /// Auto-format time value with appropriate units (fallback method)
+        /// </summary>
+        private string FormatTimeAuto(double timeInSeconds)
+        {
+            if (timeInSeconds == 0) return "0.00s";
+
+            double absTime = Math.Abs(timeInSeconds);
+
+            if (absTime >= 1.0)
+                return $"{timeInSeconds:F2}s";
+            else if (absTime >= 1e-3)
+                return $"{timeInSeconds * 1000:F2}ms";
+            else if (absTime >= 1e-6)
+                return $"{timeInSeconds * 1000000:F2}μs";
+            else if (absTime >= 1e-9)
+                return $"{timeInSeconds * 1000000000:F2}ns";
+            else
+                return $"{timeInSeconds:E2}s";
+        }
+
+        /// <summary>
+        /// Set the holdoff units combo box to match a time value (helper method)
+        /// </summary>
+        private void SetOptimalHoldoffUnits(double timeInSeconds)
+        {
+            if (HoldOffUnitsComboBox == null) return;
+
+            double absTime = Math.Abs(timeInSeconds);
+            string optimalUnit;
+
+            if (absTime >= 1.0)
+                optimalUnit = "s";
+            else if (absTime >= 1e-3)
+                optimalUnit = "ms";
+            else if (absTime >= 1e-6)
+                optimalUnit = "us";
+            else
+                optimalUnit = "ns";
+            // Add these methods to TriggerControlPanel.xaml.cs
+
+            #region HoldOff Units Handling
+
+            /// <summary>
+            /// Handle holdoff units selection changes
+            /// </summary>
+private void HoldOff_Units_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            UpdateHoldoffDisplay();
+        }
+
+        /// <summary>
+        /// Get the currently selected holdoff units
+        /// </summary>
+        private string GetSelectedHoldoffUnits()
+        {
+            if (HoldOffUnitsComboBox?.SelectedItem is ComboBoxItem selectedItem)
+            {
+                return selectedItem.Tag?.ToString() ?? "ns";
+            }
+            return "ns"; // Default to nanoseconds
+        }
+
+        /// <summary>
+        /// Update the holdoff display text with proper formatting
+        /// </summary>
+        private void UpdateHoldoffDisplay()
+        {
+            if (HoldoffDisplayText == null || HoldoffTextBox == null) return;
+
+            if (double.TryParse(HoldoffTextBox.Text, out double holdoff))
+            {
+                string selectedUnits = GetSelectedHoldoffUnits();
+                string formattedValue = FormatTimeWithUnits(holdoff, selectedUnits);
+                HoldoffDisplayText.Text = $"({formattedValue})";
+            }
+            else
+            {
+                HoldoffDisplayText.Text = "(Invalid)";
+            }
+        }
+
+        /// <summary>
+        /// Format time value with specified units to 2 decimal places
+        /// </summary>
+        private string FormatTimeWithUnits(double timeInSeconds, string units)
+        {
+            if (timeInSeconds == 0) return "0.00s";
+
+            double value;
+            string unitSymbol;
+
+            switch (units.ToLower())
+            {
+                case "s":
+                    value = timeInSeconds;
+                    unitSymbol = "s";
+                    break;
+                case "ms":
+                    value = timeInSeconds * 1000;
+                    unitSymbol = "ms";
+                    break;
+                case "us":
+                    value = timeInSeconds * 1000000;
+                    unitSymbol = "μs";
+                    break;
+                case "ns":
+                    value = timeInSeconds * 1000000000;
+                    unitSymbol = "ns";
+                    break;
+                default:
+                    // Auto-select best units if invalid unit specified
+                    return FormatTimeAuto(timeInSeconds);
+            }
+
+            return $"{value:F2}{unitSymbol}";
+        }
+
+        /// <summary>
+        /// Auto-format time value with appropriate units (fallback method)
+        /// </summary>
+        private string FormatTimeAuto(double timeInSeconds)
+        {
+            if (timeInSeconds == 0) return "0.00s";
+
+            double absTime = Math.Abs(timeInSeconds);
+
+            if (absTime >= 1.0)
+                return $"{timeInSeconds:F2}s";
+            else if (absTime >= 1e-3)
+                return $"{timeInSeconds * 1000:F2}ms";
+            else if (absTime >= 1e-6)
+                return $"{timeInSeconds * 1000000:F2}μs";
+            else if (absTime >= 1e-9)
+                return $"{timeInSeconds * 1000000000:F2}ns";
+            else
+                return $"{timeInSeconds:E2}s";
+        }
+
+        /// <summary>
+        /// Set the holdoff units combo box to match a time value (helper method)
+        /// </summary>
+        private void SetOptimalHoldoffUnits(double timeInSeconds)
+        {
+            if (HoldOffUnitsComboBox == null) return;
+
+            double absTime = Math.Abs(timeInSeconds);
+            string optimalUnit;
+
+            if (absTime >= 1.0)
+                optimalUnit = "s";
+            else if (absTime >= 1e-3)
+                optimalUnit = "ms";
+            else if (absTime >= 1e-6)
+                optimalUnit = "us";
+            else
+                optimalUnit = "ns";
+
+            // Select the optimal unit in the combo box
+            foreach (ComboBoxItem item in HoldOffUnitsComboBox.Items)
+            {
+                if (item.Tag?.ToString() == optimalUnit)
+                {
+                    HoldOffUnitsComboBox.SelectedItem = item;
+                    break;
+                }
+            }
+        }
+
+#endregion
+
+            // Select the optimal unit in the combo box
+            foreach (ComboBoxItem item in HoldOffUnitsComboBox.Items)
+            {
+                if (item.Tag?.ToString() == optimalUnit)
+                {
+                    HoldOffUnitsComboBox.SelectedItem = item;
+                    break;
+                }
+            }
+        }
+
+        #endregion
+
+
     }
 }

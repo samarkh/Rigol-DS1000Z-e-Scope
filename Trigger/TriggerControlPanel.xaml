@@ -116,33 +116,37 @@
             </ComboBox>
 
             <!-- Row 5: Holdoff -->
+            <!-- Fixed HoldOff_Units ComboBox in TriggerControlPanel.xaml -->
+            <!-- Row 5: Holdoff -->
             <Label Grid.Row="5" Grid.Column="0" 
-                   Content="Holdoff:" 
-                   HorizontalAlignment="Right"
-                   VerticalAlignment="Center" 
-                   Margin="5"/>
+       Content="Holdoff:" 
+       HorizontalAlignment="Right"
+       VerticalAlignment="Center" 
+       Margin="5"/>
             <StackPanel Grid.Row="5" Grid.Column="1" 
-                        Orientation="Horizontal" 
-                        VerticalAlignment="Center" 
-                        Margin="5">
+            Orientation="Horizontal" 
+            VerticalAlignment="Center" 
+            Margin="5">
                 <TextBox x:Name="HoldoffTextBox" 
-                         Width="80" 
-                         VerticalAlignment="Center" 
-                         Text="100E-9"/>
-                <TextBlock x:Name="HoldoffDisplayText" 
-                           Text="(100ns)" 
-                           VerticalAlignment="Center" 
-                           Margin="5,0,0,0" 
-                           FontSize="10" 
-                           Foreground="Gray"/>
-                <ComboBox Width="120" SelectionChanged="HoldOff_Units"
-                          <ComboBoxItem Content="s"
-                          <ComboBoxItem Content="ms" 
-                          <ComboBoxItem Content="us"
-                          <ComboBoxItem Content="ns" IsSelected="True"/>
-                    
+             Width="80" 
+             VerticalAlignment="Center" 
+             
+             Text="100.00"/>
 
+                <ComboBox x:Name="HoldOffUnitsComboBox" 
+              Width="65" 
+              VerticalAlignment="Center"
+              Margin="5,0,0,0"
+              SelectionChanged="HoldOff_Units_SelectionChanged">
+                    <ComboBoxItem Content="s" Tag="s"/>
+                    <ComboBoxItem Content="ms" Tag="ms"/>
+                    <ComboBoxItem Content="μs" Tag="us"/>
+                    <ComboBoxItem Content="ns" Tag="ns" IsSelected="True"/>
+                </ComboBox>
             </StackPanel>
+
+
+    
 
             <!-- Row 6: Current Settings -->
             <TextBlock x:Name="CurrentTriggerSettingsText" 

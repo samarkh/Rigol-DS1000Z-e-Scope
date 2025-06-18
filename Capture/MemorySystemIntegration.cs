@@ -19,7 +19,7 @@ namespace OscilloscopeControl.Capture
 
         private readonly IOscilloscopeInterface oscilloscope;
         private WaveformMemoryManager memoryManager;
-        private WaveformMemoryController memoryController;
+        private WaveformMemoryManager memoryController;
         private bool isInitialized = false;
 
         #endregion
@@ -85,7 +85,7 @@ namespace OscilloscopeControl.Capture
                 memoryManager.MemoryCleared += (s, e) => MemoryCleared?.Invoke(this, EventArgs.Empty);
 
                 // Create the UI controller (will be connected to UI later)
-                memoryController = new WaveformMemoryController(memoryManager);
+                memoryController = new WaveformMemoryManager(memoryManager);
                 memoryController.LogEvent += (s, e) => Log(e);
 
                 isInitialized = true;
@@ -645,7 +645,7 @@ namespace OscilloscopeControl.Capture
         /// <summary>
         /// Get the underlying memory controller (for advanced UI operations)
         /// </summary>
-        public WaveformMemoryController MemoryController => memoryController;
+        public WaveformMemoryManager MemoryController => memoryController;
 
         #endregion
     }

@@ -1,96 +1,47 @@
 ﻿using System;
-using Rigol_DS1000Z_E_Control;
-using OscilloscopeControl.Capture;
 
-namespace YourExistingNamespace
+namespace OscilloscopeControl.Capture
 {
     /// <summary>
-    /// Example showing how to integrate the capture system with your existing MainWindow code.
-    /// This class shows the integration pattern - you would add this code to your existing MainWindow.
+    /// Interface that defines the contract for oscilloscope communication.
+    /// This allows the capture system to work with different oscilloscope implementations.
     /// </summary>
-    public partial class MainWindowIntegrationExample
+    public interface IOscilloscopeInterface
     {
-        // Your existing oscilloscope instance
-        private RigolDS1000ZE oscilloscope; // This already exists in your code
-
-        // New capture system components
-        private OscilloscopeAdapter oscilloscopeAdapter;
-        private MemorySystemIntegration memoryIntegration;
+        #region Properties
 
         /// <summary>
-        /// Add this to your existing Window_Loaded event or initialization method
+        /// Gets a value indicating whether the oscilloscope is currently connected
         /// </summary>
-        private void InitializeCaptureSystem()
-        {
-            try
-            {
-                // Create adapter to wrap your existing oscilloscope
-                oscilloscopeAdapter = new OscilloscopeAdapter(oscilloscope);
+        bool IsConnected { get; }
 
-                // Create the memory integration system
-                memoryIntegration = new MemorySystemIntegration(oscilloscopeAdapter);
+        #endregion
 
-                // Subscribe to logging events
-                memoryIntegration.LogEvent += (sender, message) => Log(message);
-
-                // Initialize the system
-                memoryIntegration.Initialize();
-
-                // Connect to your UI (assuming you have a WaveformMemoryPanel named 'memoryPanel')
-                // memoryIntegration.ConnectToUI(memoryPanel);
-
-                // Add menu items and shortcuts
-                // memoryIntegration.AddToMainMenu(MainMenu);
-                // memoryIntegration.AddKeyboardShortcuts(this);
-
-                Log("✅ Capture system initialized successfully");
-            }
-            catch (Exception ex)
-            {
-                Log($"❌ Error initializing capture system: {ex.Message}");
-            }
-        }
+        #region Events
 
         /// <summary>
-        /// Add this to your existing connection status change handler
+        /// Event raised when a log message is generated
         /// </summary>
-        private void OnOscilloscopeConnectionChanged(bool isConnected)
-        {
-            // Your existing connection handling code...
+        event EventHandler<string> LogEvent;
 
-            // Update capture system
-            memoryIntegration?.UpdateConnectionStatus(isConnected);
-        }
+        #endregion
+
+        #region Methods
 
         /// <summary>
-        /// Example of how to add the capture panel to your existing UI
-        /// Add this to your XAML where you want the capture panel to appear:
+        /// Send a SCPI command to the oscilloscope
         /// </summary>
-        /*
-        <TabItem Header="Waveform Capture">
-            <local:WaveformMemoryPanel x:Name="memoryPanel"/>
-        </TabItem>
-        */
+        /// <param name="command">The SCPI command to send</param>
+        /// <returns>True if successful, false otherwise</returns>
+        bool SendCommand(string command);
 
         /// <summary>
-        /// Example of programmatic capture from your existing code
+        /// Send a SCPI query to the oscilloscope and return the response
         /// </summary>
-        private void CaptureWaveformExample()
-        {
-            if (memoryIntegration?.IsInitialized == true)
-            {
-                // Capture from both channels
-                var waveforms = memoryIntegration.CaptureWaveform(WaveformChannel.Both);
-                Log($"Captured {waveforms.Count} waveforms");
-            }
-        }
+        /// <param name="query">The SCPI query to send</param>
+        /// <returns>The response string, or null/empty if failed</returns>
+        string SendQuery(string query);
 
-        /// <summary>
-        /// Your existing Log method (this already exists in your code)
-        /// </summary>
-        private void Log(string message)
-        {
-            // Your existing logging implementation
-        }
+        #endregion
     }
 }

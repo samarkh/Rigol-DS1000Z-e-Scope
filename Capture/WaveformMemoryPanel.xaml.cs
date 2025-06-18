@@ -11,7 +11,7 @@ namespace OscilloscopeControl.Capture
     /// Code-behind for the waveform capture and memory management user interface.
     /// 
     /// This file contains minimal code-behind logic since most functionality
-    /// is handled by the WaveformMemoryController class.
+    /// is handled by the WaveformMemoryManager class.
     /// </summary>
     public partial class WaveformMemoryPanel : UserControl
     {
@@ -25,7 +25,7 @@ namespace OscilloscopeControl.Capture
             InitializeComponent();
 
             // The DataContext and control connections will be managed by
-            // the MemorySystemIntegration and WaveformMemoryController classes
+            // the MemorySystemIntegration and WaveformMemoryManager classes
 
             // Set any default properties if needed
             this.Loaded += WaveformMemoryPanel_Loaded;
@@ -41,7 +41,7 @@ namespace OscilloscopeControl.Capture
         private void WaveformMemoryPanel_Loaded(object sender, RoutedEventArgs e)
         {
             // Any initialization that needs to happen after the control is loaded
-            // Most functionality is handled by the WaveformMemoryController
+            // Most functionality is handled by the WaveformMemoryManager
 
             // You could add any additional UI setup here if needed
         }

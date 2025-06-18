@@ -14,17 +14,31 @@ namespace DS1000Z_E_USB_Control.Trigger
     /// </summary>
     public partial class TriggerControlPanel : UserControl
     {
+        #region Fields
+
         private TriggerController controller;
         private bool isInitialized = false;
-        private bool isUpdating = false;  // 🔧 ADD THIS LINE
+        private bool isUpdating = false;
+
+        #endregion
+
+        #region Events
 
         public event EventHandler<string> LogEvent;
-        // Add this event to the class
         public event EventHandler TriggerSourceChanged;
+
+        #endregion
+
+        #region Constructor
+
         public TriggerControlPanel()
         {
             InitializeComponent();
         }
+
+        #endregion
+
+        #region Initialization
 
         /// <summary>
         /// Initialize the control panel with the oscilloscope controller
@@ -94,7 +108,72 @@ namespace DS1000Z_E_USB_Control.Trigger
             controller.ForceTriggerButton = ForceTriggerButton;
         }
 
+        /// <summary>
+        /// Wire up additional controls and event handlers
+        /// </summary>
+        private void WireUpAdditionalControls()
+        {
+            // Force trigger button
+            if (ForceTriggerButton != null)
+            {
+                ForceTriggerButton.Click -= ForceTrigger_Click;  // Unsubscribe first
+                ForceTriggerButton.Click += ForceTrigger_Click;   // Then subscribe
+            }
 
+            // Trigger level arrows (multimedia control)
+            if (TriggerLevelArrows != null)
+            {
+                TriggerLevelArrows.GraticuleMovement -= TriggerLevelArrows_GraticuleMovement;  // Unsubscribe first
+                TriggerLevelArrows.GraticuleMovement += TriggerLevelArrows_GraticuleMovement;   // Then subscribe
+            }
+
+            // Holdoff text box
+            if (HoldoffTextBox != null)
+            {
+                HoldoffTextBox.TextChanged -= HoldoffTextBox_TextChanged;   // Unsubscribe first
+                HoldoffTextBox.LostFocus -= HoldoffTextBox_LostFocus;       // Unsubscribe first
+                HoldoffTextBox.TextChanged += HoldoffTextBox_TextChanged;   // Then subscribe
+                HoldoffTextBox.LostFocus += HoldoffTextBox_LostFocus;       // Then subscribe
+            }
+
+            // ComboBox event handlers - FIXED: Prevent duplicates
+            if (TriggerModeComboBox != null)
+            {
+                TriggerModeComboBox.SelectionChanged -= TriggerMode_SelectionChanged;  // Unsubscribe first
+                TriggerModeComboBox.SelectionChanged += TriggerMode_SelectionChanged;   // Then subscribe
+            }
+
+            if (TriggerSweepComboBox != null)
+            {
+                TriggerSweepComboBox.SelectionChanged -= TriggerSweep_SelectionChanged;  // Unsubscribe first
+                TriggerSweepComboBox.SelectionChanged += TriggerSweep_SelectionChanged;   // Then subscribe
+            }
+
+            if (EdgeSourceComboBox != null)
+            {
+                EdgeSourceComboBox.SelectionChanged -= EdgeSource_SelectionChanged;  // Unsubscribe first
+                EdgeSourceComboBox.SelectionChanged += EdgeSource_SelectionChanged;   // Then subscribe
+            }
+
+            if (EdgeSlopeComboBox != null)
+            {
+                EdgeSlopeComboBox.SelectionChanged -= EdgeSlope_SelectionChanged;  // Unsubscribe first
+                EdgeSlopeComboBox.SelectionChanged += EdgeSlope_SelectionChanged;   // Then subscribe
+            }
+
+            if (TriggerCouplingComboBox != null)
+            {
+                TriggerCouplingComboBox.SelectionChanged -= TriggerCoupling_SelectionChanged;  // Unsubscribe first
+                TriggerCouplingComboBox.SelectionChanged += TriggerCoupling_SelectionChanged;   // Then subscribe
+            }
+
+            // Subscribe to controller settings changes - FIXED: Prevent duplicates
+            if (controller != null)
+            {
+                controller.SettingsChanged -= (sender, e) => UpdateTriggerLevelArrowControl();  // Unsubscribe first
+                controller.SettingsChanged += (sender, e) => UpdateTriggerLevelArrowControl();   // Then subscribe
+            }
+        }
 
         /// <summary>
         /// Set up UI elements
@@ -104,6 +183,97 @@ namespace DS1000Z_E_USB_Control.Trigger
             UpdateHoldoffDisplay();
             UpdateTriggerLevelArrowControl();
         }
+
+        #endregion
+
+        #region Simple Trigger Step Methods (NEW)
+
+        /// <summary>
+        /// SIMPLE: Update trigger step size by reading the current trigger source channel's ComboBox
+        /// </summary>
+        public void UpdateTriggerStepsFromUI()
+        {
+            if (TriggerLevelArrows == null || EdgeSourceComboBox == null) return;
+
+            try
+            {
+                // Get current trigger source
+                var sourceItem = EdgeSourceComboBox.SelectedItem as ComboBoxItem;
+                string source = sourceItem?.Tag?.ToString() ?? "CHAN1";
+
+                // Read the appropriate channel's vertical scale ComboBox
+                double scale = ReadChannelScale(source);
+
+                LogEvent?.Invoke(this, $"🎯 {source}: Read scale {scale}V/div, Setting steps: Major={FormatVoltage(scale)}, Minor={FormatVoltage(scale * 0.1)}");
+
+                // Set the step size directly
+                TriggerLevelArrows.GraticuleSize = scale;
+
+                // Refresh display
+                TriggerLevelArrows.SetValue(TriggerLevelArrows.CurrentValue);
+            }
+            catch (Exception ex)
+            {
+                LogEvent?.Invoke(this, $"❌ Error updating trigger steps: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// SIMPLE: Read vertical scale from the appropriate channel's ComboBox
+        /// </summary>
+        private double ReadChannelScale(string triggerSource)
+        {
+            try
+            {
+                // Get MainWindow reference
+                var mainWindow = Window.GetWindow(this) as MainWindow;
+                if (mainWindow == null) return 1.0;
+
+                ComboBox scaleComboBox = null;
+
+                // Get the right channel's VerticalScaleComboBox
+                if (triggerSource.ToUpper().Contains("CHAN1"))
+                {
+                    scaleComboBox = mainWindow.Channel1Panel?.VerticalScaleComboBox;
+                }
+                else if (triggerSource.ToUpper().Contains("CHAN2"))
+                {
+                    scaleComboBox = mainWindow.Channel2Panel?.VerticalScaleComboBox;
+                }
+
+                // Read the selected scale value
+                if (scaleComboBox?.SelectedItem is ComboBoxItem item &&
+                    item.Tag != null &&
+                    double.TryParse(item.Tag.ToString(), out double scale))
+                {
+                    LogEvent?.Invoke(this, $"✅ Read {triggerSource} scale: {scale}V/div from ComboBox");
+                    return scale;
+                }
+
+                LogEvent?.Invoke(this, $"⚠️ Could not read {triggerSource} scale, using 1V default");
+                return 1.0;
+            }
+            catch (Exception ex)
+            {
+                LogEvent?.Invoke(this, $"❌ Error reading {triggerSource} scale: {ex.Message}");
+                return 1.0;
+            }
+        }
+
+        /// <summary>
+        /// Format voltage with appropriate units
+        /// </summary>
+        private string FormatVoltage(double voltage)
+        {
+            if (Math.Abs(voltage) >= 1.0)
+                return $"{voltage:F3}V";
+            else if (Math.Abs(voltage) >= 0.001)
+                return $"{voltage * 1000:F1}mV";
+            else
+                return $"{voltage * 1000000:F1}μV";
+        }
+
+        #endregion
 
         #region Event Handlers
 
@@ -156,254 +326,6 @@ namespace DS1000Z_E_USB_Control.Trigger
             LogEvent?.Invoke(this, "Trigger forced");
         }
 
-        #endregion
-
-        #region UI Update Methods
-
-        ///// <summary>
-        ///// Update the trigger level arrow control
-        ///// </summary>
-        //public void UpdateTriggerLevelArrowControl()
-        //{
-        //    if (TriggerLevelArrows == null || controller == null) return;
-
-        //    var settings = controller.GetSettings();
-        //    var (minLevel, maxLevel) = GetTriggerLevelRange();
-
-        //    // Update arrow control properties
-        //    TriggerLevelArrows.GraticuleSize = 0.1; // 0.1V per graticule step
-        //    TriggerLevelArrows.UpdateRange(minLevel, maxLevel);
-        //    TriggerLevelArrows.SetValue(settings.EdgeLevel);
-        //}
-
-        /// <summary>
-        /// Update the trigger level value display
-        /// </summary>
-        private void UpdateLevelValueDisplay()
-        {
-            if (LevelValueText == null || TriggerLevelArrows == null) return;
-
-            double value = TriggerLevelArrows.CurrentValue;
-            LevelValueText.Text = $"{value:F2}"; // Simple format: "0.00"
-        }
-
-        /// <summary>
-        /// Update the holdoff display text
-        /// </summary>
-        private void UpdateHoldoffDisplay()
-        {
-            if (HoldoffDisplayText == null || HoldoffTextBox == null) return;
-
-            if (double.TryParse(HoldoffTextBox.Text, out double holdoff))
-            {
-                HoldoffDisplayText.Text = $"({FormatTime(holdoff)})";
-            }
-            else
-            {
-                HoldoffDisplayText.Text = "(Invalid)";
-            }
-        }
-
-        #endregion
-
-        #region Helper Methods
-
-        /// <summary>
-        /// Get trigger level range based on source channel settings
-        /// </summary>
-        private (double min, double max) GetTriggerLevelRange()
-        {
-            // You'll need to get channel settings from the main application
-            // For now, return reasonable default range
-            return (-5.0, 5.0);
-
-            // TODO: Replace with actual channel-based range calculation:
-            // var ch1Settings = GetChannel1Settings(); // Get from main app
-            // var ch2Settings = GetChannel2Settings(); // Get from main app
-            // var settings = controller.GetSettings();
-            // return settings.GetTriggerLevelRange(ch1Settings, ch2Settings);
-        }
-
-        /// <summary>
-        /// Format time value for display
-        /// </summary>
-        private string FormatTime(double time)
-        {
-            if (time >= 1.0)
-                return $"{time:F3}s";
-            else if (time >= 0.001)
-                return $"{time * 1000:F1}ms";
-            else if (time >= 0.000001)
-                return $"{time * 1000000:F1}µs";
-            else
-                return $"{time * 1000000000:F1}ns";
-        }
-
-        #endregion
-
-        #region Public Methods
-
-        /// <summary>
-        /// Get the controller for external access
-        /// </summary>
-        public TriggerController GetController()
-        {
-            return controller;
-        }
-
-        /// <summary>
-        /// Update trigger level range from external source
-        /// </summary>
-        public void UpdateTriggerLevelRange(double minLevel, double maxLevel)
-        {
-            if (TriggerLevelArrows == null) return;
-
-            TriggerLevelArrows.UpdateRange(minLevel, maxLevel);
-            LogEvent?.Invoke(this, $"Trigger level range updated: {minLevel:F1}V to {maxLevel:F1}V");
-        }
-
-        /// <summary>
-        /// Refresh settings from oscilloscope
-        /// </summary>
-        public void RefreshSettings()
-        {
-            controller?.RefreshSettings();
-        }
-
-        /// <summary>
-        /// Update from settings (for MainWindow compatibility)
-        /// </summary>
-        public void UpdateFromSettings()
-        {
-            controller?.RefreshSettings();
-        }
-
-        /// <summary>
-        /// Update from settings with TriggerSettings parameter (for MainWindow compatibility)
-        /// </summary>
-        public void UpdateFromSettings(object triggerSettings)
-        {
-            // For now, just refresh from oscilloscope instead of using the passed settings
-            // This maintains compatibility while using our simplified approach
-            controller?.RefreshSettings();
-            LogEvent?.Invoke(this, "Trigger panel updated from settings");
-        }
-
-        /// <summary>
-        /// Set enabled state (for MainWindow compatibility)
-        /// </summary>
-        public void SetEnabled(bool enabled)
-        {
-            this.IsEnabled = enabled;
-
-            if (enabled)
-            {
-                LogEvent?.Invoke(this, "Trigger control panel enabled");
-            }
-            else
-            {
-                LogEvent?.Invoke(this, "Trigger control panel disabled");
-            }
-        }
-
-        #endregion
-
-        #region Trigger Send Methods
-
-        // ADD these methods to your TriggerControlPanel.xaml.cs
-
-        /// <summary>
-        /// Wire up additional controls and event handlers  
-        /// UPDATED VERSION - Add missing ComboBox SelectionChanged events
-        /// </summary>
-        private void WireUpAdditionalControls()
-        {
-
-            // Force trigger button
-            if (ForceTriggerButton != null)
-            {
-                ForceTriggerButton.Click += ForceTrigger_Click;
-            }
-
-            // Trigger level arrows (multimedia control)
-            if (TriggerLevelArrows != null)
-            {
-                TriggerLevelArrows.GraticuleMovement += TriggerLevelArrows_GraticuleMovement;
-            }
-
-            // Holdoff text box
-            if (HoldoffTextBox != null)
-            {
-                HoldoffTextBox.TextChanged += HoldoffTextBox_TextChanged;
-                HoldoffTextBox.LostFocus += HoldoffTextBox_LostFocus;
-            }
-
-            // Subscribe to controller settings changes
-            if (controller != null)
-            {
-                controller.SettingsChanged += (sender, e) => UpdateTriggerLevelArrowControl();
-            }
-
-            // Force trigger button
-            if (ForceTriggerButton != null)
-            {
-                ForceTriggerButton.Click += ForceTrigger_Click;
-            }
-
-            // Trigger level arrows (multimedia control)
-            if (TriggerLevelArrows != null)
-            {
-                TriggerLevelArrows.GraticuleMovement += TriggerLevelArrows_GraticuleMovement;
-            }
-
-            // Holdoff text box
-            if (HoldoffTextBox != null)
-            {
-                HoldoffTextBox.TextChanged += HoldoffTextBox_TextChanged;
-                HoldoffTextBox.LostFocus += HoldoffTextBox_LostFocus;
-            }
-
-            // 🔧 ADD MISSING COMBOBOX EVENT HANDLERS:
-
-            // Trigger Mode ComboBox
-            if (TriggerModeComboBox != null)
-            {
-                TriggerModeComboBox.SelectionChanged += TriggerMode_SelectionChanged;
-            }
-
-            // Trigger Sweep ComboBox  
-            if (TriggerSweepComboBox != null)
-            {
-                TriggerSweepComboBox.SelectionChanged += TriggerSweep_SelectionChanged;
-            }
-
-            // Edge Source ComboBox
-            if (EdgeSourceComboBox != null)
-            {
-                EdgeSourceComboBox.SelectionChanged += EdgeSource_SelectionChanged;
-            }
-
-            // Edge Slope ComboBox
-            if (EdgeSlopeComboBox != null)
-            {
-                EdgeSlopeComboBox.SelectionChanged += EdgeSlope_SelectionChanged;
-            }
-
-            // Trigger Coupling ComboBox
-            if (TriggerCouplingComboBox != null)
-            {
-                TriggerCouplingComboBox.SelectionChanged += TriggerCoupling_SelectionChanged;
-            }
-
-            // Subscribe to controller settings changes
-            if (controller != null)
-            {
-                controller.SettingsChanged += (sender, e) => UpdateTriggerLevelArrowControl();
-            }
-        }
-
-        // 🔧 ADD THESE NEW EVENT HANDLER METHODS:
-
         /// <summary>
         /// Handle trigger mode selection changes
         /// </summary>
@@ -436,21 +358,29 @@ namespace DS1000Z_E_USB_Control.Trigger
             }
         }
 
-        ///// <summary>
-        ///// Handle edge source selection changes
-        ///// </summary>
-        //private void EdgeSource_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        //{
-        //    if (controller == null || isUpdating) return;
+        /// <summary>
+        /// Handle edge source selection changes
+        /// UPDATED: Now includes simple trigger step update
+        /// </summary>
+        private void EdgeSource_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (controller == null || isUpdating) return;
 
-        //    var selectedItem = EdgeSourceComboBox.SelectedItem as ComboBoxItem;
-        //    if (selectedItem?.Tag != null)
-        //    {
-        //        string source = selectedItem.Tag.ToString();
-        //        controller.SetEdgeSource(source);
-        //        LogEvent?.Invoke(this, $"Trigger source changed to: {source}");
-        //    }
-        //}
+            var selectedItem = EdgeSourceComboBox.SelectedItem as ComboBoxItem;
+            if (selectedItem?.Tag != null)
+            {
+                string source = selectedItem.Tag.ToString();
+                bool success = controller.SetEdgeSource(source);
+
+                if (success)
+                {
+                    LogEvent?.Invoke(this, $"✅ Trigger source changed to: {source}");
+
+                    // SIMPLE: Just read the ComboBox and update steps immediately!
+                    UpdateTriggerStepsFromUI();
+                }
+            }
+        }
 
         /// <summary>
         /// Handle edge slope selection changes
@@ -484,34 +414,12 @@ namespace DS1000Z_E_USB_Control.Trigger
             }
         }
 
-
         #endregion
 
-        // Add these methods to your TriggerControlPanel.xaml.cs
-
-        #region Dynamic Step Integration
+        #region UI Update Methods
 
         /// <summary>
-        /// Update trigger level control with current channel settings
-        /// Call this whenever channel settings or trigger source changes
-        /// </summary>
-        public void UpdateTriggerLevelControl(Ch1Settings ch1Settings, Ch2Settings ch2Settings)
-        {
-            if (controller == null || ch1Settings == null || ch2Settings == null) return;
-
-            try
-            {
-                controller.UpdateTriggerLevelControl(ch1Settings, ch2Settings);
-                LogEvent?.Invoke(this, "Trigger level control updated with dynamic steps");
-            }
-            catch (Exception ex)
-            {
-                LogEvent?.Invoke(this, $"Error updating trigger level control: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// UPDATED: Enhanced UpdateTriggerLevelArrowControl with dynamic steps
+        /// Update the trigger level arrow control
         /// </summary>
         private void UpdateTriggerLevelArrowControl()
         {
@@ -520,12 +428,9 @@ namespace DS1000Z_E_USB_Control.Trigger
             try
             {
                 var settings = controller.GetSettings();
-
-                // Use default range if channel settings not available
                 var (minLevel, maxLevel) = settings.GetTriggerLevelRange();
 
-                // Try to get current channel settings from MainWindow if available
-                // This is a fallback - ideally MainWindow should call UpdateTriggerLevelControl directly
+                // Update arrow control properties
                 TriggerLevelArrows.UpdateRange(minLevel, maxLevel);
                 TriggerLevelArrows.SetValue(settings.EdgeLevel);
 
@@ -538,33 +443,104 @@ namespace DS1000Z_E_USB_Control.Trigger
         }
 
         /// <summary>
-        /// Handle trigger source changes - update step size when source changes
-        /// UPDATED: EdgeSource_SelectionChanged with dynamic step update
+        /// Update the trigger level value display
         /// </summary>
-        private void EdgeSource_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void UpdateLevelValueDisplay()
         {
-            if (controller == null || isUpdating) return;
+            if (LevelValueText == null || TriggerLevelArrows == null) return;
 
-            var selectedItem = EdgeSourceComboBox.SelectedItem as ComboBoxItem;
-            if (selectedItem?.Tag != null)
+            double value = TriggerLevelArrows.CurrentValue;
+            LevelValueText.Text = $"{value:F2}"; // Simple format: "0.00"
+        }
+
+        /// <summary>
+        /// Update the holdoff display text
+        /// </summary>
+        private void UpdateHoldoffDisplay()
+        {
+            if (HoldoffDisplayText == null || HoldoffTextBox == null) return;
+
+            if (double.TryParse(HoldoffTextBox.Text, out double holdoff))
             {
-                string source = selectedItem.Tag.ToString();
-                bool success = controller.SetEdgeSource(source);
-
-                if (success)
-                {
-                    LogEvent?.Invoke(this, $"Trigger source changed to: {source}");
-
-                    // Request MainWindow to update trigger level control with current channel settings
-                    TriggerSourceChanged?.Invoke(this, EventArgs.Empty);
-                }
+                HoldoffDisplayText.Text = $"({FormatTime(holdoff)})";
             }
+            else
+            {
+                HoldoffDisplayText.Text = "(Invalid)";
+            }
+        }
+
+        /// <summary>
+        /// Format time value with appropriate units
+        /// </summary>
+        private string FormatTime(double time)
+        {
+            if (time == 0) return "0s";
+
+            double absTime = Math.Abs(time);
+            if (absTime >= 1.0)
+                return $"{time:F3}s";
+            else if (absTime >= 1e-3)
+                return $"{time * 1000:F3}ms";
+            else if (absTime >= 1e-6)
+                return $"{time * 1000000:F3}μs";
+            else if (absTime >= 1e-9)
+                return $"{time * 1000000000:F3}ns";
+            else
+                return $"{time:E2}s";
         }
 
         #endregion
 
+        #region Legacy Compatibility Methods
 
+        /// <summary>
+        /// Update trigger level control with current channel settings
+        /// (Legacy method for compatibility - now redirects to simple method)
+        /// </summary>
+        public void UpdateTriggerLevelControl(Ch1Settings ch1Settings, Ch2Settings ch2Settings)
+        {
+            // Use the simple method instead of complex event chains
+            UpdateTriggerStepsFromUI();
+            LogEvent?.Invoke(this, "Trigger level control updated with dynamic steps");
+        }
 
+        /// <summary>
+        /// Update from settings (legacy compatibility)
+        /// </summary>
+        public void UpdateFromSettings(object triggerSettings)
+        {
+            // Refresh the controller with oscilloscope instead of using the passed settings
+            // This maintains compatibility while using our simplified approach
+            controller?.RefreshSettings();
+            LogEvent?.Invoke(this, "Trigger panel updated from settings");
+        }
 
+        /// <summary>
+        /// Set enabled state (for MainWindow compatibility)
+        /// </summary>
+        public void SetEnabled(bool enabled)
+        {
+            this.IsEnabled = enabled;
+
+            if (enabled)
+            {
+                LogEvent?.Invoke(this, "Trigger control panel enabled");
+            }
+            else
+            {
+                LogEvent?.Invoke(this, "Trigger control panel disabled");
+            }
+        }
+
+        /// <summary>
+        /// Get the trigger controller for external access
+        /// </summary>
+        public TriggerController GetController()
+        {
+            return controller;
+        }
+
+        #endregion
     }
 }

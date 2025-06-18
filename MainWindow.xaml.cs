@@ -807,7 +807,8 @@ namespace Rigol_DS1000Z_E_Control
         }
 
         /// <summary>
-        /// UPDATED: GetCurrentSettings with trigger step size update
+        /// Read all current settings from the oscilloscope and update UI
+        /// FIXED: UpdateUIFromSettings → UpdateAllPanelsFromSettings
         /// </summary>
         private void GetCurrentSettings()
         {
@@ -824,13 +825,15 @@ namespace Rigol_DS1000Z_E_Control
             {
                 Log("📊 Reading current oscilloscope settings...");
 
-                // Read all current settings
+                // Read all settings using the settings manager
                 bool success = settingsManager.ReadAllCurrentSettings();
 
                 if (success)
                 {
-                    // Update all UI panels
-                    UpdateUIFromSettings();
+                    // FIXED: Use correct method name
+                    UpdateAllPanelsFromSettings();  // ✅ CORRECT - not UpdateUIFromSettings()
+                    UpdateDeviceInfo();
+                    UpdateLastUpdateTime();
 
                     // NEW: Update trigger level step sizes after reading settings
                     UpdateTriggerLevelStepSizes();
@@ -839,12 +842,21 @@ namespace Rigol_DS1000Z_E_Control
                 }
                 else
                 {
-                    Log("❌ Failed to read some settings from oscilloscope");
+                    Log("⚠️ Some settings could not be read - check oscilloscope connection");
+                    MessageBox.Show("Some settings could not be read from the oscilloscope.\n" +
+                                  "Check the connection and try again.",
+                                  "Settings Read Warning",
+                                  MessageBoxButton.OK,
+                                  MessageBoxImage.Warning);
                 }
             }
             catch (Exception ex)
             {
                 Log($"❌ Error reading settings: {ex.Message}");
+                MessageBox.Show($"Error reading oscilloscope settings:\n{ex.Message}",
+                              "Settings Read Error",
+                              MessageBoxButton.OK,
+                              MessageBoxImage.Error);
             }
         }
 

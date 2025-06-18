@@ -135,7 +135,13 @@
                            Margin="5,0,0,0" 
                            FontSize="10" 
                            Foreground="Gray"/>
-                <ComboBox Width="120" SelectionChanged="ComboBox_SelectionChanged"/>
+                <ComboBox Width="120" SelectionChanged="HoldOff_Units"
+                          <ComboBoxItem Content="s"
+                          <ComboBoxItem Content="ms" 
+                          <ComboBoxItem Content="us"
+                          <ComboBoxItem Content="ns" IsSelected="True"/>
+                    
+
             </StackPanel>
 
             <!-- Row 6: Current Settings -->

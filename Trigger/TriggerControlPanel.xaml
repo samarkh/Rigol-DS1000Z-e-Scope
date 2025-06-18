@@ -27,20 +27,23 @@
 
             <!-- Row Definitions -->
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" MinHeight="35"/>
+
                 <!-- Row 0: Mode -->
-                <RowDefinition Height="Auto" MinHeight="35"/>
+                <RowDefinition Height="Auto" MinHeight="42"/>
                 <!-- Row 1: Sweep -->
-                <RowDefinition Height="Auto" MinHeight="35"/>
+                <RowDefinition Height="Auto" MinHeight="42"/>
                 <!-- Row 2: Source -->
-                <RowDefinition Height="Auto" MinHeight="35"/>
+                <RowDefinition Height="Auto" MinHeight="42"/>
                 <!-- Row 3: Slope -->
-                <RowDefinition Height="Auto" MinHeight="35"/>
+                <RowDefinition Height="Auto" MinHeight="42"/>
                 <!-- Row 4: Coupling -->
-                <RowDefinition Height="Auto" MinHeight="35"/>
+                <RowDefinition Height="Auto" MinHeight="42"/>
                 <!-- Row 5: Holdoff -->
-                <RowDefinition Height="Auto" MinHeight="35"/>
+                <RowDefinition Height="Auto" MinHeight="42"/>
                 <!-- Row 6: Current Settings -->
+                <RowDefinition Height="Auto" MinHeight="35"/>
+
+
             </Grid.RowDefinitions>
 
             <!-- Row 0: Mode -->
@@ -151,21 +154,21 @@
 
             <!-- Row 6: Current Settings -->
             <TextBlock x:Name="CurrentTriggerSettingsText" 
-                       Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="2"
-                       Text="Trigger: Edge, Channel1, Rising, Level: 0.000V, Auto" 
-                       FontSize="10" 
-                       Foreground="DarkBlue" 
-                       Margin="-1,1,11,0" 
-                       VerticalAlignment="Top"
-                       TextWrapping="Wrap"/>
+           Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="3"
+           Text="Trigger: Edge, Channel1, Rising, Level: 0.000V, Auto" 
+           FontSize="10" 
+           Foreground="DarkBlue" 
+           Margin="-1,1,105,0" 
+           VerticalAlignment="Top"
+           TextWrapping="Wrap"/>
 
             <!-- NEW: Right Column - Multimedia Controls (spans all rows for full height) -->
-            <GroupBox Grid.Row="0" Grid.Column="2" Grid.RowSpan="7"
+            <GroupBox Grid.Row="0" Grid.Column="2" Grid.RowSpan="6"
                       Header="Trigger Level" 
                       Background="#F8F8FF"
                       BorderBrush="#32CD32"
                       BorderThickness="1"
-                      Margin="5,5,107,-20">
+                      Margin="5,5,107,5">
 
                 <Grid Margin="10,0,13,0">
                     <Grid.RowDefinitions>

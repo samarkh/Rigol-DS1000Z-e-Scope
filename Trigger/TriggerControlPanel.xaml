@@ -12,25 +12,35 @@
     <GroupBox Header="Trigger Controls" 
               Background="#F0FFF0"
               BorderBrush="#32CD32"
-              BorderThickness="2">
+              BorderThickness="2" Margin="0,0,69,0">
 
-        <Grid>
+        <Grid Margin="0,0,34,0">
             <!-- Column Definitions: Labels | Controls | Multimedia (spans all rows) -->
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="80"/>      <!-- Row labels -->
-                <ColumnDefinition Width="160"/>     <!-- Combo boxes -->
-                <ColumnDefinition Width="200"/>     <!-- Multimedia controls column -->
+                <ColumnDefinition Width="80"/>
+                <!-- Row labels -->
+                <ColumnDefinition Width="160"/>
+                <!-- Combo boxes -->
+                <ColumnDefinition Width="200"/>
+                <!-- Multimedia controls column -->
             </Grid.ColumnDefinitions>
 
             <!-- Row Definitions -->
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" MinHeight="35"/>  <!-- Row 0: Mode -->
-                <RowDefinition Height="Auto" MinHeight="35"/>  <!-- Row 1: Sweep -->
-                <RowDefinition Height="Auto" MinHeight="35"/>  <!-- Row 2: Source -->
-                <RowDefinition Height="Auto" MinHeight="35"/>  <!-- Row 3: Slope -->
-                <RowDefinition Height="Auto" MinHeight="35"/>  <!-- Row 4: Coupling -->
-                <RowDefinition Height="Auto" MinHeight="35"/>  <!-- Row 5: Holdoff -->
-                <RowDefinition Height="Auto" MinHeight="25"/>  <!-- Row 6: Current Settings -->
+                <RowDefinition Height="Auto" MinHeight="35"/>
+                <!-- Row 0: Mode -->
+                <RowDefinition Height="Auto" MinHeight="35"/>
+                <!-- Row 1: Sweep -->
+                <RowDefinition Height="Auto" MinHeight="35"/>
+                <!-- Row 2: Source -->
+                <RowDefinition Height="Auto" MinHeight="35"/>
+                <!-- Row 3: Slope -->
+                <RowDefinition Height="Auto" MinHeight="35"/>
+                <!-- Row 4: Coupling -->
+                <RowDefinition Height="Auto" MinHeight="35"/>
+                <!-- Row 5: Holdoff -->
+                <RowDefinition Height="Auto" MinHeight="25"/>
+                <!-- Row 6: Current Settings -->
             </Grid.RowDefinitions>
 
             <!-- Row 0: Mode -->
@@ -133,8 +143,8 @@
                        Text="Trigger: Edge, Channel1, Rising, Level: 0.000V, Auto" 
                        FontSize="10" 
                        Foreground="DarkBlue" 
-                       Margin="5" 
-                       VerticalAlignment="Center"
+                       Margin="-1,1,11,0" 
+                       VerticalAlignment="Top"
                        TextWrapping="Wrap"/>
 
             <!-- NEW: Right Column - Multimedia Controls (spans all rows for full height) -->
@@ -143,16 +153,22 @@
                       Background="#F8F8FF"
                       BorderBrush="#32CD32"
                       BorderThickness="1"
-                      Margin="5">
-                
-                <Grid>
+                      Margin="5,5,107,5">
+
+                <Grid Margin="10,0,9,0">
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>      <!-- Max display -->
-                        <RowDefinition Height="*"/>         <!-- Arrow control -->
-                        <RowDefinition Height="Auto"/>      <!-- Current value -->
-                        <RowDefinition Height="Auto"/>      <!-- Min display -->
-                        <RowDefinition Height="Auto"/>      <!-- Range display -->
-                        <RowDefinition Height="Auto"/>      <!-- Controls -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Max display -->
+                        <RowDefinition Height="*"/>
+                        <!-- Arrow control -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Current value -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Min display -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Range display -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Controls -->
                     </Grid.RowDefinitions>
 
                     <!-- Max Level Display -->
@@ -187,7 +203,7 @@
                                 Orientation="Horizontal" 
                                 HorizontalAlignment="Center" 
                                 Margin="5">
-                        
+
                         <Button x:Name="ForceTriggerButton" 
                                 Content="⚡" 
                                 Width="30" 

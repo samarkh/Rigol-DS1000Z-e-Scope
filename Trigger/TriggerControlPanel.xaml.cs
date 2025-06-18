@@ -199,78 +199,25 @@ namespace DS1000Z_E_USB_Control.Trigger
             {
                 // Get current trigger source
                 var sourceItem = EdgeSourceComboBox.SelectedItem as ComboBoxItem;
-                string source = sourceItem?.Tag?.ToString() ?? "CHAN1";
+                string source = sourceItem?.Tag?.ToString() ?? "CHANnel1";
 
-                // Read the appropriate channel's vertical scale ComboBox
-                double scale = ReadChannelScale(source);
+                // Simple step size based on source
+                double stepSize = source.ToUpper() switch
+                {
+                    "CHAN1" or "CHANnel1" => 0.1,  // 100mV steps for CH1
+                    "CHAN2" or "CHANnel2" => 0.1,  // 100mV steps for CH2
+                    _ => 0.1  // Default 100mV
+                };
 
-                LogEvent?.Invoke(this, $"🎯 {source}: Read scale {scale}V/div, Setting steps: Major={FormatVoltage(scale)}, Minor={FormatVoltage(scale * 0.1)}");
+                // Update the arrow control with simple steps
+                TriggerLevelArrows.GraticuleSize = stepSize;
 
-                // Set the step size directly
-                TriggerLevelArrows.GraticuleSize = scale;
-
-                // Refresh display
-                TriggerLevelArrows.SetValue(TriggerLevelArrows.CurrentValue);
+                LogEvent?.Invoke(this, $"Updated trigger steps for {source}: {stepSize:F3}V");
             }
             catch (Exception ex)
             {
-                LogEvent?.Invoke(this, $"❌ Error updating trigger steps: {ex.Message}");
+                LogEvent?.Invoke(this, $"Error updating trigger steps: {ex.Message}");
             }
-        }
-
-        /// <summary>
-        /// SIMPLE: Read vertical scale from the appropriate channel's ComboBox
-        /// </summary>
-        private double ReadChannelScale(string triggerSource)
-        {
-            try
-            {
-                // Get MainWindow reference
-                var mainWindow = Window.GetWindow(this) as MainWindow;
-                if (mainWindow == null) return 1.0;
-
-                ComboBox scaleComboBox = null;
-
-                // Get the right channel's VerticalScaleComboBox
-                if (triggerSource.ToUpper().Contains("CHAN1"))
-                {
-                    scaleComboBox = mainWindow.Channel1Panel?.VerticalScaleComboBox;
-                }
-                else if (triggerSource.ToUpper().Contains("CHAN2"))
-                {
-                    scaleComboBox = mainWindow.Channel2Panel?.VerticalScaleComboBox;
-                }
-
-                // Read the selected scale value
-                if (scaleComboBox?.SelectedItem is ComboBoxItem item &&
-                    item.Tag != null &&
-                    double.TryParse(item.Tag.ToString(), out double scale))
-                {
-                    LogEvent?.Invoke(this, $"✅ Read {triggerSource} scale: {scale}V/div from ComboBox");
-                    return scale;
-                }
-
-                LogEvent?.Invoke(this, $"⚠️ Could not read {triggerSource} scale, using 1V default");
-                return 1.0;
-            }
-            catch (Exception ex)
-            {
-                LogEvent?.Invoke(this, $"❌ Error reading {triggerSource} scale: {ex.Message}");
-                return 1.0;
-            }
-        }
-
-        /// <summary>
-        /// Format voltage with appropriate units
-        /// </summary>
-        private string FormatVoltage(double voltage)
-        {
-            if (Math.Abs(voltage) >= 1.0)
-                return $"{voltage:F3}V";
-            else if (Math.Abs(voltage) >= 0.001)
-                return $"{voltage * 1000:F1}mV";
-            else
-                return $"{voltage * 1000000:F1}μV";
         }
 
         #endregion
@@ -284,46 +231,9 @@ namespace DS1000Z_E_USB_Control.Trigger
         {
             if (controller == null) return;
 
-            controller.HandleTriggerLevelChanged(e.NewValue);
+            controller.SetEdgeLevel(e.NewValue);
             UpdateLevelValueDisplay();
-            LogEvent?.Invoke(this, $"Trigger level moved {e.GraticuleMultiplier:F1} graticule to {e.NewValue:F1}V");
-        }
-
-        /// <summary>
-        /// Handle holdoff text box changes
-        /// </summary>
-        private void HoldoffTextBox_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            UpdateHoldoffDisplay();
-        }
-
-        /// <summary>
-        /// Handle holdoff text box lost focus (commit the value)
-        /// </summary>
-        private void HoldoffTextBox_LostFocus(object sender, RoutedEventArgs e)
-        {
-            if (controller == null || HoldoffTextBox == null) return;
-
-            if (double.TryParse(HoldoffTextBox.Text, out double holdoff))
-            {
-                controller.SetHoldoff(holdoff);
-            }
-            else
-            {
-                // Reset to last known good value
-                var settings = controller.GetSettings();
-                HoldoffTextBox.Text = settings.Holdoff.ToString("E3");
-                LogEvent?.Invoke(this, "Invalid holdoff value - reset to previous value");
-            }
-        }
-
-        /// <summary>
-        /// Force trigger button handler
-        /// </summary>
-        private void ForceTrigger_Click(object sender, RoutedEventArgs e)
-        {
-            controller?.ForceTrigger();
-            LogEvent?.Invoke(this, "Trigger forced");
+            LogEvent?.Invoke(this, $"Trigger level changed to: {e.NewValue:F3}V");
         }
 
         /// <summary>
@@ -378,6 +288,20 @@ namespace DS1000Z_E_USB_Control.Trigger
 
                     // SIMPLE: Just read the ComboBox and update steps immediately!
                     UpdateTriggerStepsFromUI();
+
+                    // Notify listeners that trigger source changed
+                    TriggerSourceChanged?.Invoke(this, EventArgs.Empty);
+                }
+                else
+                {
+                    LogEvent?.Invoke(this, $"❌ Failed to change trigger source to: {source}");
+                    // Revert the ComboBox selection if the command failed
+                    if (!isUpdating)
+                    {
+                        isUpdating = true;
+                        controller.RefreshSettings(); // This will update UI with actual oscilloscope state
+                        isUpdating = false;
+                    }
                 }
             }
         }
@@ -412,6 +336,43 @@ namespace DS1000Z_E_USB_Control.Trigger
                 controller.SetCoupling(coupling);
                 LogEvent?.Invoke(this, $"Trigger coupling changed to: {coupling}");
             }
+        }
+
+        /// <summary>
+        /// Handle holdoff text box changes
+        /// </summary>
+        private void HoldoffTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            UpdateHoldoffDisplay();
+        }
+
+        /// <summary>
+        /// Handle holdoff text box lost focus (commit the value)
+        /// </summary>
+        private void HoldoffTextBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (controller == null || HoldoffTextBox == null) return;
+
+            if (double.TryParse(HoldoffTextBox.Text, out double holdoff))
+            {
+                controller.SetHoldoff(holdoff);
+            }
+            else
+            {
+                // Reset to last known good value
+                var settings = controller.GetSettings();
+                HoldoffTextBox.Text = settings.Holdoff.ToString("E3");
+                LogEvent?.Invoke(this, "Invalid holdoff value - reset to previous value");
+            }
+        }
+
+        /// <summary>
+        /// Force trigger button handler
+        /// </summary>
+        private void ForceTrigger_Click(object sender, RoutedEventArgs e)
+        {
+            controller?.ForceTrigger();
+            LogEvent?.Invoke(this, "Trigger forced");
         }
 
         #endregion
@@ -453,109 +414,7 @@ namespace DS1000Z_E_USB_Control.Trigger
             LevelValueText.Text = $"{value:F2}"; // Simple format: "0.00"
         }
 
-        /// <summary>
-        /// Update the holdoff display text
-        /// </summary>
-        private void UpdateHoldoffDisplay()
-        {
-            if (HoldoffDisplayText == null || HoldoffTextBox == null) return;
-
-            if (double.TryParse(HoldoffTextBox.Text, out double holdoff))
-            {
-                HoldoffDisplayText.Text = $"({FormatTime(holdoff)})";
-            }
-            else
-            {
-                HoldoffDisplayText.Text = "(Invalid)";
-            }
-        }
-
-        /// <summary>
-        /// Format time value with appropriate units
-        /// </summary>
-        //private string FormatTime(double time)
-        //{
-        //    if (time == 0) return "0s";
-
-        //    double absTime = Math.Abs(time);
-        //    if (absTime >= 1.0)
-        //        return $"{time:F3}s";
-        //    else if (absTime >= 1e-3)
-        //        return $"{time * 1000:F3}ms";
-        //    else if (absTime >= 1e-6)
-        //        return $"{time * 1000000:F3}μs";
-        //    else if (absTime >= 1e-9)
-        //        return $"{time * 1000000000:F3}ns";
-        //    else
-        //        return $"{time:E2}s";
-        //}
-
-
-        // Update the existing FormatTime method to use 2 decimal places
-        /// <summary>
-        /// Format time value with appropriate units (updated for 2 decimal places)
-        /// </summary>
-        private string FormatTime(double time)
-        {
-            return FormatTimeAuto(time);
-        }
-
-
-
         #endregion
-
-        #region Legacy Compatibility Methods
-
-        /// <summary>
-        /// Update trigger level control with current channel settings
-        /// (Legacy method for compatibility - now redirects to simple method)
-        /// </summary>
-        public void UpdateTriggerLevelControl(Ch1Settings ch1Settings, Ch2Settings ch2Settings)
-        {
-            // Use the simple method instead of complex event chains
-            UpdateTriggerStepsFromUI();
-            LogEvent?.Invoke(this, "Trigger level control updated with dynamic steps");
-        }
-
-        /// <summary>
-        /// Update from settings (legacy compatibility)
-        /// </summary>
-        public void UpdateFromSettings(object triggerSettings)
-        {
-            // Refresh the controller with oscilloscope instead of using the passed settings
-            // This maintains compatibility while using our simplified approach
-            controller?.RefreshSettings();
-            LogEvent?.Invoke(this, "Trigger panel updated from settings");
-        }
-
-        /// <summary>
-        /// Set enabled state (for MainWindow compatibility)
-        /// </summary>
-        public void SetEnabled(bool enabled)
-        {
-            this.IsEnabled = enabled;
-
-            if (enabled)
-            {
-                LogEvent?.Invoke(this, "Trigger control panel enabled");
-            }
-            else
-            {
-                LogEvent?.Invoke(this, "Trigger control panel disabled");
-            }
-        }
-
-        /// <summary>
-        /// Get the trigger controller for external access
-        /// </summary>
-        public TriggerController GetController()
-        {
-            return controller;
-        }
-
-        #endregion
-
-        // Add these methods to TriggerControlPanel.xaml.cs
 
         #region HoldOff Units Handling
 
@@ -673,124 +532,6 @@ namespace DS1000Z_E_USB_Control.Trigger
                 optimalUnit = "us";
             else
                 optimalUnit = "ns";
-            // Add these methods to TriggerControlPanel.xaml.cs
-
-            #region HoldOff Units Handling
-
-            /// <summary>
-            /// Handle holdoff units selection changes
-            /// </summary>
-private void HoldOff_Units_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            UpdateHoldoffDisplay();
-        }
-
-        /// <summary>
-        /// Get the currently selected holdoff units
-        /// </summary>
-        private string GetSelectedHoldoffUnits()
-        {
-            if (HoldOffUnitsComboBox?.SelectedItem is ComboBoxItem selectedItem)
-            {
-                return selectedItem.Tag?.ToString() ?? "ns";
-            }
-            return "ns"; // Default to nanoseconds
-        }
-
-        /// <summary>
-        /// Update the holdoff display text with proper formatting
-        /// </summary>
-        private void UpdateHoldoffDisplay()
-        {
-            if (HoldoffDisplayText == null || HoldoffTextBox == null) return;
-
-            if (double.TryParse(HoldoffTextBox.Text, out double holdoff))
-            {
-                string selectedUnits = GetSelectedHoldoffUnits();
-                string formattedValue = FormatTimeWithUnits(holdoff, selectedUnits);
-                HoldoffDisplayText.Text = $"({formattedValue})";
-            }
-            else
-            {
-                HoldoffDisplayText.Text = "(Invalid)";
-            }
-        }
-
-        /// <summary>
-        /// Format time value with specified units to 2 decimal places
-        /// </summary>
-        private string FormatTimeWithUnits(double timeInSeconds, string units)
-        {
-            if (timeInSeconds == 0) return "0.00s";
-
-            double value;
-            string unitSymbol;
-
-            switch (units.ToLower())
-            {
-                case "s":
-                    value = timeInSeconds;
-                    unitSymbol = "s";
-                    break;
-                case "ms":
-                    value = timeInSeconds * 1000;
-                    unitSymbol = "ms";
-                    break;
-                case "us":
-                    value = timeInSeconds * 1000000;
-                    unitSymbol = "μs";
-                    break;
-                case "ns":
-                    value = timeInSeconds * 1000000000;
-                    unitSymbol = "ns";
-                    break;
-                default:
-                    // Auto-select best units if invalid unit specified
-                    return FormatTimeAuto(timeInSeconds);
-            }
-
-            return $"{value:F2}{unitSymbol}";
-        }
-
-        /// <summary>
-        /// Auto-format time value with appropriate units (fallback method)
-        /// </summary>
-        private string FormatTimeAuto(double timeInSeconds)
-        {
-            if (timeInSeconds == 0) return "0.00s";
-
-            double absTime = Math.Abs(timeInSeconds);
-
-            if (absTime >= 1.0)
-                return $"{timeInSeconds:F2}s";
-            else if (absTime >= 1e-3)
-                return $"{timeInSeconds * 1000:F2}ms";
-            else if (absTime >= 1e-6)
-                return $"{timeInSeconds * 1000000:F2}μs";
-            else if (absTime >= 1e-9)
-                return $"{timeInSeconds * 1000000000:F2}ns";
-            else
-                return $"{timeInSeconds:E2}s";
-        }
-
-        /// <summary>
-        /// Set the holdoff units combo box to match a time value (helper method)
-        /// </summary>
-        private void SetOptimalHoldoffUnits(double timeInSeconds)
-        {
-            if (HoldOffUnitsComboBox == null) return;
-
-            double absTime = Math.Abs(timeInSeconds);
-            string optimalUnit;
-
-            if (absTime >= 1.0)
-                optimalUnit = "s";
-            else if (absTime >= 1e-3)
-                optimalUnit = "ms";
-            else if (absTime >= 1e-6)
-                optimalUnit = "us";
-            else
-                optimalUnit = "ns";
 
             // Select the optimal unit in the combo box
             foreach (ComboBoxItem item in HoldOffUnitsComboBox.Items)
@@ -803,21 +544,66 @@ private void HoldOff_Units_SelectionChanged(object sender, SelectionChangedEvent
             }
         }
 
-#endregion
-
-            // Select the optimal unit in the combo box
-            foreach (ComboBoxItem item in HoldOffUnitsComboBox.Items)
-            {
-                if (item.Tag?.ToString() == optimalUnit)
-                {
-                    HoldOffUnitsComboBox.SelectedItem = item;
-                    break;
-                }
-            }
+        /// <summary>
+        /// Format time value with appropriate units (updated for 2 decimal places)
+        /// </summary>
+        private string FormatTime(double time)
+        {
+            return FormatTimeAuto(time);
         }
 
         #endregion
 
+        #region Legacy Compatibility Methods
 
-    }
-}
+        /// <summary>
+        /// Update trigger level control with current channel settings
+        /// (Legacy method for compatibility - now redirects to simple method)
+        /// </summary>
+        public void UpdateTriggerLevelControl(Ch1Settings ch1Settings, Ch2Settings ch2Settings)
+        {
+            // Use the simple method instead of complex event chains
+            UpdateTriggerStepsFromUI();
+            LogEvent?.Invoke(this, "Trigger level control updated with dynamic steps");
+        }
+
+        /// <summary>
+        /// Update from settings (legacy compatibility)
+        /// </summary>
+        public void UpdateFromSettings(object triggerSettings)
+        {
+            // Refresh the controller with oscilloscope instead of using the passed settings
+            // This maintains compatibility while using our simplified approach
+            controller?.RefreshSettings();
+            LogEvent?.Invoke(this, "Trigger panel updated from settings");
+        }
+
+        /// <summary>
+        /// Set enabled state (for MainWindow compatibility)
+        /// </summary>
+        public void SetEnabled(bool enabled)
+        {
+            this.IsEnabled = enabled;
+
+            if (enabled)
+            {
+                LogEvent?.Invoke(this, "Trigger control panel enabled");
+            }
+            else
+            {
+                LogEvent?.Invoke(this, "Trigger control panel disabled");
+            }
+        }
+
+        /// <summary>
+        /// Get the trigger controller for external access
+        /// </summary>
+        public TriggerController GetController()
+        {
+            return controller;
+        }
+
+        #endregion
+
+    } // End of TriggerControlPanel class
+} // End of namespace DS1000Z_E_USB_Control.Trigger

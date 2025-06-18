@@ -1,15 +1,16 @@
-﻿using System;
-using System.IO;
-using System.Windows;
-using System.Windows.Media;
-using System.Windows.Controls;
+﻿using DS1000Z_E_USB_Control;
 using DS1000Z_E_USB_Control.Channels.Ch1;
 using DS1000Z_E_USB_Control.Channels.Ch2;
-using DS1000Z_E_USB_Control.Trigger;
 using DS1000Z_E_USB_Control.TimeBase;
-using DS1000Z_E_USB_Control;
+using DS1000Z_E_USB_Control.Trigger;
 using Microsoft.Win32;
+using OscilloscopeControl.Capture;
+using System;
+using System.IO;
 using System.Text;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace Rigol_DS1000Z_E_Control
 {
@@ -22,6 +23,10 @@ namespace Rigol_DS1000Z_E_Control
         private RigolDS1000ZE oscilloscope;
         private OscilloscopeSettingsManager settingsManager;
         private bool isConnected = false;
+        private OscilloscopeAdapter oscilloscopeAdapter;
+        private MemorySystemIntegration memoryIntegration;
+
+
         #endregion
 
       #region Constructor and Initialization
@@ -236,53 +241,6 @@ namespace Rigol_DS1000Z_E_Control
             GetCurrentSettings();
         }
 
-        ///// <summary>
-        ///// Read all current settings from the oscilloscope and update UI
-        ///// FIXED: Line 259 error - proper UpdateFromSettings calls
-        ///// </summary>
-        //private void GetCurrentSettings()
-        //{
-        //    if (!isConnected)
-        //    {
-        //        Log("Cannot get settings - oscilloscope not connected");
-        //        return;
-        //    }
-
-        //    Log("Reading all current oscilloscope settings...");
-
-        //    try
-        //    {
-        //        // Read all settings using the settings manager
-        //        bool success = settingsManager.ReadAllCurrentSettings();
-
-        //        if (success)
-        //        {
-        //            // Update UI with the new settings - FIXED: Use proper method calls
-        //            UpdateAllPanelsFromSettings();
-        //            UpdateDeviceInfo();
-        //            UpdateLastUpdateTime();
-
-        //            Log("✅ Successfully updated UI with current oscilloscope settings");
-        //        }
-        //        else
-        //        {
-        //            Log("⚠️ Some settings could not be read - check oscilloscope connection");
-        //            MessageBox.Show("Some settings could not be read from the oscilloscope.\n" +
-        //                          "Check the connection and try again.",
-        //                          "Settings Read Warning",
-        //                          MessageBoxButton.OK,
-        //                          MessageBoxImage.Warning);
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Log($"❌ Error reading oscilloscope settings: {ex.Message}");
-        //        MessageBox.Show($"Error reading oscilloscope settings:\n{ex.Message}",
-        //                      "Settings Read Error",
-        //                      MessageBoxButton.OK,
-        //                      MessageBoxImage.Error);
-        //    }
-        //}
 
         /// <summary>
         /// Update all control panel UIs with settings from oscilloscope
@@ -542,9 +500,50 @@ namespace Rigol_DS1000Z_E_Control
                 Log("Failed to apply auto scale");
             }
         }
+
+        // Add this to your Window_Loaded event or initialization method
+        private void InitializeCaptureSystem()
+        {
+            try
+            {
+                // Create adapter to wrap your existing oscilloscope
+                oscilloscopeAdapter = new OscilloscopeAdapter(oscilloscope); // 'oscilloscope' is your existing RigolDS1000ZE
+
+                // Create the memory integration system
+                memoryIntegration = new MemorySystemIntegration(oscilloscopeAdapter);
+                memoryIntegration.LogEvent += (sender, message) => Log(message);
+
+                // Initialize the system
+                memoryIntegration.Initialize();
+
+                // Connect to UI (after you add the panel)
+                memoryIntegration.ConnectToUI(memoryPanel);
+
+                // Add menu items and shortcuts
+                memoryIntegration.AddToMainMenu(MainMenu);
+                memoryIntegration.AddKeyboardShortcuts(this);
+
+                Log("✅ Capture system initialized successfully");
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Error initializing capture system: {ex.Message}");
+            }
+        }
+
+        // Add this to your existing connection status change handler
+        private void OnOscilloscopeConnectionChanged(bool isConnected)
+        {
+            // Your existing connection handling code...
+
+            // Update capture system
+            memoryIntegration?.UpdateConnectionStatus(isConnected);
+        }
+
+
         #endregion
 
-      #region Additional Methods
+        #region Additional Methods
         /// <summary>
         /// Trigger Control button handler
         /// </summary>
@@ -863,7 +862,7 @@ namespace Rigol_DS1000Z_E_Control
         #endregion
         // Add these DEBUG methods to your MainWindow.xaml.cs
 
-        #region DEBUG: Test Dynamic Trigger Steps
+      #region DEBUG: Test Dynamic Trigger Steps
 
         /// <summary>
         /// DEBUG: Test trigger step sizing manually

@@ -359,11 +359,10 @@ namespace DS1000Z_E_USB_Control.Trigger
             // Initialize holdoff text box
             if (HoldoffTextBox != null)
             {
-                HoldoffTextBox.Text = settings.Holdoff.ToString("E3");
+                // Convert to nanoseconds and display as a regular number
+                double holdoffInNanoseconds = settings.Holdoff * 1000000000;
+                HoldoffTextBox.Text = holdoffInNanoseconds.ToString("F2");
             }
-
-            // Initialize level value display
-            UpdateLevelValueDisplay();
         }
 
         #endregion

@@ -17,7 +17,10 @@
         <Grid Margin="0,0,25,0" Height="374">
             <!-- Column Definitions: Labels | Controls | Multimedia (spans all rows) -->
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="80"/>
+                <ColumnDefinition Width="11.339"/>
+                <ColumnDefinition Width="43.05"/>
+                <ColumnDefinition Width="9.566"/>
+                <ColumnDefinition Width="16.045"/>
                 <!-- Row labels -->
                 <ColumnDefinition Width="160"/>
                 <!-- Combo boxes -->
@@ -47,14 +50,13 @@
             </Grid.RowDefinitions>
 
             <!-- Row 0: Mode -->
-            <Label Grid.Row="0" Grid.Column="0" 
+            <Label Grid.Column="1" 
                    Content="Mode:" 
-                   HorizontalAlignment="Right"
+                   HorizontalAlignment="Left"
                    VerticalAlignment="Center" 
-                   Margin="5"/>
-            <ComboBox x:Name="TriggerModeComboBox" 
-                      Grid.Row="0" Grid.Column="1" 
-                      Margin="5" VerticalAlignment="Center">
+                   Margin="20,0,0,0" Grid.ColumnSpan="3"/>
+            <ComboBox x:Name="TriggerModeComboBox" Grid.Column="4" 
+                      Margin="5,0,5,0" VerticalAlignment="Center">
                 <ComboBoxItem Content="Edge" Tag="EDGE" IsSelected="True"/>
                 <ComboBoxItem Content="Pulse" Tag="PULS"/>
                 <ComboBoxItem Content="Video" Tag="VID"/>
@@ -62,28 +64,28 @@
             </ComboBox>
 
             <!-- Row 1: Sweep -->
-            <Label Grid.Row="1" Grid.Column="0" 
+            <Label Grid.Row="1" Grid.Column="1" 
                    Content="Sweep:" 
-                   HorizontalAlignment="Right"
+                   HorizontalAlignment="Left"
                    VerticalAlignment="Center" 
-                   Margin="5"/>
+                   Margin="17,0,0,0" Grid.ColumnSpan="3"/>
             <ComboBox x:Name="TriggerSweepComboBox" 
-                      Grid.Row="1" Grid.Column="1" 
-                      Margin="5" VerticalAlignment="Center">
+                      Grid.Row="1" Grid.Column="4" 
+                      Margin="5,0,5,0" VerticalAlignment="Center">
                 <ComboBoxItem Content="Auto" Tag="AUTO" IsSelected="True"/>
                 <ComboBoxItem Content="Normal" Tag="NORM"/>
                 <ComboBoxItem Content="Single" Tag="SING"/>
             </ComboBox>
 
             <!-- Row 2: Source -->
-            <Label Grid.Row="2" Grid.Column="0" 
+            <Label Grid.Row="2" Grid.Column="1" 
                    Content="Source:" 
-                   HorizontalAlignment="Right"
+                   HorizontalAlignment="Left"
                    VerticalAlignment="Center" 
-                   Margin="5"/>
+                   Margin="15,0,0,0" Grid.ColumnSpan="3"/>
             <ComboBox x:Name="EdgeSourceComboBox" 
-                      Grid.Row="2" Grid.Column="1" 
-                      Margin="5" VerticalAlignment="Center">
+                      Grid.Row="2" Grid.Column="4" 
+                      Margin="5,0,5,0" VerticalAlignment="Center">
                 <ComboBoxItem Content="Channel 1" Tag="CHAN1" IsSelected="True"/>
                 <ComboBoxItem Content="Channel 2" Tag="CHAN2"/>
                 <ComboBoxItem Content="External" Tag="EXT"/>
@@ -91,27 +93,27 @@
             </ComboBox>
 
             <!-- Row 3: Slope -->
-            <Label Grid.Row="3" Grid.Column="0" 
+            <Label Grid.Row="3" Grid.Column="1" 
                    Content="Slope:" 
-                   HorizontalAlignment="Right"
+                   HorizontalAlignment="Left"
                    VerticalAlignment="Center" 
-                   Margin="5"/>
+                   Margin="22,0,0,0" Grid.ColumnSpan="3"/>
             <ComboBox x:Name="EdgeSlopeComboBox" 
-                      Grid.Row="3" Grid.Column="1" 
-                      Margin="5" VerticalAlignment="Center">
+                      Grid.Row="3" Grid.Column="4" 
+                      Margin="5,0,5,0" VerticalAlignment="Center">
                 <ComboBoxItem Content="Rising Edge" Tag="POSitive" IsSelected="True"/>
                 <ComboBoxItem Content="Falling Edge" Tag="NEGative"/>
             </ComboBox>
 
             <!-- Row 4: Coupling -->
-            <Label Grid.Row="4" Grid.Column="0" 
+            <Label Grid.Row="4" Grid.Column="1" 
                    Content="Coupling:" 
-                   HorizontalAlignment="Right"
+                   HorizontalAlignment="Left"
                    VerticalAlignment="Center" 
-                   Margin="5"/>
+                   Margin="3,0,0,0" Grid.ColumnSpan="3"/>
             <ComboBox x:Name="TriggerCouplingComboBox" 
-                      Grid.Row="4" Grid.Column="1" 
-                      Margin="5" VerticalAlignment="Center">
+                      Grid.Row="4" Grid.Column="4" 
+                      Margin="5,0,5,0" VerticalAlignment="Center">
                 <ComboBoxItem Content="DC" Tag="DC" IsSelected="True"/>
                 <ComboBoxItem Content="AC" Tag="AC"/>
                 <ComboBoxItem Content="LF Reject" Tag="LFR"/>
@@ -122,18 +124,19 @@
             <!-- Fixed HoldOff_Units ComboBox in TriggerControlPanel.xaml -->
             <!-- Row 5: Holdoff -->
             <!-- Row 5: Holdoff (UPDATED with display text) -->
-            <Label Grid.Row="5" Grid.Column="0" 
+            <Label Grid.Row="5" Grid.Column="1" 
        Content="Holdoff:" 
-       HorizontalAlignment="Right"
+       HorizontalAlignment="Left"
        VerticalAlignment="Center" 
-       Margin="5"/>
-            <StackPanel Grid.Row="5" Grid.Column="1" 
+       Margin="11,0,0,0" Grid.ColumnSpan="3"/>
+            <StackPanel Grid.Row="5" Grid.Column="4" 
             Orientation="Horizontal" 
             VerticalAlignment="Center" 
-            Margin="5">
+            Margin="5,0,5,0">
                 <TextBox x:Name="HoldoffTextBox" 
              Width="80" 
-             VerticalAlignment="Center" 
+             VerticalAlignment="Center"
+             TextAlignment="Right"
              Text="100.00"/>
 
 
@@ -142,10 +145,10 @@
               VerticalAlignment="Center"
               Margin="5,0,0,0"
               SelectionChanged="HoldOff_Units_SelectionChanged">
-                    <ComboBoxItem Content="s" Tag="s"/>
-                    <ComboBoxItem Content="ms" Tag="ms"/>
-                    <ComboBoxItem Content="μs" Tag="us"/>
-                    <ComboBoxItem Content="ns" Tag="ns" IsSelected="True"/>
+                    <ComboBoxItem Content="S" Tag="s"/>
+                    <ComboBoxItem Content="mS" Tag="ms"/>
+                    <ComboBoxItem Content="μS" Tag="us"/>
+                    <ComboBoxItem Content="nS" Tag="ns" IsSelected="True"/>
                 </ComboBox>
             </StackPanel>
 
@@ -154,7 +157,7 @@
 
             <!-- Row 6: Current Settings -->
             <TextBlock x:Name="CurrentTriggerSettingsText" 
-           Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="3"
+           Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="6"
            Text="Trigger: Edge, Channel1, Rising, Level: 0.000V, Auto" 
            FontSize="10" 
            Foreground="DarkBlue" 
@@ -163,7 +166,7 @@
            TextWrapping="Wrap"/>
 
             <!-- NEW: Right Column - Multimedia Controls (spans all rows for full height) -->
-            <GroupBox Grid.Row="0" Grid.Column="2" Grid.RowSpan="6"
+            <GroupBox Grid.Row="0" Grid.Column="5" Grid.RowSpan="6"
                       Header="Trigger Level" 
                       Background="#F8F8FF"
                       BorderBrush="#32CD32"
@@ -209,7 +212,8 @@
                                    Text="0.00" 
                                    FontSize="12" 
                                    FontWeight="Bold"
-                                   Foreground="#32CD32" 
+                                   Foreground="#32CD32"
+                                   TextAlignment="Right"
                                    HorizontalAlignment="Center"/>
                     </StackPanel>
 

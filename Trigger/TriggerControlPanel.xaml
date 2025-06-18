@@ -135,6 +135,7 @@
                            Margin="5,0,0,0" 
                            FontSize="10" 
                            Foreground="Gray"/>
+                <ComboBox Width="120" SelectionChanged="ComboBox_SelectionChanged"/>
             </StackPanel>
 
             <!-- Row 6: Current Settings -->

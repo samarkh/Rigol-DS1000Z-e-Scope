@@ -542,5 +542,10 @@ namespace DS1000Z_E_USB_Control.Trigger
         }
 
         #endregion
+
+        private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            // populate with engineering notation for time from nS to Seconds
+        }
     }
 }

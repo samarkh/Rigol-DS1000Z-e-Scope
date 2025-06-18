@@ -6,15 +6,15 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:DS1000Z_E_USB_Control.Controls"
              mc:Ignorable="d" 
-             d:DesignHeight="400" d:DesignWidth="500">
+             d:DesignHeight="400" Width="375">
 
     <!-- Trigger Controls (Light Green Background) -->
     <GroupBox Header="Trigger Controls" 
               Background="#F0FFF0"
               BorderBrush="#32CD32"
-              BorderThickness="2" Margin="0,0,69,0">
+              BorderThickness="2" Margin="0,0,2,0">
 
-        <Grid Margin="0,0,34,0">
+        <Grid Margin="0,0,25,0" Height="374">
             <!-- Column Definitions: Labels | Controls | Multimedia (spans all rows) -->
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="80"/>
@@ -39,7 +39,7 @@
                 <!-- Row 4: Coupling -->
                 <RowDefinition Height="Auto" MinHeight="35"/>
                 <!-- Row 5: Holdoff -->
-                <RowDefinition Height="Auto" MinHeight="25"/>
+                <RowDefinition Height="Auto" MinHeight="35"/>
                 <!-- Row 6: Current Settings -->
             </Grid.RowDefinitions>
 
@@ -118,6 +118,7 @@
             <!-- Row 5: Holdoff -->
             <!-- Fixed HoldOff_Units ComboBox in TriggerControlPanel.xaml -->
             <!-- Row 5: Holdoff -->
+            <!-- Row 5: Holdoff (UPDATED with display text) -->
             <Label Grid.Row="5" Grid.Column="0" 
        Content="Holdoff:" 
        HorizontalAlignment="Right"
@@ -130,11 +131,11 @@
                 <TextBox x:Name="HoldoffTextBox" 
              Width="80" 
              VerticalAlignment="Center" 
-             
              Text="100.00"/>
 
+
                 <ComboBox x:Name="HoldOffUnitsComboBox" 
-              Width="65" 
+              Width="62" 
               VerticalAlignment="Center"
               Margin="5,0,0,0"
               SelectionChanged="HoldOff_Units_SelectionChanged">
@@ -146,7 +147,7 @@
             </StackPanel>
 
 
-    
+
 
             <!-- Row 6: Current Settings -->
             <TextBlock x:Name="CurrentTriggerSettingsText" 
@@ -164,9 +165,9 @@
                       Background="#F8F8FF"
                       BorderBrush="#32CD32"
                       BorderThickness="1"
-                      Margin="5,5,107,5">
+                      Margin="5,5,107,-20">
 
-                <Grid Margin="10,0,9,0">
+                <Grid Margin="10,0,13,0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <!-- Max display -->

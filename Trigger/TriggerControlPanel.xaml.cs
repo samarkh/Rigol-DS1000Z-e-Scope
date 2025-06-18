@@ -190,6 +190,7 @@ namespace DS1000Z_E_USB_Control.Trigger
 
         /// <summary>
         /// SIMPLE: Update trigger step size by reading the current trigger source channel's ComboBox
+        /// FIXED: C# 7.3 compatible syntax
         /// </summary>
         public void UpdateTriggerStepsFromUI()
         {
@@ -201,13 +202,22 @@ namespace DS1000Z_E_USB_Control.Trigger
                 var sourceItem = EdgeSourceComboBox.SelectedItem as ComboBoxItem;
                 string source = sourceItem?.Tag?.ToString() ?? "CHANnel1";
 
-                // Simple step size based on source
-                double stepSize = source.ToUpper() switch
+                // FIXED: Traditional if-else instead of switch expression (C# 7.3 compatible)
+                double stepSize = 0.1; // Default 100mV
+
+                string upperSource = source.ToUpper();
+                if (upperSource == "CHAN1" || upperSource == "CHANNEL1")
                 {
-                    "CHAN1" or "CHANnel1" => 0.1,  // 100mV steps for CH1
-                    "CHAN2" or "CHANnel2" => 0.1,  // 100mV steps for CH2
-                    _ => 0.1  // Default 100mV
-                };
+                    stepSize = 0.1; // 100mV steps for CH1
+                }
+                else if (upperSource == "CHAN2" || upperSource == "CHANNEL2")
+                {
+                    stepSize = 0.1; // 100mV steps for CH2
+                }
+                else
+                {
+                    stepSize = 0.1; // Default 100mV
+                }
 
                 // Update the arrow control with simple steps
                 TriggerLevelArrows.GraticuleSize = stepSize;
@@ -220,18 +230,29 @@ namespace DS1000Z_E_USB_Control.Trigger
             }
         }
 
+        /// <summary>
+        /// Handle holdoff units selection changes
+        /// </summary>
+        private void HoldOff_Units_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            UpdateHoldoffDisplay();
+        }
+
+
         #endregion
 
         #region Event Handlers
 
         /// <summary>
         /// Handle trigger level arrow movement
+        /// FIXED: Use correct method name
         /// </summary>
         private void TriggerLevelArrows_GraticuleMovement(object sender, GraticuleMovementEventArgs e)
         {
             if (controller == null) return;
 
-            controller.SetEdgeLevel(e.NewValue);
+            // FIXED: Use HandleTriggerLevelChanged instead of SetEdgeLevel
+            controller.HandleTriggerLevelChanged(e.NewValue);
             UpdateLevelValueDisplay();
             LogEvent?.Invoke(this, $"Trigger level changed to: {e.NewValue:F3}V");
         }
@@ -346,6 +367,52 @@ namespace DS1000Z_E_USB_Control.Trigger
             UpdateHoldoffDisplay();
         }
 
+
+
+        /// <summary>
+        /// Update the holdoff display text with proper formatting
+        /// FIXED: Handle missing HoldoffDisplayText control gracefully
+        /// </summary>
+        private void UpdateHoldoffDisplay()
+        {
+            // FIXED: Check if the control exists, if not, skip this functionality
+            // You may need to add the TextBlock to your XAML or use an alternative approach
+            try
+            {
+                if (HoldoffTextBox == null) return;
+
+                if (double.TryParse(HoldoffTextBox.Text, out double holdoff))
+                {
+                    string selectedUnits = GetSelectedHoldoffUnits();
+                    string formattedValue = FormatTimeWithUnits(holdoff, selectedUnits);
+
+                    // OPTION 1: If you have the HoldoffDisplayText control in XAML
+                    // HoldoffDisplayText.Text = $"({formattedValue})";
+
+                    // OPTION 2: Use tooltip as fallback display
+                    HoldoffTextBox.ToolTip = $"Formatted: {formattedValue}";
+
+                    // OPTION 3: Update the holdoff text box with formatted value
+                    // (Uncomment if you want this behavior)
+                    // HoldoffTextBox.Text = formattedValue;
+                }
+                else
+                {
+                    HoldoffTextBox.ToolTip = "Invalid holdoff value";
+                }
+            }
+            catch (Exception ex)
+            {
+                LogEvent?.Invoke(this, $"Error updating holdoff display: {ex.Message}");
+            }
+        }
+
+
+
+
+
+
+
         /// <summary>
         /// Handle holdoff text box lost focus (commit the value)
         /// </summary>
@@ -418,13 +485,7 @@ namespace DS1000Z_E_USB_Control.Trigger
 
         #region HoldOff Units Handling
 
-        /// <summary>
-        /// Handle holdoff units selection changes
-        /// </summary>
-        private void HoldOff_Units_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            UpdateHoldoffDisplay();
-        }
+
 
         /// <summary>
         /// Get the currently selected holdoff units
@@ -436,25 +497,6 @@ namespace DS1000Z_E_USB_Control.Trigger
                 return selectedItem.Tag?.ToString() ?? "ns";
             }
             return "ns"; // Default to nanoseconds
-        }
-
-        /// <summary>
-        /// Update the holdoff display text with proper formatting
-        /// </summary>
-        private void UpdateHoldoffDisplay()
-        {
-            if (HoldoffDisplayText == null || HoldoffTextBox == null) return;
-
-            if (double.TryParse(HoldoffTextBox.Text, out double holdoff))
-            {
-                string selectedUnits = GetSelectedHoldoffUnits();
-                string formattedValue = FormatTimeWithUnits(holdoff, selectedUnits);
-                HoldoffDisplayText.Text = $"({formattedValue})";
-            }
-            else
-            {
-                HoldoffDisplayText.Text = "(Invalid)";
-            }
         }
 
         /// <summary>
@@ -493,6 +535,8 @@ namespace DS1000Z_E_USB_Control.Trigger
             return $"{value:F2}{unitSymbol}";
         }
 
+
+
         /// <summary>
         /// Auto-format time value with appropriate units (fallback method)
         /// </summary>
@@ -513,6 +557,7 @@ namespace DS1000Z_E_USB_Control.Trigger
             else
                 return $"{timeInSeconds:E2}s";
         }
+
 
         /// <summary>
         /// Set the holdoff units combo box to match a time value (helper method)
@@ -551,6 +596,7 @@ namespace DS1000Z_E_USB_Control.Trigger
         {
             return FormatTimeAuto(time);
         }
+
 
         #endregion
 

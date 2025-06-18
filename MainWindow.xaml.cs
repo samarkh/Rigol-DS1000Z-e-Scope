@@ -543,7 +543,7 @@ namespace Rigol_DS1000Z_E_Control
 
         #endregion
 
-        #region Additional Methods
+      #region Additional Methods
         /// <summary>
         /// Trigger Control button handler
         /// </summary>

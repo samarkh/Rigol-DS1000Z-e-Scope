@@ -4,9 +4,10 @@ using DS1000Z_E_USB_Control.Channels.Ch2;
 using DS1000Z_E_USB_Control.TimeBase;
 using DS1000Z_E_USB_Control.Trigger;
 using Microsoft.Win32;
-using OscilloscopeControl.Capture;
+
 using System;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -23,13 +24,12 @@ namespace Rigol_DS1000Z_E_Control
         private RigolDS1000ZE oscilloscope;
         private OscilloscopeSettingsManager settingsManager;
         private bool isConnected = false;
-        private OscilloscopeAdapter oscilloscopeAdapter;
-        private MemorySystemIntegration memoryIntegration;
+        private SimpleWaveformCapture captureSystem;
 
 
         #endregion
 
-      #region Constructor and Initialization
+        #region Constructor and Initialization
         public MainWindow()
         {
             InitializeComponent();
@@ -44,6 +44,9 @@ namespace Rigol_DS1000Z_E_Control
 
             // Initialize all control panels
             InitializeControlPanels();
+
+            // ADD THIS LINE HERE:
+            InitializeCaptureSystem();
 
             Log("Application started. Ready to connect to Rigol DS1000Z-E.");
             UpdateDeviceInfo();
@@ -105,6 +108,9 @@ namespace Rigol_DS1000Z_E_Control
                         Log($"Device ID: {id}");
                         UpdateDeviceInfo();
                     }
+
+                    // ADD THIS LINE HERE:
+                    InitializeCaptureSystem();
 
                     // Automatically get current settings after connection
                     Log("Connection successful! Reading current oscilloscope settings...");
@@ -501,44 +507,9 @@ namespace Rigol_DS1000Z_E_Control
             }
         }
 
-        // Add this to your Window_Loaded event or initialization method
-        private void InitializeCaptureSystem()
-        {
-            try
-            {
-                // Create adapter to wrap your existing oscilloscope
-                oscilloscopeAdapter = new OscilloscopeAdapter(oscilloscope); // 'oscilloscope' is your existing RigolDS1000ZE
 
-                // Create the memory integration system
-                memoryIntegration = new MemorySystemIntegration(oscilloscopeAdapter);
-                memoryIntegration.LogEvent += (sender, message) => Log(message);
 
-                // Initialize the system
-                memoryIntegration.Initialize();
 
-                // Connect to UI (after you add the panel)
-                memoryIntegration.ConnectToUI(memoryPanel);
-
-                // Add menu items and shortcuts
-                memoryIntegration.AddToMainMenu(MainMenu);
-                memoryIntegration.AddKeyboardShortcuts(this);
-
-                Log("✅ Capture system initialized successfully");
-            }
-            catch (Exception ex)
-            {
-                Log($"❌ Error initializing capture system: {ex.Message}");
-            }
-        }
-
-        // Add this to your existing connection status change handler
-        private void OnOscilloscopeConnectionChanged(bool isConnected)
-        {
-            // Your existing connection handling code...
-
-            // Update capture system
-            memoryIntegration?.UpdateConnectionStatus(isConnected);
-        }
 
 
         #endregion
@@ -711,6 +682,121 @@ namespace Rigol_DS1000Z_E_Control
 
 
         #endregion
+
+
+        // ADD these to your MainWindow.xaml.cs class:
+      #region Simple Capture System
+
+        private SimpleWaveformCapture captureSystem;
+
+        /// <summary>
+        /// Initialize the simple capture system (call this in your Window_Loaded or connection method)
+        /// </summary>
+        private void InitializeCaptureSystem()
+        {
+            try
+            {
+                captureSystem = new SimpleWaveformCapture(oscilloscope); // your existing oscilloscope instance
+                captureSystem.LogEvent += (s, message) => Log(message);
+                captureSystem.WaveformCaptured += (s, waveform) => Log($"Captured: {waveform}");
+
+                Log("✅ Simple capture system ready");
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Error initializing capture: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Capture from Channel 1
+        /// </summary>
+        private void CaptureChannel1_Click(object sender, RoutedEventArgs e)
+        {
+            if (captureSystem == null) return;
+
+            var waveform = captureSystem.CaptureWaveform(1);
+            if (waveform != null)
+            {
+                Log($"✅ Captured CH1: {waveform.SampleCount} points");
+            }
+        }
+
+        /// <summary>
+        /// Capture from Channel 2
+        /// </summary>
+        private void CaptureChannel2_Click(object sender, RoutedEventArgs e)
+        {
+            if (captureSystem == null) return;
+
+            var waveform = captureSystem.CaptureWaveform(2);
+            if (waveform != null)
+            {
+                Log($"✅ Captured CH2: {waveform.SampleCount} points");
+            }
+        }
+
+        /// <summary>
+        /// Show memory status
+        /// </summary>
+        private void ShowMemoryStatus_Click(object sender, RoutedEventArgs e)
+        {
+            if (captureSystem == null) return;
+
+            string status = captureSystem.GetMemoryStatus();
+            MessageBox.Show(status, "Memory Status", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        /// <summary>
+        /// Export latest waveform to CSV
+        /// </summary>
+        private void ExportLatestWaveform_Click(object sender, RoutedEventArgs e)
+        {
+            if (captureSystem == null) return;
+
+            var waveforms = captureSystem.GetStoredWaveforms();
+            if (waveforms.Count == 0)
+            {
+                MessageBox.Show("No waveforms to export", "Export", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var latest = waveforms.Last();
+
+            var dialog = new Microsoft.Win32.SaveFileDialog
+            {
+                FileName = $"Waveform_{latest.ChannelNumber}_{DateTime.Now:yyyyMMdd_HHmmss}.csv",
+                DefaultExt = ".csv",
+                Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*"
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                if (captureSystem.ExportToCSV(latest, dialog.FileName))
+                {
+                    MessageBox.Show($"Exported to:\n{dialog.FileName}", "Export Complete",
+                                  MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Clear all stored waveforms
+        /// </summary>
+        private void ClearMemory_Click(object sender, RoutedEventArgs e)
+        {
+            if (captureSystem == null) return;
+
+            if (MessageBox.Show("Clear all stored waveforms?", "Clear Memory",
+                               MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+            {
+                captureSystem.ClearMemory();
+                Log("Memory cleared");
+            }
+        }
+
+        #endregion
+
 
         // Add these methods to your MainWindow.xaml.cs
       #region Dynamic Trigger Step Integration
@@ -942,5 +1028,9 @@ namespace Rigol_DS1000Z_E_Control
 
         #endregion
 
+        private void Channel2Panel_Loaded(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 }

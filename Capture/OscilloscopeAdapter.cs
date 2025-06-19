@@ -29,6 +29,9 @@ namespace OscilloscopeControl.Capture
             this.rigolOscilloscope.LogEvent += (sender, message) => LogEvent?.Invoke(this, message);
         }
 
+
+
+
         #endregion
 
         #region IOscilloscopeInterface Implementation

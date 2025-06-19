@@ -13,6 +13,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
@@ -205,7 +206,7 @@
             <!-- Channel 2 Control Panel -->
             <ch2:Ch2ControlPanel x:Name="Channel2Panel" 
                          Grid.Row="0" Grid.Column="2" 
-                         IsEnabled="False"/>
+                         IsEnabled="False" Loaded="Channel2Panel_Loaded"/>
 
             <!-- Trigger Control Panel -->
             <trigger:TriggerControlPanel x:Name="TriggerPanel" 
@@ -218,8 +219,42 @@
                                    IsEnabled="False"/>
         </Grid>
 
-        <!-- Enhanced Log Output with Clear Button -->
+
+        <!-- Waveform Capture Controls -->
         <Grid Grid.Row="5" Margin="10">
+
+            <GroupBox Header="Waveform Capture" Margin="5">
+                <StackPanel Orientation="Horizontal" Margin="5">
+                    <Button Name="CaptureChannel1Button" 
+                Content="Capture CH1" 
+                Width="100" Height="30" Margin="2"
+                Click="CaptureChannel1_Click"/>
+
+                    <Button Name="CaptureChannel2Button" 
+                Content="Capture CH2" 
+                Width="100" Height="30" Margin="2"
+                Click="CaptureChannel2_Click"/>
+
+                    <Button Name="ShowMemoryStatusButton" 
+                Content="Memory Status" 
+                Width="100" Height="30" Margin="2"
+                Click="ShowMemoryStatus_Click"/>
+
+                    <Button Name="ExportLatestButton" 
+                Content="Export Latest" 
+                Width="100" Height="30" Margin="2"
+                Click="ExportLatestWaveform_Click"/>
+
+                    <Button Name="ClearMemoryButton" 
+                Content="Clear Memory" 
+                Width="100" Height="30" Margin="2"
+                Click="ClearMemory_Click"/>
+                </StackPanel>
+            </GroupBox>
+        </Grid>
+
+        <!-- Enhanced Log Output with Clear Button -->
+        <Grid Grid.Row="6" Margin="10">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>

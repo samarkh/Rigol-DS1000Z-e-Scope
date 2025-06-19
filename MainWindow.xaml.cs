@@ -687,7 +687,7 @@ namespace Rigol_DS1000Z_E_Control
         // ADD these to your MainWindow.xaml.cs class:
       #region Simple Capture System
 
-        private SimpleWaveformCapture captureSystem;
+       
 
         /// <summary>
         /// Initialize the simple capture system (call this in your Window_Loaded or connection method)

@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 
 namespace OscilloscopeControl.Capture
@@ -9,9 +10,6 @@ namespace OscilloscopeControl.Capture
     /// <summary>
     /// Interaction logic for WaveformMemoryPanel.xaml
     /// Code-behind for the waveform capture and memory management user interface.
-    /// 
-    /// This file contains minimal code-behind logic since most functionality
-    /// is handled by the WaveformMemoryManager class.
     /// </summary>
     public partial class WaveformMemoryPanel : UserControl
     {
@@ -23,13 +21,54 @@ namespace OscilloscopeControl.Capture
         public WaveformMemoryPanel()
         {
             InitializeComponent();
-
-            // The DataContext and control connections will be managed by
-            // the MemorySystemIntegration and WaveformMemoryManager classes
-
-            // Set any default properties if needed
             this.Loaded += WaveformMemoryPanel_Loaded;
         }
+
+        #endregion
+
+        #region UI Properties (Must match what WaveformMemoryController expects)
+
+        /// <summary>Channel selection combo box</summary>
+        public ComboBox ChannelSelectionComboBox { get; private set; }
+
+        /// <summary>Waveform mode combo box</summary>
+        public ComboBox WaveformModeComboBox { get; private set; }
+
+        /// <summary>Waveform format combo box</summary>
+        public ComboBox WaveformFormatComboBox { get; private set; }
+
+        /// <summary>Capture waveform button</summary>
+        public Button CaptureWaveformButton { get; private set; }
+
+        /// <summary>Clear memory button</summary>
+        public Button ClearMemoryButton { get; private set; }
+
+        /// <summary>Export selected button</summary>
+        public Button ExportSelectedButton { get; private set; }
+
+        /// <summary>Stored waveforms list box</summary>
+        public ListBox StoredWaveformsListBox { get; private set; }
+
+        /// <summary>Memory status text block</summary>
+        public TextBlock MemoryStatusTextBlock { get; private set; }
+
+        /// <summary>Waveform details text block</summary>
+        public TextBlock WaveformDetailsTextBlock { get; private set; }
+
+        /// <summary>Capture progress bar</summary>
+        public ProgressBar CaptureProgressBar { get; private set; }
+
+        /// <summary>Memory limit slider</summary>
+        public Slider MemoryLimitSlider { get; private set; }
+
+        /// <summary>Memory limit text block</summary>
+        public TextBlock MemoryLimitTextBlock { get; private set; }
+
+        /// <summary>Auto capture checkbox</summary>
+        public CheckBox AutoCaptureCheckBox { get; private set; }
+
+        /// <summary>Filter channel combo box</summary>
+        public ComboBox FilterChannelComboBox { get; private set; }
 
         #endregion
 
@@ -40,15 +79,113 @@ namespace OscilloscopeControl.Capture
         /// </summary>
         private void WaveformMemoryPanel_Loaded(object sender, RoutedEventArgs e)
         {
-            // Any initialization that needs to happen after the control is loaded
-            // Most functionality is handled by the WaveformMemoryManager
+            // Find and assign UI controls by name (these must exist in your XAML)
+            try
+            {
+                ChannelSelectionComboBox = FindName("ChannelSelectionComboBox") as ComboBox;
+                WaveformModeComboBox = FindName("WaveformModeComboBox") as ComboBox;
+                WaveformFormatComboBox = FindName("WaveformFormatComboBox") as ComboBox;
+                CaptureWaveformButton = FindName("CaptureWaveformButton") as Button;
+                ClearMemoryButton = FindName("ClearMemoryButton") as Button;
+                ExportSelectedButton = FindName("ExportSelectedButton") as Button;
+                StoredWaveformsListBox = FindName("StoredWaveformsListBox") as ListBox;
+                MemoryStatusTextBlock = FindName("MemoryStatusTextBlock") as TextBlock;
+                WaveformDetailsTextBlock = FindName("WaveformDetailsTextBlock") as TextBlock;
+                CaptureProgressBar = FindName("CaptureProgressBar") as ProgressBar;
+                MemoryLimitSlider = FindName("MemoryLimitSlider") as Slider;
+                MemoryLimitTextBlock = FindName("MemoryLimitTextBlock") as TextBlock;
+                AutoCaptureCheckBox = FindName("AutoCaptureCheckBox") as CheckBox;
+                FilterChannelComboBox = FindName("FilterChannelComboBox") as ComboBox;
 
-            // You could add any additional UI setup here if needed
+                // Initialize default values
+                InitializeDefaults();
+            }
+            catch (Exception ex)
+            {
+                // Log error if needed
+                MessageBox.Show($"Error initializing UI controls: {ex.Message}", "UI Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
         }
 
         #endregion
 
-        #region Public Properties
+        #region Initialization
+
+        /// <summary>
+        /// Initialize default values for UI controls
+        /// </summary>
+        private void InitializeDefaults()
+        {
+            try
+            {
+                // Initialize channel selection
+                if (ChannelSelectionComboBox != null)
+                {
+                    ChannelSelectionComboBox.Items.Clear();
+                    ChannelSelectionComboBox.Items.Add("Channel 1");
+                    ChannelSelectionComboBox.Items.Add("Channel 2");
+                    ChannelSelectionComboBox.Items.Add("Both Channels");
+                    ChannelSelectionComboBox.SelectedIndex = 0;
+                }
+
+                // Initialize waveform mode
+                if (WaveformModeComboBox != null)
+                {
+                    WaveformModeComboBox.Items.Clear();
+                    WaveformModeComboBox.Items.Add("Normal");
+                    WaveformModeComboBox.Items.Add("Raw");
+                    WaveformModeComboBox.Items.Add("Maximum");
+                    WaveformModeComboBox.SelectedIndex = 0;
+                }
+
+                // Initialize waveform format
+                if (WaveformFormatComboBox != null)
+                {
+                    WaveformFormatComboBox.Items.Clear();
+                    WaveformFormatComboBox.Items.Add("Byte");
+                    WaveformFormatComboBox.Items.Add("Word");
+                    WaveformFormatComboBox.Items.Add("ASCII");
+                    WaveformFormatComboBox.SelectedIndex = 0;
+                }
+
+                // Initialize filter channel
+                if (FilterChannelComboBox != null)
+                {
+                    FilterChannelComboBox.Items.Clear();
+                    FilterChannelComboBox.Items.Add("All Channels");
+                    FilterChannelComboBox.Items.Add("Channel 1 Only");
+                    FilterChannelComboBox.Items.Add("Channel 2 Only");
+                    FilterChannelComboBox.SelectedIndex = 0;
+                }
+
+                // Initialize memory limit slider
+                if (MemoryLimitSlider != null)
+                {
+                    MemoryLimitSlider.Minimum = 10;
+                    MemoryLimitSlider.Maximum = 1000;
+                    MemoryLimitSlider.Value = 100;
+                }
+
+                // Initialize status text
+                if (MemoryStatusTextBlock != null)
+                {
+                    MemoryStatusTextBlock.Text = "Ready";
+                }
+
+                if (MemoryLimitTextBlock != null)
+                {
+                    MemoryLimitTextBlock.Text = "100";
+                }
+            }
+            catch (Exception ex)
+            {
+                // Ignore initialization errors for missing controls
+            }
+        }
+
+        #endregion
+
+        #region Public Properties for Compatibility
 
         /// <summary>
         /// Indicates whether the panel is ready for capture operations
@@ -61,305 +198,5 @@ namespace OscilloscopeControl.Capture
         public int WaveformCount => StoredWaveformsListBox?.Items.Count ?? 0;
 
         #endregion
-
-        #region Public Methods
-
-        /// <summary>
-        /// Programmatically set focus to the capture button
-        /// </summary>
-        public void FocusCaptureButton()
-        {
-            CaptureWaveformButton?.Focus();
-        }
-
-        /// <summary>
-        /// Scroll the waveform list to the top
-        /// </summary>
-        public void ScrollWaveformListToTop()
-        {
-            if (StoredWaveformsListBox?.Items.Count > 0)
-            {
-                StoredWaveformsListBox.ScrollIntoView(StoredWaveformsListBox.Items[0]);
-            }
-        }
-
-        /// <summary>
-        /// Clear the current waveform selection
-        /// </summary>
-        public void ClearWaveformSelection()
-        {
-            if (StoredWaveformsListBox != null)
-            {
-                StoredWaveformsListBox.SelectedItem = null;
-            }
-        }
-
-        #endregion
     }
-
-    #region Value Converters
-
-    /// <summary>
-    /// Converter to display duration values with appropriate time units
-    /// Converts seconds to a user-friendly display format (ms, μs, etc.)
-    /// </summary>
-    public class DurationToMillisecondsConverter : IValueConverter
-    {
-        /// <summary>
-        /// Singleton instance for efficient reuse
-        /// </summary>
-        public static readonly DurationToMillisecondsConverter Instance = new DurationToMillisecondsConverter();
-
-        /// <summary>
-        /// Convert duration in seconds to a formatted string with appropriate units
-        /// </summary>
-        /// <param name="value">Duration in seconds (double)</param>
-        /// <param name="targetType">Target type (not used)</param>
-        /// <param name="parameter">Parameter (not used)</param>
-        /// <param name="culture">Culture info for formatting</param>
-        /// <returns>Formatted duration string with units</returns>
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value is double durationInSeconds)
-            {
-                double durationInMs = durationInSeconds * 1000.0;
-
-                if (durationInMs >= 10000.0)
-                {
-                    // Show in seconds if >= 10 seconds
-                    return $"{durationInSeconds:F1}s";
-                }
-                else if (durationInMs >= 1000.0)
-                {
-                    // Show in seconds with more precision if >= 1 second
-                    return $"{durationInSeconds:F2}s";
-                }
-                else if (durationInMs >= 1.0)
-                {
-                    // Show in milliseconds if >= 1 ms
-                    return $"{durationInMs:F1}ms";
-                }
-                else if (durationInMs >= 0.001)
-                {
-                    // Show in microseconds if >= 1 μs
-                    return $"{durationInMs * 1000.0:F0}μs";
-                }
-                else
-                {
-                    // Show in nanoseconds for very small durations
-                    return $"{durationInMs * 1000000.0:F0}ns";
-                }
-            }
-
-            return "0ms";
-        }
-
-        /// <summary>
-        /// Convert back is not implemented as it's not needed for display-only binding
-        /// </summary>
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException("ConvertBack not implemented for DurationToMillisecondsConverter");
-        }
-    }
-
-    /// <summary>
-    /// Converter to format voltage values with appropriate voltage units
-    /// Automatically selects V, mV, μV, or kV based on magnitude
-    /// </summary>
-    public class VoltageFormatter : IValueConverter
-    {
-        /// <summary>
-        /// Singleton instance for efficient reuse
-        /// </summary>
-        public static readonly VoltageFormatter Instance = new VoltageFormatter();
-
-        /// <summary>
-        /// Convert voltage value to formatted string with appropriate units
-        /// </summary>
-        /// <param name="value">Voltage in volts (double)</param>
-        /// <param name="targetType">Target type (not used)</param>
-        /// <param name="parameter">Parameter (not used)</param>
-        /// <param name="culture">Culture info for formatting</param>
-        /// <returns>Formatted voltage string with units</returns>
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value is double voltage)
-            {
-                double absVoltage = Math.Abs(voltage);
-
-                if (absVoltage >= 1000.0)
-                {
-                    // Kilovolts for large voltages
-                    return $"{voltage / 1000.0:F2}kV";
-                }
-                else if (absVoltage >= 1.0)
-                {
-                    // Volts for normal range
-                    return $"{voltage:F3}V";
-                }
-                else if (absVoltage >= 0.001)
-                {
-                    // Millivolts for small voltages
-                    return $"{voltage * 1000.0:F1}mV";
-                }
-                else if (absVoltage >= 0.000001)
-                {
-                    // Microvolts for very small voltages
-                    return $"{voltage * 1000000.0:F0}μV";
-                }
-                else
-                {
-                    // Nanovolts for extremely small voltages
-                    return $"{voltage * 1000000000.0:F0}nV";
-                }
-            }
-
-            return "0V";
-        }
-
-        /// <summary>
-        /// Convert back is not implemented as it's not needed for display-only binding
-        /// </summary>
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException("ConvertBack not implemented for VoltageFormatter");
-        }
-    }
-
-    /// <summary>
-    /// Converter to format large numbers with appropriate abbreviations
-    /// Useful for displaying point counts, sample rates, etc.
-    /// </summary>
-    public class PointCountFormatter : IValueConverter
-    {
-        /// <summary>
-        /// Singleton instance for efficient reuse
-        /// </summary>
-        public static readonly PointCountFormatter Instance = new PointCountFormatter();
-
-        /// <summary>
-        /// Convert large numbers to abbreviated format (K, M, G)
-        /// </summary>
-        /// <param name="value">Number to format (int, long, or double)</param>
-        /// <param name="targetType">Target type (not used)</param>
-        /// <param name="parameter">Parameter (not used)</param>
-        /// <param name="culture">Culture info for formatting</param>
-        /// <returns>Formatted number string with abbreviation</returns>
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value is int intValue)
-            {
-                return FormatNumber(intValue);
-            }
-            else if (value is long longValue)
-            {
-                return FormatNumber(longValue);
-            }
-            else if (value is double doubleValue)
-            {
-                return FormatNumber((long)doubleValue);
-            }
-
-            return "0";
-        }
-
-        /// <summary>
-        /// Format a number with appropriate abbreviation
-        /// </summary>
-        private string FormatNumber(long number)
-        {
-            if (number >= 1000000000)
-            {
-                return $"{number / 1000000000.0:F1}G";
-            }
-            else if (number >= 1000000)
-            {
-                return $"{number / 1000000.0:F1}M";
-            }
-            else if (number >= 1000)
-            {
-                return $"{number / 1000.0:F1}K";
-            }
-            else
-            {
-                return number.ToString("N0");
-            }
-        }
-
-        /// <summary>
-        /// Convert back is not implemented as it's not needed for display-only binding
-        /// </summary>
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException("ConvertBack not implemented for PointCountFormatter");
-        }
-    }
-
-    /// <summary>
-    /// Converter to format file sizes in human-readable format
-    /// Converts bytes to KB, MB, GB as appropriate
-    /// </summary>
-    public class FileSizeFormatter : IValueConverter
-    {
-        /// <summary>
-        /// Singleton instance for efficient reuse
-        /// </summary>
-        public static readonly FileSizeFormatter Instance = new FileSizeFormatter();
-
-        /// <summary>
-        /// Convert file size in bytes to formatted string
-        /// </summary>
-        /// <param name="value">File size in bytes (long or double)</param>
-        /// <param name="targetType">Target type (not used)</param>
-        /// <param name="parameter">Parameter (not used)</param>
-        /// <param name="culture">Culture info for formatting</param>
-        /// <returns>Formatted file size string</returns>
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value is long bytes)
-            {
-                return FormatFileSize(bytes);
-            }
-            else if (value is double doubleBytes)
-            {
-                return FormatFileSize((long)doubleBytes);
-            }
-
-            return "0 B";
-        }
-
-        /// <summary>
-        /// Format file size with appropriate units
-        /// </summary>
-        private string FormatFileSize(long bytes)
-        {
-            if (bytes >= 1073741824) // 1 GB
-            {
-                return $"{bytes / 1073741824.0:F1} GB";
-            }
-            else if (bytes >= 1048576) // 1 MB
-            {
-                return $"{bytes / 1048576.0:F1} MB";
-            }
-            else if (bytes >= 1024) // 1 KB
-            {
-                return $"{bytes / 1024.0:F1} KB";
-            }
-            else
-            {
-                return $"{bytes} B";
-            }
-        }
-
-        /// <summary>
-        /// Convert back is not implemented as it's not needed for display-only binding
-        /// </summary>
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException("ConvertBack not implemented for FileSizeFormatter");
-        }
-    }
-
-    #endregion
 }

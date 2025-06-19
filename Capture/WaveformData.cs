@@ -131,30 +131,6 @@ namespace OscilloscopeControl.Capture
         #endregion
     }
 
-    /// <summary>
-    /// Event arguments for memory status changes
-    /// </summary>
-    public class MemoryStatusEventArgs : EventArgs
-    {
-        /// <summary>Number of stored waveforms</summary>
-        public int WaveformCount { get; set; }
-
-        /// <summary>Total memory usage in bytes</summary>
-        public long TotalMemoryUsage { get; set; }
-
-        /// <summary>Maximum allowed waveforms</summary>
-        public int MaxWaveforms { get; set; }
-
-        /// <summary>Memory usage as a percentage (0-100)</summary>
-        public double MemoryUsagePercent { get; set; }
-
-        /// <summary>Most recent waveform information</summary>
-        public string LastWaveformInfo { get; set; } = "";
-
-        // Additional properties for compatibility
-        public int TotalWaveforms { get; set; }
-        public int Channel1Count { get; set; }
-        public int Channel2Count { get; set; }
-        public long TotalDataPoints => Channel1Count + Channel2Count;
-    }
+    // REMOVED: MemoryStatusEventArgs (it's already defined in MemorySystemIntegration.cs)  
+    // This eliminates the CS0101 "already contains a definition" error
 }

@@ -1,5 +1,4 @@
-﻿using DS1000Z_E_USB_Control.Capture;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;

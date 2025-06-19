@@ -15,11 +15,12 @@ namespace OscilloscopeControl.Capture
     /// </summary>
     public class MemorySystemIntegration
     {
+        // 1. Fix the private fields section (around line 21-22):
         #region Private Fields
 
         private readonly IOscilloscopeInterface oscilloscope;
         private WaveformMemoryManager memoryManager;
-        private WaveformMemoryManager memoryController;
+        private WaveformMemoryController memoryController;  // FIXED: Correct type (was WaveformMemoryManager)
         private bool isInitialized = false;
 
         #endregion
@@ -618,7 +619,7 @@ namespace OscilloscopeControl.Capture
 
         #endregion
 
-        #region Logging
+        #region logging
 
         /// <summary>
         /// Log a message through the event system
@@ -627,9 +628,10 @@ namespace OscilloscopeControl.Capture
         {
             LogEvent?.Invoke(this, $"[Memory] {message}");
         }
-
+        
         #endregion
 
+        // 2. Fix the Properties section (around line 643-648):
         #region Properties
 
         /// <summary>
@@ -645,9 +647,10 @@ namespace OscilloscopeControl.Capture
         /// <summary>
         /// Get the underlying memory controller (for advanced UI operations)
         /// </summary>
-        public WaveformMemoryManager MemoryController => memoryController;
+        public WaveformMemoryController MemoryController => memoryController;  // FIXED: Correct type
 
         #endregion
+
     }
 
     /// <summary>

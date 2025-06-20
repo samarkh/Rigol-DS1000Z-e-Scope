@@ -5,246 +5,267 @@
         xmlns:ch2="clr-namespace:DS1000Z_E_USB_Control.Channels.Ch2"
         xmlns:trigger="clr-namespace:DS1000Z_E_USB_Control.Trigger"
         xmlns:timebase="clr-namespace:DS1000Z_E_USB_Control.TimeBase"
-        Title="Rigol DS1000Z-E USB Control" Height="1200" Width="1400">
-    <Grid>
+        Title="Rigol DS1000Z-E USB Control" 
+        Height="1200" Width="1400"
+        WindowStartupLocation="CenterScreen">
+
+    <Grid Margin="5">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <!-- Status -->
             <RowDefinition Height="Auto"/>
+            <!-- Main Controls -->
             <RowDefinition Height="Auto"/>
+            <!-- Oscilloscope Controls -->
             <RowDefinition Height="Auto"/>
+            <!-- Channel/Trigger/TimeBase Controls -->
             <RowDefinition Height="Auto"/>
+            <!-- Waveform Capture -->
             <RowDefinition Height="Auto"/>
+            <!-- USB Storage -->
             <RowDefinition Height="*"/>
+            <!-- Log Output -->
         </Grid.RowDefinitions>
 
-        <!-- Connection Status -->
-        <TextBlock x:Name="StatusText" Grid.Row="0" 
-                   Text="Status: Disconnected" 
-                   HorizontalAlignment="Center" 
-                   Margin="10" 
-                   FontSize="16"/>
+        <!-- Row 0: Connection Status -->
+        <Border Grid.Row="0" 
+                Background="#F0F8FF" 
+                BorderBrush="#4169E1" 
+                BorderThickness="2" 
+                CornerRadius="5" 
+                Margin="5">
+            <TextBlock x:Name="StatusText" 
+                       Text="Status: Disconnected" 
+                       HorizontalAlignment="Center" 
+                       VerticalAlignment="Center"
+                       FontSize="16" 
+                       FontWeight="Bold"
+                       Foreground="#4169E1"
+                       Margin="10"/>
+        </Border>
 
-        <!-- Main Control Buttons Row -->
-        <Grid Grid.Row="1" Margin="10">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="10"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="10"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="10"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="10"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
+        <!-- Row 1: Main Control Buttons -->
+        <GroupBox Grid.Row="1" Header="Main Controls" Margin="5" FontWeight="Bold">
+            <Grid Margin="5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="5"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="5"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="5"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="5"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
 
-            <!-- Connect/Disconnect Button -->
-            <Button x:Name="ConnectButton" Grid.Column="0"
-                    Content="Connect" 
-                    Height="40" 
-                    FontSize="14"
-                    Background="#E8F5E8"
-                    BorderBrush="#4CAF50"
-                    Click="ConnectButton_Click"/>
+                <!-- Connect/Disconnect Button -->
+                <Button x:Name="ConnectButton" Grid.Column="0"
+                        Content="🔌 Connect" 
+                        Height="40" 
+                        FontSize="14"
+                        Background="#E8F5E8"
+                        BorderBrush="#4CAF50"
+                        Click="ConnectButton_Click"/>
 
-            <!-- Get Current Settings Button -->
-            <Button x:Name="GetSettingsButton" Grid.Column="2"
-                    Content="📋 Get Current Settings" 
-                    Height="40" 
-                    FontSize="14"
-                    Background="#E3F2FD"
-                    BorderBrush="#2196F3"
-                    IsEnabled="False"
-                    Click="GetSettingsButton_Click"/>
+                <!-- Get Current Settings Button -->
+                <Button x:Name="GetSettingsButton" Grid.Column="2"
+                        Content="📋 Get Settings" 
+                        Height="40" 
+                        FontSize="14"
+                        Background="#E3F2FD"
+                        BorderBrush="#2196F3"
+                        IsEnabled="False"
+                        Click="GetSettingsButton_Click"/>
 
-            <!-- Export Settings Button -->
-            <Button x:Name="ExportSettingsButton" Grid.Column="4"
-                    Content="💾 Export Settings" 
-                    Height="40" 
-                    FontSize="14"
-                    Background="#FFF3E0"
-                    BorderBrush="#FF9800"
-                    IsEnabled="False"
-                    Click="ExportSettingsButton_Click"/>
+                <!-- Export Settings Button -->
+                <Button x:Name="ExportSettingsButton" Grid.Column="4"
+                        Content="💾 Export Settings" 
+                        Height="40" 
+                        FontSize="14"
+                        Background="#FFF3E0"
+                        BorderBrush="#FF9800"
+                        IsEnabled="False"
+                        Click="ExportSettingsButton_Click"/>
 
-            <!-- Preset Menu Button -->
-            <Button x:Name="PresetButton" Grid.Column="6"
-                    Content="⚙️ Apply Presets" 
-                    Height="40" 
-                    FontSize="14"
-                    Background="#F3E5F5"
-                    BorderBrush="#9C27B0"
-                    IsEnabled="False"
-                    Click="PresetButton_Click"/>
+                <!-- Preset Menu Button -->
+                <Button x:Name="PresetButton" Grid.Column="6"
+                        Content="⚙️ Apply Presets" 
+                        Height="40" 
+                        FontSize="14"
+                        Background="#F3E5F5"
+                        BorderBrush="#9C27B0"
+                        IsEnabled="False"
+                        Click="PresetButton_Click"/>
 
-            <!-- Trigger Control Button -->
-            <Button x:Name="TriggerControlButton" Grid.Column="8"
-                    Content="🎯 Query Trigger" 
-                    Height="40" 
-                    FontSize="14"
-                    Background="#E8F5E8"
-                    BorderBrush="#32CD32"
-                    IsEnabled="False"
-                    Click="TriggerControlButton_Click"/>
-        </Grid>
+                <!-- Trigger Control Button -->
+                <Button x:Name="TriggerControlButton" Grid.Column="8"
+                        Content="🎯 Query Trigger" 
+                        Height="40" 
+                        FontSize="14"
+                        Background="#E8F5E8"
+                        BorderBrush="#32CD32"
+                        IsEnabled="False"
+                        Click="TriggerControlButton_Click"/>
+            </Grid>
+        </GroupBox>
 
-        <!-- Oscilloscope Control Buttons Row (MISSING FROM ORIGINAL) -->
-        <Grid Grid.Row="2" Margin="10">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="10"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="10"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="10"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="10"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
+        <!-- Row 2: Oscilloscope Control Buttons -->
+        <GroupBox Grid.Row="2" Header="Oscilloscope Controls" Margin="5" FontWeight="Bold">
+            <Grid Margin="5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="5"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="5"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="5"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="5"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
 
-            <!-- Run Button -->
-            <Button x:Name="RunButton" Grid.Column="0"
-                    Content="▶️ Run" 
-                    Height="35" 
-                    FontSize="12"
-                    Background="#E8F5E8"
-                    BorderBrush="#4CAF50"
-                    IsEnabled="False"
-                    Click="RunButton_Click"/>
+                <!-- Run Button -->
+                <Button x:Name="RunButton" Grid.Column="0"
+                        Content="▶️ Run" 
+                        Height="35" 
+                        FontSize="12"
+                        Background="#E8F5E8"
+                        BorderBrush="#4CAF50"
+                        IsEnabled="False"
+                        Click="RunButton_Click"/>
 
-            <!-- Stop Button -->
-            <Button x:Name="StopButton" Grid.Column="2"
-                    Content="⏹️ Stop" 
-                    Height="35" 
-                    FontSize="12"
-                    Background="#FFEBEE"
-                    BorderBrush="#F44336"
-                    IsEnabled="False"
-                    Click="StopButton_Click"/>
+                <!-- Stop Button -->
+                <Button x:Name="StopButton" Grid.Column="2"
+                        Content="⏹️ Stop" 
+                        Height="35" 
+                        FontSize="12"
+                        Background="#FFEBEE"
+                        BorderBrush="#F44336"
+                        IsEnabled="False"
+                        Click="StopButton_Click"/>
 
-            <!-- Single Button -->
-            <Button x:Name="SingleButton" Grid.Column="4"
-                    Content="⏯️ Single" 
-                    Height="35" 
-                    FontSize="12"
-                    Background="#FFF3E0"
-                    BorderBrush="#FF9800"
-                    IsEnabled="False"
-                    Click="SingleButton_Click"/>
+                <!-- Single Button -->
+                <Button x:Name="SingleButton" Grid.Column="4"
+                        Content="⏯️ Single" 
+                        Height="35" 
+                        FontSize="12"
+                        Background="#FFF3E0"
+                        BorderBrush="#FF9800"
+                        IsEnabled="False"
+                        Click="SingleButton_Click"/>
 
-            <!-- Clear Button -->
-            <Button x:Name="ClearButton" Grid.Column="6"
-                    Content="🧹 Clear" 
-                    Height="35" 
-                    FontSize="12"
-                    Background="#F3E5F5"
-                    BorderBrush="#9C27B0"
-                    IsEnabled="False"
-                    Click="ClearButton_Click"/>
+                <!-- Clear Button -->
+                <Button x:Name="ClearButton" Grid.Column="6"
+                        Content="🧹 Clear" 
+                        Height="35" 
+                        FontSize="12"
+                        Background="#F3E5F5"
+                        BorderBrush="#9C27B0"
+                        IsEnabled="False"
+                        Click="ClearButton_Click"/>
 
-            <!-- Auto Scale Button -->
-            <Button x:Name="AutoScaleButton" Grid.Column="8"
-                    Content="📏 Auto Scale" 
-                    Height="35" 
-                    FontSize="12"
-                    Background="#E1F5FE"
-                    BorderBrush="#03A9F4"
-                    IsEnabled="False"
-                    Click="AutoScaleButton_Click"/>
-        </Grid>
+                <!-- Auto Scale Button -->
+                <Button x:Name="AutoScaleButton" Grid.Column="8"
+                        Content="📏 Auto Scale" 
+                        Height="35" 
+                        FontSize="12"
+                        Background="#E1F5FE"
+                        BorderBrush="#03A9F4"
+                        IsEnabled="False"
+                        Click="AutoScaleButton_Click"/>
+            </Grid>
+        </GroupBox>
 
-        <!-- Device Information Panel -->
-        <GroupBox Grid.Row="3" Header="Device Information" Margin="10" Background="#FAFAFA">
-            <Grid>
+        <!-- Row 3: Channel, Trigger, and TimeBase Controls -->
+        <GroupBox Grid.Row="3" Header="Channel  Trigger Controls" Margin="5" FontWeight="Bold">
+            <Grid Margin="5">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="10"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="10"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="10"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <TextBlock x:Name="DeviceInfoText" Grid.Row="0" Grid.Column="0" 
-                           Text="Device: Not Connected" 
-                           Margin="5" FontSize="12" FontFamily="Consolas"/>
+                <!-- First Row: Channel 1, Channel 2, Trigger Controls -->
+                <ch1:Ch1ControlPanel x:Name="Channel1Panel" 
+                                     Grid.Row="0" Grid.Column="0" 
+                                     IsEnabled="False"/>
 
-                <TextBlock x:Name="AcquisitionInfoText" Grid.Row="0" Grid.Column="1" 
-                           Text="Acquisition: Unknown" 
-                           Margin="5" FontSize="12" FontFamily="Consolas"/>
+                <ch2:Ch2ControlPanel x:Name="Channel2Panel" 
+                                     Grid.Row="0" Grid.Column="2" 
+                                     IsEnabled="False" 
+                                     Loaded="Channel2Panel_Loaded"/>
 
-                <TextBlock x:Name="LastUpdateText" Grid.Row="1" Grid.ColumnSpan="2" 
-                           Text="Last Settings Update: Never" 
-                           Margin="5" FontSize="10" Foreground="Gray" FontStyle="Italic"/>
+                <trigger:TriggerControlPanel x:Name="TriggerPanel" 
+                                             Grid.Row="0" Grid.Column="4" 
+                                             IsEnabled="False"/>
+
+                <!-- Second Row: TimeBase Panel (spans all columns) -->
+                <timebase:TimeBaseControlPanel x:Name="TimeBasePanel" 
+                                               Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="5"
+                                               IsEnabled="False"/>
             </Grid>
         </GroupBox>
 
-        <!-- All Control Panels in Grid Layout -->
-        <Grid Grid.Row="4" Margin="10">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="10"/>
-                <!-- Spacing between rows -->
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="10"/>
-                <!-- Spacing between panels -->
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="10"/>
-                <!-- Spacing between panels -->
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
+        <!-- Row 4: Waveform Capture Controls -->
+        <GroupBox Grid.Row="4" Header="Waveform Capture  Export" Margin="5" FontWeight="Bold">
+            <Grid Margin="5">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="10"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-            <!-- First Row: Channel and Trigger Panels -->
-            <!-- Channel 1 Control Panel -->
-            <ch1:Ch1ControlPanel x:Name="Channel1Panel" 
-                         Grid.Row="0" Grid.Column="0" 
-                         IsEnabled="False"/>
-
-            <!-- Channel 2 Control Panel -->
-            <ch2:Ch2ControlPanel x:Name="Channel2Panel" 
-                         Grid.Row="0" Grid.Column="2" 
-                         IsEnabled="False" Loaded="Channel2Panel_Loaded"/>
-
-            <!-- Trigger Control Panel -->
-            <trigger:TriggerControlPanel x:Name="TriggerPanel" 
-                                 Grid.Row="0" Grid.Column="4" 
-                                 IsEnabled="False"/>
-
-            <!-- Second Row: TimeBase Panel (spans all columns) -->
-            <timebase:TimeBaseControlPanel x:Name="TimeBasePanel" 
-                                   Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="5"
-                                   IsEnabled="False"/>
-        </Grid>
-
-
-        <!-- Waveform Capture Controls -->
-        <Grid Grid.Row="5" Margin="10">
-
-            <GroupBox Header="Waveform Capture" Margin="5">
-                <StackPanel Orientation="Horizontal" Margin="5">
+                <!-- First Row: Capture Controls -->
+                <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Left">
                     <Button Name="CaptureChannel1Button" 
-                Content="Capture CH1" 
-                Width="100" Height="30" Margin="2"
-                Click="CaptureChannel1_Click"/>
+                            Content="📈 Capture CH1" 
+                            Width="120" Height="35" 
+                            Margin="5,0"
+                            Background="#E8F5E8"
+                            BorderBrush="#4CAF50"
+                            FontWeight="Bold"
+                            Click="CaptureChannel1_Click"/>
 
                     <Button Name="CaptureChannel2Button" 
-                Content="Capture CH2" 
-                Width="100" Height="30" Margin="2"
-                Click="CaptureChannel2_Click"/>
+                            Content="📈 Capture CH2" 
+                            Width="120" Height="35" 
+                            Margin="5,0"
+                            Background="#E3F2FD"
+                            BorderBrush="#2196F3"
+                            FontWeight="Bold"
+                            Click="CaptureChannel2_Click"/>
 
                     <Button Name="ShowMemoryStatusButton" 
-                Content="Memory Status" 
-                Width="100" Height="30" Margin="2"
-                Click="ShowMemoryStatus_Click"/>
+                            Content="💾 Memory Status" 
+                            Width="130" Height="35" 
+                            Margin="5,0"
+                            Background="#FFF3E0"
+                            BorderBrush="#FF9800"
+                            FontWeight="Bold"
+                            Click="ShowMemoryStatus_Click"/>
+                </StackPanel>
 
-                    <Label Content="Export Format:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                <!-- Second Row: Export Controls -->
+                <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Left">
+                    <Label Content="Export Format:" 
+                           VerticalAlignment="Center" 
+                           FontWeight="Bold"
+                           Margin="5,0"/>
+
                     <ComboBox x:Name="ExportFormatComboBox" 
-                  Width="120" 
-                  VerticalAlignment="Center"
-                  SelectedIndex="0">
+                              Width="140" 
+                              Height="30"
+                              VerticalAlignment="Center"
+                              SelectedIndex="0"
+                              Margin="5,0">
                         <ComboBoxItem Content="CSV" Tag="csv"/>
                         <ComboBoxItem Content="JSON" Tag="json"/>
                         <ComboBoxItem Content="MATLAB" Tag="matlab"/>
@@ -252,48 +273,112 @@
                         <ComboBoxItem Content="With Preamble" Tag="preamble"/>
                     </ComboBox>
 
-                    <!-- FIX: Remove the extra ">" at the end of this button -->
                     <Button x:Name="ExportLatestWaveformButton" 
-                Content="Export Latest" 
-                Click="ExportLatestWaveform_Click" 
-                Margin="10,0,0,0"/>
-
+                            Content="📤 Export Latest" 
+                            Width="120" Height="35"
+                            Margin="10,0,5,0"
+                            Background="#F3E5F5"
+                            BorderBrush="#9C27B0"
+                            FontWeight="Bold"
+                            Click="ExportLatestWaveform_Click"/>
                 </StackPanel>
-            </GroupBox>
-        </Grid>
-
-        <!-- Enhanced Log Output with Clear Button -->
-        <Grid Grid.Row="6" Margin="10">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
-
-            <!-- Log Header with Clear Button -->
-            <Grid Grid.Row="0" Margin="0,0,0,5">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-
-                <TextBlock Grid.Column="0" Text="Activity Log" FontWeight="Bold" VerticalAlignment="Center"/>
-                <Button Grid.Column="1" x:Name="ClearLogButton" Content="Clear Log" 
-                        Width="80" Height="25" FontSize="10"
-                        Click="ClearLogButton_Click"/>
             </Grid>
+        </GroupBox>
 
-            <!-- Log Text Area -->
-            <ScrollViewer Grid.Row="1" 
-                          VerticalScrollBarVisibility="Auto"
-                          HorizontalScrollBarVisibility="Auto">
-                <TextBox x:Name="LogTextBox" 
-                         IsReadOnly="True" 
-                         TextWrapping="Wrap"
-                         Background="#F8F8F8"
-                         FontFamily="Consolas"
-                         FontSize="10"
-                         Padding="5"/>
-            </ScrollViewer>
-        </Grid>
+        <!-- Row 5: USB Storage Controls (Event handlers need to be added to code-behind) -->
+        <GroupBox Grid.Row="5" Header="Direct USB Storage (On Oscilloscope)" Margin="5" FontWeight="Bold">
+            <StackPanel Orientation="Horizontal" Margin="5" HorizontalAlignment="Left">
+                <Button Name="SaveCH1ToUSBButton" 
+                        Content="💾 Save CH1 to USB" 
+                        Width="140" Height="35" 
+                        Margin="5,0"
+                        Background="#E8F5E8"
+                        BorderBrush="#4CAF50"
+                        FontWeight="Bold"
+                        IsEnabled="False"/>
+
+                <Button Name="SaveCH2ToUSBButton" 
+                        Content="💾 Save CH2 to USB" 
+                        Width="140" Height="35" 
+                        Margin="5,0"
+                        Background="#E3F2FD"
+                        BorderBrush="#2196F3"
+                        FontWeight="Bold"
+                        IsEnabled="False"/>
+
+                <Button Name="SaveScreenToUSBButton" 
+                        Content="📸 Save Screen to USB" 
+                        Width="150" Height="35" 
+                        Margin="5,0"
+                        Background="#FFF3E0"
+                        BorderBrush="#FF9800"
+                        FontWeight="Bold"
+                        IsEnabled="False"/>
+
+                <Button Name="CheckUSBStatusButton" 
+                        Content="🔍 Check USB Status" 
+                        Width="140" Height="35" 
+                        Margin="5,0"
+                        Background="#F3E5F5"
+                        BorderBrush="#9C27B0"
+                        FontWeight="Bold"
+                        IsEnabled="False"/>
+            </StackPanel>
+        </GroupBox>
+
+        <!-- Row 6: Enhanced Log Output -->
+        <GroupBox Grid.Row="6" Header="Activity Log" Margin="5" FontWeight="Bold">
+            <Grid Margin="5">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="5"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Log Header with Clear Button -->
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0" 
+                               Text="System Messages and Command Responses" 
+                               FontWeight="Normal" 
+                               FontStyle="Italic"
+                               VerticalAlignment="Center"
+                               Foreground="Gray"/>
+
+                    <Button Grid.Column="1" 
+                            x:Name="ClearLogButton" 
+                            Content="🗑️ Clear Log" 
+                            Width="100" Height="25" 
+                            FontSize="11"
+                            Background="#FFEBEE"
+                            BorderBrush="#F44336"
+                            Click="ClearLogButton_Click"/>
+                </Grid>
+
+                <!-- Log Text Area with Scroll -->
+                <Border Grid.Row="2" 
+                        BorderBrush="#CCCCCC" 
+                        BorderThickness="1" 
+                        CornerRadius="3">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Auto"
+                                  Background="White">
+                        <TextBox x:Name="LogTextBox" 
+                                 IsReadOnly="True" 
+                                 TextWrapping="Wrap"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 FontFamily="Consolas"
+                                 FontSize="11"
+                                 Padding="5"
+                                 VerticalAlignment="Stretch"/>
+                    </ScrollViewer>
+                </Border>
+            </Grid>
+        </GroupBox>
     </Grid>
 </Window>

@@ -905,11 +905,119 @@ namespace Rigol_DS1000Z_E_Control
             }
         }
 
+        // Add these event handlers to your MainWindow.xaml.cs
+
+        /// <summary>
+        /// Save CH1 waveform directly to USB drive on oscilloscope
+        /// </summary>
+        private void SaveCH1ToUSB_Click(object sender, RoutedEventArgs e)
+        {
+            if (!isConnected)
+            {
+                MessageBox.Show("Please connect to the oscilloscope first.", "USB Save",
+                              MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            string filename = $"CH1_Waveform_{DateTime.Now:yyyyMMdd_HHmmss}";
+
+            if (captureSystem.SaveWaveformToUSB(1, filename))
+            {
+                Log($"✅ CH1 waveform saved to oscilloscope USB as {filename}");
+                MessageBox.Show($"CH1 waveform saved to USB drive as:\n{filename}.csv",
+                              "USB Save Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                MessageBox.Show("Failed to save to USB. Check:\n• USB drive is connected to oscilloscope\n• USB drive has free space\n• Oscilloscope is not busy",
+                              "USB Save Failed", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        /// <summary>
+        /// Save CH2 waveform directly to USB drive on oscilloscope
+        /// </summary>
+        private void SaveCH2ToUSB_Click(object sender, RoutedEventArgs e)
+        {
+            if (!isConnected)
+            {
+                MessageBox.Show("Please connect to the oscilloscope first.", "USB Save",
+                              MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            string filename = $"CH2_Waveform_{DateTime.Now:yyyyMMdd_HHmmss}";
+
+            if (captureSystem.SaveWaveformToUSB(2, filename))
+            {
+                Log($"✅ CH2 waveform saved to oscilloscope USB as {filename}");
+                MessageBox.Show($"CH2 waveform saved to USB drive as:\n{filename}.csv",
+                              "USB Save Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                MessageBox.Show("Failed to save to USB. Check:\n• USB drive is connected to oscilloscope\n• USB drive has free space\n• Oscilloscope is not busy",
+                              "USB Save Failed", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        /// <summary>
+        /// Save oscilloscope screen image to USB drive
+        /// </summary>
+        private void SaveScreenToUSB_Click(object sender, RoutedEventArgs e)
+        {
+            if (!isConnected)
+            {
+                MessageBox.Show("Please connect to the oscilloscope first.", "USB Save",
+                              MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            string filename = $"Screen_{DateTime.Now:yyyyMMdd_HHmmss}";
+
+            if (captureSystem.SaveScreenToUSB(filename, "PNG"))
+            {
+                Log($"✅ Screen image saved to oscilloscope USB as {filename}.png");
+                MessageBox.Show($"Screen image saved to USB drive as:\n{filename}.png",
+                              "USB Save Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                MessageBox.Show("Failed to save screen to USB. Check:\n• USB drive is connected to oscilloscope\n• USB drive has free space",
+                              "USB Save Failed", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        /// <summary>
+        /// Check USB drive status on oscilloscope
+        /// </summary>
+        private void CheckUSBStatus_Click(object sender, RoutedEventArgs e)
+        {
+            if (!isConnected)
+            {
+                MessageBox.Show("Please connect to the oscilloscope first.", "USB Status",
+                              MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            if (captureSystem.CheckUSBStatus())
+            {
+                Log("✅ USB drive detected on oscilloscope");
+            }
+            else
+            {
+                Log("❌ No USB drive detected or empty");
+                MessageBox.Show("No USB drive detected on oscilloscope.\n\nMake sure:\n• USB drive is properly connected\n• USB drive is formatted (FAT32 recommended)\n• USB drive is not write-protected",
+                              "USB Status", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
+
         #endregion
 
 
         // Add these methods to your MainWindow.xaml.cs
-      #region Dynamic Trigger Step Integration
+        #region Dynamic Trigger Step Integration
 
         /// <summary>
         /// Update trigger level control when channel settings change

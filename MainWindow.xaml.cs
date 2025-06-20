@@ -1,6 +1,7 @@
 ﻿using DS1000Z_E_USB_Control;
 using DS1000Z_E_USB_Control.Channels.Ch1;
 using DS1000Z_E_USB_Control.Channels.Ch2;
+using DS1000Z_E_USB_Control.Storage;
 using DS1000Z_E_USB_Control.TimeBase;
 using DS1000Z_E_USB_Control.Trigger;
 using Microsoft.Win32;
@@ -29,7 +30,7 @@ namespace Rigol_DS1000Z_E_Control
 
         #endregion
 
-        #region Constructor and Initialization
+      #region Constructor and Initialization
         public MainWindow()
         {
             InitializeComponent();
@@ -1026,7 +1027,7 @@ namespace Rigol_DS1000Z_E_Control
 
 
         // Add these methods to your MainWindow.xaml.cs
-        #region Dynamic Trigger Step Integration
+      #region Dynamic Trigger Step Integration
 
         /// <summary>
         /// Update trigger level control when channel settings change
@@ -1254,6 +1255,527 @@ namespace Rigol_DS1000Z_E_Control
         }
 
         #endregion
+
+
+
+        // Additional event handlers to add to your MainWindow.xaml.cs
+        // These support the enhanced storage functionality in the complete XAML
+
+      #region Enhanced Storage Event Handlers
+
+        /// <summary>
+        /// Save both channels to USB simultaneously
+        /// </summary>
+        private void SaveBothChannelsToUSB_Click(object sender, RoutedEventArgs e)
+        {
+            if (!isConnected)
+            {
+                MessageBox.Show("Please connect to the oscilloscope first.", "USB Save",
+                              MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            try
+            {
+                var format = GetSelectedUSBWaveformFormat();
+                string baseFilename = $"DualChannel_{DateTime.Now:yyyyMMdd_HHmmss}";
+
+                Log($"📊 Starting dual channel save to USB (Format: {format})...");
+
+                // Save both channels with format
+                bool ch1Success = usbStorageManager.SaveWaveformToUSB(1, $"{baseFilename}_CH1", format);
+                System.Threading.Thread.Sleep(500); // Delay between saves
+                bool ch2Success = usbStorageManager.SaveWaveformToUSB(2, $"{baseFilename}_CH2", format);
+
+                if (ch1Success && ch2Success)
+                {
+                    Log("✅ Both channels saved successfully to USB");
+                    MessageBox.Show($"Both channels saved to USB drive:\n{baseFilename}_CH1.{format.ToString().ToLower()}\n{baseFilename}_CH2.{format.ToString().ToLower()}",
+                                  "Dual Channel Save Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    Log($"⚠️ Partial save: CH1={ch1Success}, CH2={ch2Success}");
+                    MessageBox.Show("Partial save completed. Check log for details.", "Dual Channel Save",
+                                  MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Dual channel save error: {ex.Message}");
+                MessageBox.Show($"Error saving both channels: {ex.Message}", "Save Error",
+                              MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Enhanced screen save with format options
+        /// </summary>
+        private void SaveScreenToUSB_Click(object sender, RoutedEventArgs e)
+        {
+            if (!isConnected)
+            {
+                MessageBox.Show("Please connect to the oscilloscope first.", "USB Save",
+                              MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            try
+            {
+                var format = GetSelectedUSBImageFormat();
+                bool colorMode = ColorModeCheckBox?.IsChecked ?? true;
+                bool invertColors = InvertColorsCheckBox?.IsChecked ?? false;
+
+                string filename = $"Screen_{DateTime.Now:yyyyMMdd_HHmmss}";
+
+                if (usbStorageManager.SaveScreenImageToUSB(filename, format, colorMode, invertColors))
+                {
+                    string modeDesc = colorMode ? "color" : "grayscale";
+                    string invertDesc = invertColors ? ", inverted" : "";
+                    Log($"✅ Screen image saved: {filename}.{format.ToString().ToLower()} ({modeDesc}{invertDesc})");
+                    MessageBox.Show($"Screen image saved to USB drive:\n{filename}.{format.ToString().ToLower()}\nMode: {modeDesc}{invertDesc}",
+                                  "Screen Save Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    MessageBox.Show("Failed to save screen to USB. Check connection and USB drive.",
+                                  "Screen Save Failed", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Screen save error: {ex.Message}");
+                MessageBox.Show($"Error saving screen: {ex.Message}", "Save Error",
+                              MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Save system setup with selected format
+        /// </summary>
+        private void SaveSetup_Click(object sender, RoutedEventArgs e)
+        {
+            if (!isConnected)
+            {
+                MessageBox.Show("Please connect to the oscilloscope first.", "Setup Save",
+                              MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            try
+            {
+                var format = GetSelectedSetupFormat();
+                Log($"💾 Saving setup in {format} format...");
+
+                if (setupStorageManager.SaveSetupWithDialog(format))
+                {
+                    Log("✅ Setup saved successfully");
+                }
+                else
+                {
+                    Log("🚫 Setup save cancelled or failed");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Setup save error: {ex.Message}");
+                MessageBox.Show($"Error saving setup: {ex.Message}", "Save Error",
+                              MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Load system setup from file
+        /// </summary>
+        private void LoadSetup_Click(object sender, RoutedEventArgs e)
+        {
+            if (!isConnected)
+            {
+                MessageBox.Show("Please connect to the oscilloscope first.", "Setup Load",
+                              MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            try
+            {
+                Log("📂 Loading setup from file...");
+
+                if (setupStorageManager.LoadSetupWithDialog())
+                {
+                    Log("✅ Setup loaded successfully");
+                    MessageBox.Show("Setup loaded successfully. All settings have been applied to the oscilloscope.",
+                                  "Setup Load Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                    // Refresh the UI to reflect loaded settings
+                    GetSettingsButton_Click(sender, e);
+                }
+                else
+                {
+                    Log("🚫 Setup load cancelled or failed");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Setup load error: {ex.Message}");
+                MessageBox.Show($"Error loading setup: {ex.Message}", "Load Error",
+                              MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Save setup directly to USB in native format
+        /// </summary>
+        private void SaveSetupToUSB_Click(object sender, RoutedEventArgs e)
+        {
+            if (!isConnected)
+            {
+                MessageBox.Show("Please connect to the oscilloscope first.", "USB Setup Save",
+                              MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            try
+            {
+                string filename = $"Setup_{DateTime.Now:yyyyMMdd_HHmmss}";
+                Log($"📀 Saving setup to USB: {filename}...");
+
+                if (setupStorageManager.SaveAsNativeFormat(filename))
+                {
+                    Log($"✅ Setup saved to USB: {filename}.set");
+                    MessageBox.Show($"Setup saved to USB drive:\n{filename}.set",
+                                  "USB Setup Save Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    MessageBox.Show("Failed to save setup to USB. Check USB connection.",
+                                  "USB Setup Save Failed", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ USB setup save error: {ex.Message}");
+                MessageBox.Show($"Error saving setup to USB: {ex.Message}", "Save Error",
+                              MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Refresh USB file list and status
+        /// </summary>
+        private void RefreshUSB_Click(object sender, RoutedEventArgs e)
+        {
+            if (!isConnected)
+            {
+                MessageBox.Show("Please connect to the oscilloscope first.", "USB Refresh",
+                              MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            try
+            {
+                Log("🔄 Refreshing USB status...");
+
+                var status = usbStorageManager.GetUSBStatus();
+                USBStatusTextBlock.Text = status.ToString();
+                USBFileListBox.ItemsSource = status.Files;
+
+                if (status.IsConnected)
+                {
+                    Log($"✅ USB refreshed: {status.FileCount} files found");
+                }
+                else
+                {
+                    Log($"❌ USB not connected: {status.ErrorMessage}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ USB refresh error: {ex.Message}");
+                USBStatusTextBlock.Text = $"Error: {ex.Message}";
+            }
+        }
+
+        /// <summary>
+        /// Delete selected file from USB
+        /// </summary>
+        private void DeleteSelectedFile_Click(object sender, RoutedEventArgs e)
+        {
+            if (USBFileListBox.SelectedItem == null)
+            {
+                MessageBox.Show("Please select a file to delete.", "Delete File",
+                              MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            string selectedFile = USBFileListBox.SelectedItem.ToString();
+
+            var result = MessageBox.Show($"Are you sure you want to delete '{selectedFile}' from the USB drive?\n\nThis action cannot be undone.",
+                                       "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                try
+                {
+                    Log($"🗑️ Deleting file: {selectedFile}");
+
+                    if (usbStorageManager.DeleteUSBFile(selectedFile))
+                    {
+                        Log($"✅ File deleted: {selectedFile}");
+                        RefreshUSB_Click(sender, e); // Refresh the list
+                    }
+                    else
+                    {
+                        MessageBox.Show($"Failed to delete file: {selectedFile}", "Delete Failed",
+                                      MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log($"❌ Delete error: {ex.Message}");
+                    MessageBox.Show($"Error deleting file: {ex.Message}", "Delete Error",
+                                  MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        /// <summary>
+        /// USB file list selection changed
+        /// </summary>
+        private void USBFileListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            DeleteSelectedFileButton.IsEnabled = USBFileListBox.SelectedItem != null;
+        }
+
+        /// <summary>
+        /// Export all waveforms in selected format
+        /// </summary>
+        private void ExportAllWaveforms_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var waveforms = captureSystem.GetStoredWaveforms();
+                if (waveforms.Count == 0)
+                {
+                    MessageBox.Show("No waveforms to export. Capture some waveforms first.", "Export All",
+                                  MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                var exportFormat = GetSelectedExportFormat();
+                Log($"📦 Starting batch export of {waveforms.Count} waveforms in {exportFormat} format...");
+
+                string folder = GetExportFolder();
+                if (string.IsNullOrEmpty(folder)) return;
+
+                int successCount = 0;
+                foreach (var waveform in waveforms)
+                {
+                    string filename = Path.Combine(folder, $"Waveform_CH{waveform.ChannelNumber}_{waveform.Timestamp:yyyyMMdd_HHmmss}");
+                    if (captureSystem.ExportWaveform(waveform, filename, exportFormat))
+                    {
+                        successCount++;
+                    }
+                }
+
+                Log($"✅ Batch export completed: {successCount}/{waveforms.Count} files exported");
+                MessageBox.Show($"Batch export completed!\n\nExported: {successCount}/{waveforms.Count} files\nLocation: {folder}",
+                              "Batch Export Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Batch export error: {ex.Message}");
+                MessageBox.Show($"Batch export error: {ex.Message}", "Export Error",
+                              MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Quick backup - save everything
+        /// </summary>
+        private void QuickBackup_Click(object sender, RoutedEventArgs e)
+        {
+            if (!isConnected)
+            {
+                MessageBox.Show("Please connect to the oscilloscope first.", "Quick Backup",
+                              MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            try
+            {
+                Log("🎯 Starting quick backup...");
+                string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+
+                // Save setup
+                if (setupStorageManager.SaveAsNativeFormat($"QuickBackup_Setup_{timestamp}"))
+                {
+                    Log("✅ Setup backed up");
+                }
+
+                // Save current waveforms to USB
+                var format = EnhancedUSBStorageManager.USBWaveformFormat.CSV;
+                if (usbStorageManager.SaveMultipleWaveformsToUSB(new[] { 1, 2 }, $"QuickBackup_Waveforms_{timestamp}", format))
+                {
+                    Log("✅ Waveforms backed up");
+                }
+
+                // Save screen image
+                if (usbStorageManager.SaveScreenImageToUSB($"QuickBackup_Screen_{timestamp}",
+                    EnhancedUSBStorageManager.USBImageFormat.PNG))
+                {
+                    Log("✅ Screen image backed up");
+                }
+
+                MessageBox.Show("Quick backup completed! All data saved to USB drive.", "Backup Complete",
+                              MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Quick backup error: {ex.Message}");
+                MessageBox.Show($"Quick backup error: {ex.Message}", "Backup Error",
+                              MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Quick restore from USB
+        /// </summary>
+        private void QuickRestore_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("Quick Restore functionality coming soon!\n\nFor now, use 'Load Setup' to restore configurations.",
+                          "Quick Restore", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        /// <summary>
+        /// Batch export with options
+        /// </summary>
+        private void BatchExport_Click(object sender, RoutedEventArgs e)
+        {
+            ExportAllWaveforms_Click(sender, e);
+        }
+
+        /// <summary>
+        /// Storage settings dialog
+        /// </summary>
+        private void StorageSettings_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("Storage Settings dialog coming soon!\n\nThis will allow you to configure:\n• Default export formats\n• Auto-backup settings\n• File naming patterns\n• Storage locations",
+                          "Storage Settings", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        /// <summary>
+        /// Save log to file
+        /// </summary>
+        private void SaveLogButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var dialog = new SaveFileDialog
+                {
+                    Title = "Save Activity Log",
+                    FileName = $"RigolDS1000ZE_Log_{DateTime.Now:yyyyMMdd_HHmmss}.txt",
+                    Filter = "Text Files (*.txt)|*.txt|All Files (*.*)|*.*",
+                    DefaultExt = ".txt"
+                };
+
+                if (dialog.ShowDialog() == true)
+                {
+                    File.WriteAllText(dialog.FileName, LogTextBox.Text, Encoding.UTF8);
+                    Log($"💾 Log saved: {Path.GetFileName(dialog.FileName)}");
+                    MessageBox.Show($"Log saved successfully:\n{dialog.FileName}", "Log Saved",
+                                  MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error saving log: {ex.Message}", "Save Error",
+                              MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        #endregion
+
+      #region Helper Methods for Format Selection
+
+        private EnhancedUSBStorageManager.USBWaveformFormat GetSelectedUSBWaveformFormat()
+        {
+            string tag = ((ComboBoxItem)USBWaveformFormatComboBox?.SelectedItem)?.Tag?.ToString() ?? "CSV";
+            return Enum.Parse<EnhancedUSBStorageManager.USBWaveformFormat>(tag);
+        }
+
+        private EnhancedUSBStorageManager.USBImageFormat GetSelectedUSBImageFormat()
+        {
+            string tag = ((ComboBoxItem)USBImageFormatComboBox?.SelectedItem)?.Tag?.ToString() ?? "PNG";
+            return Enum.Parse<EnhancedUSBStorageManager.USBImageFormat>(tag);
+        }
+
+        private SystemSetupStorageManager.SetupFileFormat GetSelectedSetupFormat()
+        {
+            string tag = ((ComboBoxItem)SetupFormatComboBox?.SelectedItem)?.Tag?.ToString() ?? "JSON";
+            return Enum.Parse<SystemSetupStorageManager.SetupFileFormat>(tag);
+        }
+
+        private SimpleWaveformCapture.ExportFormat GetSelectedExportFormat()
+        {
+            string tag = ((ComboBoxItem)ExportFormatComboBox?.SelectedItem)?.Tag?.ToString() ?? "csv";
+            return tag switch
+            {
+                "csv" => SimpleWaveformCapture.ExportFormat.CSV,
+                "json" => SimpleWaveformCapture.ExportFormat.JSON,
+                "matlab" => SimpleWaveformCapture.ExportFormat.MATLAB,
+                "binary" => SimpleWaveformCapture.ExportFormat.RawBinary,
+                "preamble" => SimpleWaveformCapture.ExportFormat.WithPreamble,
+                _ => SimpleWaveformCapture.ExportFormat.CSV
+            };
+        }
+
+        private string GetExportFolder()
+        {
+            var dialog = new System.Windows.Forms.FolderBrowserDialog
+            {
+                Description = "Select folder for batch export",
+                ShowNewFolderButton = true
+            };
+
+            return dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK ? dialog.SelectedPath : null;
+        }
+
+        #endregion
+
+      #region Additional Initialization for Enhanced Storage
+
+        // Add this to your existing InitializeCaptureSystem method or create a new initialization method
+        private void InitializeEnhancedStorage()
+        {
+            try
+            {
+                // Initialize enhanced storage managers
+                usbStorageManager = new EnhancedUSBStorageManager(oscilloscope, Log);
+                setupStorageManager = new SystemSetupStorageManager(oscilloscope, settingsManager, Log);
+
+                Log("🏪 Enhanced storage system initialized");
+
+                // Set default format selections
+                if (USBWaveformFormatComboBox != null) USBWaveformFormatComboBox.SelectedIndex = 0;
+                if (USBImageFormatComboBox != null) USBImageFormatComboBox.SelectedIndex = 0;
+                if (SetupFormatComboBox != null) SetupFormatComboBox.SelectedIndex = 0;
+                if (ExportFormatComboBox != null) ExportFormatComboBox.SelectedIndex = 0;
+
+                // Enable auto-scroll by default
+                if (AutoScrollCheckBox != null) AutoScrollCheckBox.IsChecked = true;
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Enhanced storage initialization error: {ex.Message}");
+            }
+        }
+
+        // Don't forget to add these private fields to your MainWindow class:
+        private EnhancedUSBStorageManager usbStorageManager;
+        private SystemSetupStorageManager setupStorageManager;
+
+        #endregion
+
 
         private void Channel2Panel_Loaded(object sender, RoutedEventArgs e)
         {

@@ -124,7 +124,7 @@ namespace DS1000Z_E_USB_Control
             sb.AppendLine($"Enabled: {Channel1Settings.IsEnabled}");
             sb.AppendLine($"Probe Ratio: {Channel1Settings.ProbeRatio}:1");
             sb.AppendLine($"Vertical Scale: {Channel1Settings.VerticalScale}V/div ({Channel1Settings.VerticalScaleDisplay})");
-            sb.AppendLine($"Vertical Offset: {Channel1Settings.VerticalOffset}V ({Channel1Settings.VerticalOffsetDisplay})");
+            sb.AppendLine($"Vertical Offset: {Channel1Settings.VerticalOffset}V");
             sb.AppendLine($"Coupling: {Channel1Settings.Coupling}");
             sb.AppendLine($"Bandwidth Limit: {Channel1Settings.BandwidthLimit}");
             sb.AppendLine($"Units: {Channel1Settings.Units}");
@@ -137,7 +137,7 @@ namespace DS1000Z_E_USB_Control
             sb.AppendLine($"Enabled: {Channel2Settings.IsEnabled}");
             sb.AppendLine($"Probe Ratio: {Channel2Settings.ProbeRatio}:1");
             sb.AppendLine($"Vertical Scale: {Channel2Settings.VerticalScale}V/div ({Channel2Settings.VerticalScaleDisplay})");
-            sb.AppendLine($"Vertical Offset: {Channel2Settings.VerticalOffset}V ({Channel2Settings.VerticalOffsetDisplay})");
+            sb.AppendLine($"Vertical Offset: {Channel2Settings.VerticalOffset}V");
             sb.AppendLine($"Coupling: {Channel2Settings.Coupling}");
             sb.AppendLine($"Bandwidth Limit: {Channel2Settings.BandwidthLimit}");
             sb.AppendLine($"Units: {Channel2Settings.Units}");

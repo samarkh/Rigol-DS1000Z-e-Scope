@@ -1276,19 +1276,20 @@ namespace Rigol_DS1000Z_E_Control
         private USBWaveformFormat GetSelectedUSBWaveformFormat()
         {
             string tag = ((ComboBoxItem)USBWaveformFormatComboBox?.SelectedItem)?.Tag?.ToString() ?? "CSV";
-            return Enum.Parse<USBWaveformFormat>(tag);
+            return (USBWaveformFormat)Enum.Parse(typeof(USBWaveformFormat), tag);  // Fixed: Remove generics
         }
+
 
         private USBImageFormat GetSelectedUSBImageFormat()
         {
             string tag = ((ComboBoxItem)USBImageFormatComboBox?.SelectedItem)?.Tag?.ToString() ?? "PNG";
-            return Enum.Parse<USBImageFormat>(tag);
+            return (USBImageFormat)Enum.Parse(typeof(USBImageFormat), tag);  // Fixed: Remove generics
         }
 
         private SetupFileFormat GetSelectedSetupFormat()
         {
             string tag = ((ComboBoxItem)SetupFormatComboBox?.SelectedItem)?.Tag?.ToString() ?? "JSON";
-            return Enum.Parse<SetupFileFormat>(tag);
+            return (SetupFileFormat)Enum.Parse(typeof(SetupFileFormat), tag);  // Fixed: Remove generics
         }
 
         private ExportFormat GetSelectedExportFormat()

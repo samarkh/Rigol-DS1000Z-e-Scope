@@ -9,8 +9,20 @@ using System.Windows;
 namespace DS1000Z_E_USB_Control
 {
     /// <summary>
+    /// Export format options for waveform data
+    /// </summary>
+    public enum ExportFormat
+    {
+        CSV,
+        JSON,
+        MATLAB,
+        RawBinary,
+        WithPreamble
+    }
+
+    /// <summary>
     /// Simple waveform capture and memory system for the oscilloscope.
-    /// This single class handles everything - no complex architecture needed.
+    /// Supports multiple export formats and handles binary data properly.
     /// </summary>
     public class SimpleWaveformCapture
     {
@@ -43,20 +55,18 @@ namespace DS1000Z_E_USB_Control
             this.oscilloscope = oscilloscope ?? throw new ArgumentNullException(nameof(oscilloscope));
             this.storedWaveforms = new List<CapturedWaveform>();
 
-            Log("✅ Simple capture system initialized");
+            Log("✅ Simple capture system initialized with multi-format export support");
         }
 
         #endregion
 
-        #region Main Methods
+        #region Main Capture Methods
 
         /// <summary>
-        /// Capture waveform from specified channel
+        /// Capture waveform from specified channel with binary data support
         /// </summary>
         /// <param name="channelNumber">Channel number (1 or 2)</param>
         /// <returns>Captured waveform data, or null if failed</returns>
-        // Replace your CaptureWaveform method with this fixed version
-
         public CapturedWaveform CaptureWaveform(int channelNumber = 1)
         {
             if (!oscilloscope.IsConnected)
@@ -73,17 +83,17 @@ namespace DS1000Z_E_USB_Control
                 oscilloscope.SendCommand(":STOP");
                 System.Threading.Thread.Sleep(100);
 
-                // Set waveform source
+                // Set waveform source and format
                 oscilloscope.SendCommand($":WAVeform:SOURce CHANnel{channelNumber}");
                 oscilloscope.SendCommand(":WAVeform:MODE NORMal");
                 oscilloscope.SendCommand(":WAVeform:FORMat BYTE");
 
-                // Get waveform parameters (this is text data)
+                // Get waveform parameters (text data)
                 string preambleResponse = oscilloscope.SendQuery(":WAVeform:PREamble?");
                 Log($"📊 Preamble: {preambleResponse}");
                 double[] preamble = ParsePreamble(preambleResponse);
 
-                // Get waveform data (this is BINARY data) - need to use new method
+                // Get waveform data (binary data) - use binary query method
                 byte[] binaryData = oscilloscope.SendBinaryQuery(":WAVeform:DATA?");
 
                 if (binaryData == null || binaryData.Length == 0)
@@ -105,11 +115,11 @@ namespace DS1000Z_E_USB_Control
 
                 Log($"✅ Parsed {rawData.Length} data points");
 
-                // Convert to voltages
+                // Convert to voltages and time values
                 double[] voltages = ConvertToVoltages(rawData, preamble);
                 double[] timeValues = GenerateTimeValues(voltages.Length, preamble);
 
-                // Create waveform object
+                // Create waveform object with all data
                 var waveform = new CapturedWaveform
                 {
                     ChannelNumber = channelNumber,
@@ -117,10 +127,12 @@ namespace DS1000Z_E_USB_Control
                     VoltageData = voltages.ToList(),
                     TimeData = timeValues.ToList(),
                     SampleCount = voltages.Length,
-                    Description = $"CH{channelNumber} - {DateTime.Now:HH:mm:ss}"
+                    Description = $"CH{channelNumber} - {DateTime.Now:HH:mm:ss}",
+                    Preamble = preamble,  // Store preamble for complete exports
+                    RawData = rawData     // Store raw data for binary exports
                 };
 
-                // Store it
+                // Store it in memory
                 StoreWaveform(waveform);
 
                 Log($"✅ Captured {voltages.Length} points from Channel {channelNumber}");
@@ -134,6 +146,426 @@ namespace DS1000Z_E_USB_Control
                 return null;
             }
         }
+
+        #endregion
+
+        #region Export Methods
+
+        /// <summary>
+        /// Export waveform in the specified format
+        /// </summary>
+        public bool ExportWaveform(CapturedWaveform waveform, string filePath, ExportFormat format)
+        {
+            if (waveform == null)
+            {
+                Log("❌ Cannot export: No waveform data");
+                return false;
+            }
+
+            switch (format)
+            {
+                case ExportFormat.CSV:
+                    return ExportToCSV(waveform, filePath);
+                case ExportFormat.JSON:
+                    return ExportToJSON(waveform, filePath);
+                case ExportFormat.MATLAB:
+                    return ExportToMAT(waveform, filePath);
+                case ExportFormat.RawBinary:
+                    return ExportRawBinary(waveform, filePath);
+                case ExportFormat.WithPreamble:
+                    return ExportWithPreamble(waveform, filePath);
+                default:
+                    Log($"❌ Unknown export format: {format}");
+                    return false;
+            }
+        }
+
+        /// <summary>
+        /// Export waveform to CSV file (original format)
+        /// </summary>
+        public bool ExportToCSV(CapturedWaveform waveform, string filePath)
+        {
+            try
+            {
+                using (var writer = new StreamWriter(filePath))
+                {
+                    // Write header with metadata
+                    writer.WriteLine($"# Waveform Export - {waveform.Description}");
+                    writer.WriteLine($"# Captured: {waveform.CaptureTime}");
+                    writer.WriteLine($"# Channel: {waveform.ChannelNumber}");
+                    writer.WriteLine($"# Sample Count: {waveform.SampleCount}");
+                    writer.WriteLine($"# Export Format: CSV");
+                    writer.WriteLine($"# Export Time: {DateTime.Now}");
+                    writer.WriteLine("Time (s),Voltage (V)");
+
+                    // Write data
+                    for (int i = 0; i < waveform.VoltageData.Count; i++)
+                    {
+                        double time = i < waveform.TimeData.Count ? waveform.TimeData[i] : i * 1e-6;
+                        writer.WriteLine($"{time:E6},{waveform.VoltageData[i]:F6}");
+                    }
+                }
+
+                Log($"📁 Exported CSV to: {filePath}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ CSV export error: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Export as JSON for web applications
+        /// </summary>
+        public bool ExportToJSON(CapturedWaveform waveform, string filePath)
+        {
+            try
+            {
+                var data = new
+                {
+                    metadata = new
+                    {
+                        channel = waveform.ChannelNumber,
+                        captureTime = waveform.CaptureTime.ToString("o"), // ISO format
+                        sampleCount = waveform.SampleCount,
+                        description = waveform.Description,
+                        exportFormat = "JSON",
+                        exportTime = DateTime.Now.ToString("o"),
+                        software = "Rigol DS1000Z-E Control"
+                    },
+                    waveform = new
+                    {
+                        timeUnit = "seconds",
+                        voltageUnit = "volts",
+                        data = waveform.TimeData.Zip(waveform.VoltageData, (t, v) => new {
+                            time = Math.Round(t, 9),
+                            voltage = Math.Round(v, 6)
+                        }).ToArray()
+                    }
+                };
+
+                string json = System.Text.Json.JsonSerializer.Serialize(data, new System.Text.Json.JsonSerializerOptions
+                {
+                    WriteIndented = true
+                });
+
+                File.WriteAllText(filePath, json);
+
+                Log($"📁 Exported JSON to: {filePath}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ JSON export error: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Export as MATLAB-compatible .m file
+        /// </summary>
+        public bool ExportToMAT(CapturedWaveform waveform, string filePath)
+        {
+            try
+            {
+                using (var writer = new StreamWriter(filePath))
+                {
+                    writer.WriteLine("% MATLAB compatible waveform data");
+                    writer.WriteLine($"% Generated by: Rigol DS1000Z-E Control Software");
+                    writer.WriteLine($"% Channel: {waveform.ChannelNumber}");
+                    writer.WriteLine($"% Captured: {waveform.CaptureTime}");
+                    writer.WriteLine($"% Sample Count: {waveform.SampleCount}");
+                    writer.WriteLine($"% Export Time: {DateTime.Now}");
+                    writer.WriteLine();
+
+                    // Time vector
+                    writer.WriteLine("% Time data (seconds)");
+                    writer.Write("time = [");
+                    for (int i = 0; i < waveform.TimeData.Count; i++)
+                    {
+                        if (i > 0) writer.Write(", ");
+                        if (i % 8 == 0 && i > 0)
+                        {
+                            writer.WriteLine(" ...");
+                            writer.Write("        ");
+                        }
+                        writer.Write($"{waveform.TimeData[i]:E6}");
+                    }
+                    writer.WriteLine("];");
+                    writer.WriteLine();
+
+                    // Voltage vector
+                    writer.WriteLine("% Voltage data (volts)");
+                    writer.Write("voltage = [");
+                    for (int i = 0; i < waveform.VoltageData.Count; i++)
+                    {
+                        if (i > 0) writer.Write(", ");
+                        if (i % 8 == 0 && i > 0)
+                        {
+                            writer.WriteLine(" ...");
+                            writer.Write("          ");
+                        }
+                        writer.Write($"{waveform.VoltageData[i]:F6}");
+                    }
+                    writer.WriteLine("];");
+                    writer.WriteLine();
+
+                    // Metadata structure
+                    writer.WriteLine("% Metadata structure");
+                    writer.WriteLine("metadata = struct();");
+                    writer.WriteLine($"metadata.channel = {waveform.ChannelNumber};");
+                    writer.WriteLine($"metadata.sampleCount = {waveform.SampleCount};");
+                    writer.WriteLine($"metadata.captureTime = '{waveform.CaptureTime:yyyy-MM-dd HH:mm:ss}';");
+                    writer.WriteLine($"metadata.description = '{waveform.Description}';");
+                    writer.WriteLine();
+
+                    // Usage examples
+                    writer.WriteLine("% Usage examples:");
+                    writer.WriteLine("% figure;");
+                    writer.WriteLine("% plot(time, voltage);");
+                    writer.WriteLine("% xlabel('Time (s)');");
+                    writer.WriteLine("% ylabel('Voltage (V)');");
+                    writer.WriteLine($"% title('Channel {waveform.ChannelNumber} Waveform - {waveform.CaptureTime:HH:mm:ss}');");
+                    writer.WriteLine("% grid on;");
+                }
+
+                Log($"📁 Exported MATLAB format to: {filePath}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ MATLAB export error: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Export raw binary data with metadata header
+        /// </summary>
+        public bool ExportRawBinary(CapturedWaveform waveform, string filePath)
+        {
+            try
+            {
+                using (var writer = new BinaryWriter(File.Open(filePath, FileMode.Create)))
+                {
+                    // Write file signature and version
+                    writer.Write("RIGOL_RAW_V1".ToCharArray());
+
+                    // Write metadata
+                    writer.Write(waveform.ChannelNumber);
+                    writer.Write(waveform.CaptureTime.ToBinary());
+                    writer.Write(waveform.SampleCount);
+
+                    // Write description length and description
+                    string desc = waveform.Description ?? "";
+                    writer.Write(desc.Length);
+                    writer.Write(desc.ToCharArray());
+
+                    // Write preamble if available
+                    if (waveform.Preamble != null && waveform.Preamble.Length > 0)
+                    {
+                        writer.Write(waveform.Preamble.Length);
+                        foreach (double val in waveform.Preamble)
+                        {
+                            writer.Write(val);
+                        }
+                    }
+                    else
+                    {
+                        writer.Write(0); // No preamble
+                    }
+
+                    // Write raw ADC data if available, otherwise approximate from voltages
+                    if (waveform.RawData != null && waveform.RawData.Length > 0)
+                    {
+                        writer.Write(waveform.RawData.Length);
+                        writer.Write(waveform.RawData);
+                    }
+                    else
+                    {
+                        // Convert voltages back to approximate ADC values
+                        writer.Write(waveform.VoltageData.Count);
+                        foreach (double voltage in waveform.VoltageData)
+                        {
+                            byte adcValue = (byte)Math.Max(0, Math.Min(255, (voltage + 2.5) * 51.2));
+                            writer.Write(adcValue);
+                        }
+                    }
+                }
+
+                Log($"📁 Exported raw binary to: {filePath}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Raw binary export error: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Export with complete preamble information for full reconstruction
+        /// </summary>
+        public bool ExportWithPreamble(CapturedWaveform waveform, string filePath)
+        {
+            try
+            {
+                using (var writer = new StreamWriter(filePath))
+                {
+                    writer.WriteLine("# Complete Rigol DS1000Z-E Waveform Export");
+                    writer.WriteLine($"# Generated by: Rigol DS1000Z-E Control Software");
+                    writer.WriteLine($"# Export time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+                    writer.WriteLine($"# Channel: {waveform.ChannelNumber}");
+                    writer.WriteLine($"# Captured: {waveform.CaptureTime}");
+                    writer.WriteLine($"# Sample count: {waveform.SampleCount}");
+                    writer.WriteLine($"# Description: {waveform.Description}");
+                    writer.WriteLine("#");
+                    writer.WriteLine("# SCPI Preamble Parameters (for complete data reconstruction):");
+                    writer.WriteLine("# [0] Format (0=BYTE, 1=WORD, 2=ASC)");
+                    writer.WriteLine("# [1] Type (0=NORMal, 1=MAXimum, 2=RAW)");
+                    writer.WriteLine("# [2] Points (number of data points)");
+                    writer.WriteLine("# [3] Count (always 1 in NORMal mode)");
+                    writer.WriteLine("# [4] XIncrement (time between points)");
+                    writer.WriteLine("# [5] XOrigin (time of first point)");
+                    writer.WriteLine("# [6] XReference (reference point)");
+                    writer.WriteLine("# [7] YIncrement (voltage per ADC count)");
+                    writer.WriteLine("# [8] YOrigin (voltage at ADC=0)");
+                    writer.WriteLine("# [9] YReference (ADC reference point)");
+                    writer.WriteLine("#");
+
+                    if (waveform.Preamble != null && waveform.Preamble.Length > 0)
+                    {
+                        for (int i = 0; i < Math.Min(waveform.Preamble.Length, 10); i++)
+                        {
+                            writer.WriteLine($"# Preamble[{i}]: {waveform.Preamble[i]:E6}");
+                        }
+                    }
+                    else
+                    {
+                        writer.WriteLine("# No preamble data available");
+                    }
+
+                    writer.WriteLine("#");
+                    writer.WriteLine("# Voltage calculation: V = (ADC - YReference) * YIncrement + YOrigin");
+                    writer.WriteLine("# Time calculation: T = XOrigin + (Index * XIncrement)");
+                    writer.WriteLine("#");
+                    writer.WriteLine("# Data format: Index, Time(s), Voltage(V), RawADC");
+                    writer.WriteLine("Index,Time,Voltage,RawADC");
+
+                    for (int i = 0; i < waveform.VoltageData.Count; i++)
+                    {
+                        double time = i < waveform.TimeData.Count ? waveform.TimeData[i] : i * 1e-6;
+
+                        // Get raw ADC value if available, otherwise approximate
+                        int rawADC = 128; // Default
+                        if (waveform.RawData != null && i < waveform.RawData.Length)
+                        {
+                            rawADC = waveform.RawData[i];
+                        }
+                        else
+                        {
+                            // Approximate from voltage if preamble is available
+                            if (waveform.Preamble != null && waveform.Preamble.Length > 9)
+                            {
+                                double yIncrement = waveform.Preamble[7];
+                                double yOrigin = waveform.Preamble[8];
+                                double yReference = waveform.Preamble[9];
+
+                                if (Math.Abs(yIncrement) > 1e-12) // Avoid division by zero
+                                {
+                                    rawADC = (int)Math.Round((waveform.VoltageData[i] - yOrigin) / yIncrement + yReference);
+                                }
+                            }
+                        }
+
+                        writer.WriteLine($"{i},{time:E6},{waveform.VoltageData[i]:F6},{rawADC}");
+                    }
+                }
+
+                Log($"📁 Exported with preamble to: {filePath}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Preamble export error: {ex.Message}");
+                return false;
+            }
+        }
+
+        #endregion
+
+        #region Static Helper Methods for Export Formats
+
+        /// <summary>
+        /// Get file extension for export format
+        /// </summary>
+        public static string GetFileExtension(ExportFormat format)
+        {
+            switch (format)
+            {
+                case ExportFormat.CSV:
+                case ExportFormat.WithPreamble:
+                    return ".csv";
+                case ExportFormat.JSON:
+                    return ".json";
+                case ExportFormat.MATLAB:
+                    return ".m";
+                case ExportFormat.RawBinary:
+                    return ".bin";
+                default:
+                    return ".txt";
+            }
+        }
+
+        /// <summary>
+        /// Get file filter for save dialog
+        /// </summary>
+        public static string GetFileFilter(ExportFormat format)
+        {
+            switch (format)
+            {
+                case ExportFormat.CSV:
+                case ExportFormat.WithPreamble:
+                    return "CSV files (*.csv)|*.csv|All files (*.*)|*.*";
+                case ExportFormat.JSON:
+                    return "JSON files (*.json)|*.json|All files (*.*)|*.*";
+                case ExportFormat.MATLAB:
+                    return "MATLAB files (*.m)|*.m|All files (*.*)|*.*";
+                case ExportFormat.RawBinary:
+                    return "Binary files (*.bin)|*.bin|All files (*.*)|*.*";
+                default:
+                    return "All files (*.*)|*.*";
+            }
+        }
+
+        /// <summary>
+        /// Get format description for UI display
+        /// </summary>
+        public static string GetFormatDescription(ExportFormat format)
+        {
+            switch (format)
+            {
+                case ExportFormat.CSV:
+                    return "Comma-separated values (Excel compatible)";
+                case ExportFormat.JSON:
+                    return "JavaScript Object Notation (web compatible)";
+                case ExportFormat.MATLAB:
+                    return "MATLAB script file (ready to plot)";
+                case ExportFormat.RawBinary:
+                    return "Raw binary data (compact format)";
+                case ExportFormat.WithPreamble:
+                    return "CSV with complete oscilloscope parameters";
+                default:
+                    return "Unknown format";
+            }
+        }
+
+        #endregion
+
+        #region Memory Management Methods
+
         /// <summary>
         /// Get all stored waveforms
         /// </summary>
@@ -153,42 +585,6 @@ namespace DS1000Z_E_USB_Control
         }
 
         /// <summary>
-        /// Export waveform to CSV file
-        /// </summary>
-        /// <param name="waveform">Waveform to export</param>
-        /// <param name="filePath">Output file path</param>
-        /// <returns>True if successful</returns>
-        public bool ExportToCSV(CapturedWaveform waveform, string filePath)
-        {
-            try
-            {
-                using (var writer = new StreamWriter(filePath))
-                {
-                    // Write header
-                    writer.WriteLine($"# Waveform Export - {waveform.Description}");
-                    writer.WriteLine($"# Captured: {waveform.CaptureTime}");
-                    writer.WriteLine($"# Points: {waveform.SampleCount}");
-                    writer.WriteLine("Time (s),Voltage (V)");
-
-                    // Write data
-                    for (int i = 0; i < waveform.VoltageData.Count; i++)
-                    {
-                        double time = i < waveform.TimeData.Count ? waveform.TimeData[i] : i * 1e-6;
-                        writer.WriteLine($"{time:E6},{waveform.VoltageData[i]:F6}");
-                    }
-                }
-
-                Log($"📁 Exported to: {filePath}");
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Log($"❌ Export error: {ex.Message}");
-                return false;
-            }
-        }
-
-        /// <summary>
         /// Get memory status information
         /// </summary>
         public string GetMemoryStatus()
@@ -196,8 +592,12 @@ namespace DS1000Z_E_USB_Control
             var ch1Count = storedWaveforms.Count(w => w.ChannelNumber == 1);
             var ch2Count = storedWaveforms.Count(w => w.ChannelNumber == 2);
             var totalPoints = storedWaveforms.Sum(w => w.SampleCount);
+            var totalMemoryMB = totalPoints * 16 / (1024 * 1024); // Rough estimate in MB
 
-            return $"Stored: {storedWaveforms.Count} waveforms (CH1: {ch1Count}, CH2: {ch2Count}) - {totalPoints:N0} total points";
+            return $"Stored: {storedWaveforms.Count} waveforms (CH1: {ch1Count}, CH2: {ch2Count})\n" +
+                   $"Total Points: {totalPoints:N0}\n" +
+                   $"Est. Memory: ~{totalMemoryMB:F1} MB\n" +
+                   $"Limit: {maxStoredWaveforms} waveforms";
         }
 
         #endregion
@@ -213,7 +613,7 @@ namespace DS1000Z_E_USB_Control
             {
                 var oldest = storedWaveforms.OrderBy(w => w.CaptureTime).First();
                 storedWaveforms.Remove(oldest);
-                Log($"📦 Memory limit reached: removed oldest waveform");
+                Log($"📦 Memory limit reached: removed oldest waveform from {oldest.CaptureTime:HH:mm:ss}");
             }
         }
 
@@ -232,10 +632,12 @@ namespace DS1000Z_E_USB_Control
                         preamble[i] = value;
                 }
 
+                Log($"📋 Parsed preamble: {preamble.Length} parameters");
                 return preamble;
             }
-            catch
+            catch (Exception ex)
             {
+                Log($"⚠️ Preamble parsing error: {ex.Message}");
                 return new double[10]; // Default values
             }
         }
@@ -279,7 +681,7 @@ namespace DS1000Z_E_USB_Control
                 byte[] actualData = new byte[dataLength];
                 Array.Copy(binaryResponse, headerLength, actualData, 0, dataLength);
 
-                Log($"📋 TMC Header length: {headerLength}, Data points: {dataLength}");
+                Log($"📋 TMC Header: {headerLength} bytes, Data: {dataLength} points");
                 return actualData;
             }
             catch (Exception ex)
@@ -296,13 +698,14 @@ namespace DS1000Z_E_USB_Control
             // Use preamble values if available, otherwise use defaults
             double yIncrement = preamble.Length > 7 ? preamble[7] : 0.001;
             double yOrigin = preamble.Length > 8 ? preamble[8] : 0.0;
-            double yReference = preamble.Length > 9 ? preamble[9] : 0.0;
+            double yReference = preamble.Length > 9 ? preamble[9] : 127.0;
 
             for (int i = 0; i < rawData.Length; i++)
             {
                 voltages[i] = (rawData[i] - yReference) * yIncrement + yOrigin;
             }
 
+            Log($"⚡ Converted {rawData.Length} points to voltages (range: {voltages.Min():F3}V to {voltages.Max():F3}V)");
             return voltages;
         }
 
@@ -319,6 +722,7 @@ namespace DS1000Z_E_USB_Control
                 timeValues[i] = xOrigin + i * xIncrement;
             }
 
+            Log($"⏱️ Generated time values: {xIncrement:E3}s/point, span: {timeValues.Last() - timeValues.First():E3}s");
             return timeValues;
         }
 
@@ -345,7 +749,7 @@ namespace DS1000Z_E_USB_Control
     }
 
     /// <summary>
-    /// Simple class to hold captured waveform data
+    /// Enhanced class to hold captured waveform data with export support
     /// </summary>
     public class CapturedWaveform
     {
@@ -356,9 +760,42 @@ namespace DS1000Z_E_USB_Control
         public int SampleCount { get; set; }
         public string Description { get; set; } = "";
 
+        // New properties for enhanced export capabilities
+        public double[] Preamble { get; set; }  // SCPI preamble parameters
+        public byte[] RawData { get; set; }     // Original ADC values
+
         public override string ToString()
         {
             return $"CH{ChannelNumber} - {CaptureTime:HH:mm:ss} - {SampleCount:N0} samples";
+        }
+
+        /// <summary>
+        /// Get detailed information about this waveform
+        /// </summary>
+        public string GetDetailedInfo()
+        {
+            var info = new StringBuilder();
+            info.AppendLine($"Channel: {ChannelNumber}");
+            info.AppendLine($"Captured: {CaptureTime:yyyy-MM-dd HH:mm:ss}");
+            info.AppendLine($"Sample Count: {SampleCount:N0}");
+            info.AppendLine($"Description: {Description}");
+
+            if (VoltageData.Count > 0)
+            {
+                info.AppendLine($"Voltage Range: {VoltageData.Min():F3}V to {VoltageData.Max():F3}V");
+            }
+
+            if (TimeData.Count > 0)
+            {
+                info.AppendLine($"Time Span: {(TimeData.Last() - TimeData.First()) * 1000:F3}ms");
+            }
+
+            if (Preamble != null && Preamble.Length > 4)
+            {
+                info.AppendLine($"Sample Rate: {1.0 / Preamble[4]:E2} Sa/s");
+            }
+
+            return info.ToString();
         }
     }
 }

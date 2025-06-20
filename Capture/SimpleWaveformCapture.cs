@@ -201,7 +201,8 @@ namespace DS1000Z_E_USB_Control
                     // Write data
                     for (int i = 0; i < waveform.VoltageData.Count; i++)
                     {
-                        double time = i < waveform.TimeData.Count ? waveform.TimeData[i] : i * 1e-6;
+                        double time = i < waveform.TimeData.Count ?
+                            waveform.TimeData[i] : i * 1e-6;
                         writer.WriteLine($"{time:E6},{waveform.VoltageData[i]:F6}");
                     }
                 }
@@ -243,7 +244,8 @@ namespace DS1000Z_E_USB_Control
                     // Write data points
                     for (int i = 0; i < waveform.VoltageData.Count; i++)
                     {
-                        double time = i < waveform.TimeData.Count ? waveform.TimeData[i] : i * 1e-6;
+                        double time = i < waveform.TimeData.Count ?
+                            waveform.TimeData[i] : i * 1e-6;
                         double voltage = waveform.VoltageData[i];
 
                         writer.Write($"      {{\"time\": {time:E6}, \"voltage\": {voltage:F6}}}");
@@ -371,15 +373,16 @@ namespace DS1000Z_E_USB_Control
                     // Write description length and description
                     string desc = waveform.Description ?? "";
                     writer.Write(desc.Length);
-                    writer.Write(desc.ToCharArray());
+                    if (desc.Length > 0)
+                        writer.Write(desc.ToCharArray());
 
                     // Write preamble if available
-                    if (waveform.Preamble != null && waveform.Preamble.Length > 0)
+                    if (waveform.Preamble != null)
                     {
                         writer.Write(waveform.Preamble.Length);
-                        foreach (double val in waveform.Preamble)
+                        foreach (double value in waveform.Preamble)
                         {
-                            writer.Write(val);
+                            writer.Write(value);
                         }
                     }
                     else
@@ -387,20 +390,20 @@ namespace DS1000Z_E_USB_Control
                         writer.Write(0); // No preamble
                     }
 
-                    // Write raw ADC data if available, otherwise approximate from voltages
-                    if (waveform.RawData != null && waveform.RawData.Length > 0)
+                    // Write raw data if available, otherwise convert voltages
+                    if (waveform.RawData != null)
                     {
                         writer.Write(waveform.RawData.Length);
                         writer.Write(waveform.RawData);
                     }
                     else
                     {
-                        // Convert voltages back to approximate ADC values
+                        // Convert voltages back to approximate raw values
                         writer.Write(waveform.VoltageData.Count);
                         foreach (double voltage in waveform.VoltageData)
                         {
-                            byte adcValue = (byte)Math.Max(0, Math.Min(255, (voltage + 2.5) * 51.2));
-                            writer.Write(adcValue);
+                            byte approximateRaw = (byte)Math.Round((voltage + 2.0) * 127.0 / 4.0);
+                            writer.Write(approximateRaw);
                         }
                     }
                 }
@@ -466,7 +469,8 @@ namespace DS1000Z_E_USB_Control
 
                     for (int i = 0; i < waveform.VoltageData.Count; i++)
                     {
-                        double time = i < waveform.TimeData.Count ? waveform.TimeData[i] : i * 1e-6;
+                        double time = i < waveform.TimeData.Count ?
+                            waveform.TimeData[i] : i * 1e-6;
 
                         // Get raw ADC value if available, otherwise approximate
                         int rawADC = 128; // Default
@@ -593,28 +597,20 @@ namespace DS1000Z_E_USB_Control
                 oscilloscope.SendCommand(":STOP");
                 System.Threading.Thread.Sleep(100);
 
-                // Set the file format (CSV, BIN, etc.)
+                // Set the file format (CSV, BIN, etc.) - you can modify this
                 oscilloscope.SendCommand(":STORage:WAVeform:FORMat CSV");
 
                 // Set the source channel
                 oscilloscope.SendCommand($":STORage:WAVeform:SOURce CHANnel{channelNumber}");
 
-                // Set the filename (without extension - oscilloscope adds it)
+                // Set the filename (without extension)
                 oscilloscope.SendCommand($":STORage:WAVeform:FNAMe \"{filename}\"");
 
-                // Execute the save command - this saves to USB drive on oscilloscope
-                bool success = oscilloscope.SendCommand(":STORage:WAVeform:SAVE");
+                // Save to USB
+                oscilloscope.SendCommand(":STORage:WAVeform:SAVE");
 
-                if (success)
-                {
-                    Log($"✅ Waveform saved to oscilloscope USB: {filename}");
-                }
-                else
-                {
-                    Log($"❌ Failed to save waveform to USB");
-                }
-
-                return success;
+                Log($"✅ Saved CH{channelNumber} waveform to USB: {filename}");
+                return true;
             }
             catch (Exception ex)
             {
@@ -624,9 +620,9 @@ namespace DS1000Z_E_USB_Control
         }
 
         /// <summary>
-        /// Save oscilloscope screen image to USB drive
+        /// Check USB drive status
         /// </summary>
-        public bool SaveScreenToUSB(string filename, string format = "PNG")
+        public bool CheckUSBStatus()
         {
             try
             {
@@ -636,42 +632,8 @@ namespace DS1000Z_E_USB_Control
                     return false;
                 }
 
-                // Set image format (BMP24, BMP8, PNG, JPEG, TIFF)
-                oscilloscope.SendCommand($":STORage:IMAGe:TYPE {format}");
-
-                // Set filename
-                oscilloscope.SendCommand($":STORage:IMAGe:FNAMe \"{filename}\"");
-
-                // Save image to USB
-                bool success = oscilloscope.SendCommand(":STORage:IMAGe:SAVE");
-
-                if (success)
-                {
-                    Log($"✅ Screen image saved to oscilloscope USB: {filename}.{format.ToLower()}");
-                }
-                else
-                {
-                    Log($"❌ Failed to save image to USB");
-                }
-
-                return success;
-            }
-            catch (Exception ex)
-            {
-                Log($"❌ USB image save error: {ex.Message}");
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// Check if USB drive is connected to oscilloscope
-        /// </summary>
-        public bool CheckUSBStatus()
-        {
-            try
-            {
-                // Query system status - this might include USB info
-                string status = oscilloscope.SendQuery(":SYSTem:ERRor?");
+                // Query storage system status
+                string status = oscilloscope.SendQuery(":STORage:STATus?");
                 Log($"System status: {status}");
 
                 // Try to list files (if USB is connected, this should work)
@@ -913,6 +875,30 @@ namespace DS1000Z_E_USB_Control
         public double[] Preamble { get; set; }  // SCPI preamble parameters
         public byte[] RawData { get; set; }     // Original ADC values
 
+        /// <summary>
+        /// Alias for CaptureTime to maintain compatibility
+        /// </summary>
+        public DateTime Timestamp
+        {
+            get => CaptureTime;
+            set => CaptureTime = value;
+        }
+
+        /// <summary>
+        /// Sample rate calculated from preamble data
+        /// </summary>
+        public double SampleRate
+        {
+            get
+            {
+                if (Preamble != null && Preamble.Length > 4 && Math.Abs(Preamble[4]) > 1e-12)
+                {
+                    return 1.0 / Preamble[4]; // Sample rate = 1/time increment
+                }
+                return 1e6; // Default 1 MSa/s if not available
+            }
+        }
+
         public override string ToString()
         {
             return $"CH{ChannelNumber} - {CaptureTime:HH:mm:ss} - {SampleCount:N0} samples";
@@ -927,6 +913,7 @@ namespace DS1000Z_E_USB_Control
             info.AppendLine($"Channel: {ChannelNumber}");
             info.AppendLine($"Captured: {CaptureTime:yyyy-MM-dd HH:mm:ss}");
             info.AppendLine($"Sample Count: {SampleCount:N0}");
+            info.AppendLine($"Sample Rate: {SampleRate / 1e6:F1} MSa/s");
             info.AppendLine($"Description: {Description}");
 
             if (VoltageData.Count > 0)
@@ -937,11 +924,6 @@ namespace DS1000Z_E_USB_Control
             if (TimeData.Count > 0)
             {
                 info.AppendLine($"Time Span: {(TimeData.Last() - TimeData.First()) * 1000:F3}ms");
-            }
-
-            if (Preamble != null && Preamble.Length > 4)
-            {
-                info.AppendLine($"Sample Rate: {1.0 / Preamble[4]:E2} Sa/s");
             }
 
             return info.ToString();

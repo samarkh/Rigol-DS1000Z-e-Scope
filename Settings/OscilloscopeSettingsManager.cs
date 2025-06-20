@@ -122,10 +122,9 @@ namespace DS1000Z_E_USB_Control
             // Channel 1 Settings
             sb.AppendLine("=== Channel 1 Settings ===");
             sb.AppendLine($"Enabled: {Channel1Settings.IsEnabled}");
-            sb.AppendLine($"Probe Ratio: {Channel1Settings.ProbeRatio}×");
-            sb.AppendLine($"Vertical Scale: {Channel1Settings.VerticalScale}V/div");
-            sb.AppendLine($"Vertical Offset: {Channel1Settings.VerticalOffset}V");
-            sb.AppendLine($"Vertical Range: {Channel1Settings.VerticalRange}V");
+            sb.AppendLine($"Probe Ratio: {Channel1Settings.ProbeRatio}:1");
+            sb.AppendLine($"Vertical Scale: {Channel1Settings.VerticalScale}V/div ({Channel1Settings.VerticalScaleDisplay})");
+            sb.AppendLine($"Vertical Offset: {Channel1Settings.VerticalOffset}V ({Channel1Settings.VerticalOffsetDisplay})");
             sb.AppendLine($"Coupling: {Channel1Settings.Coupling}");
             sb.AppendLine($"Bandwidth Limit: {Channel1Settings.BandwidthLimit}");
             sb.AppendLine($"Units: {Channel1Settings.Units}");
@@ -136,10 +135,9 @@ namespace DS1000Z_E_USB_Control
             // Channel 2 Settings
             sb.AppendLine("=== Channel 2 Settings ===");
             sb.AppendLine($"Enabled: {Channel2Settings.IsEnabled}");
-            sb.AppendLine($"Probe Ratio: {Channel2Settings.ProbeRatio}×");
-            sb.AppendLine($"Vertical Scale: {Channel2Settings.VerticalScale}V/div");
-            sb.AppendLine($"Vertical Offset: {Channel2Settings.VerticalOffset}V");
-            sb.AppendLine($"Vertical Range: {Channel2Settings.VerticalRange}V");
+            sb.AppendLine($"Probe Ratio: {Channel2Settings.ProbeRatio}:1");
+            sb.AppendLine($"Vertical Scale: {Channel2Settings.VerticalScale}V/div ({Channel2Settings.VerticalScaleDisplay})");
+            sb.AppendLine($"Vertical Offset: {Channel2Settings.VerticalOffset}V ({Channel2Settings.VerticalOffsetDisplay})");
             sb.AppendLine($"Coupling: {Channel2Settings.Coupling}");
             sb.AppendLine($"Bandwidth Limit: {Channel2Settings.BandwidthLimit}");
             sb.AppendLine($"Units: {Channel2Settings.Units}");
@@ -591,12 +589,12 @@ namespace DS1000Z_E_USB_Control
 
         #endregion
 
-        #region Individual Settings Application
+        #region Individual Settings Application - CHANGED TO PUBLIC
 
         /// <summary>
         /// Apply Channel 1 settings to oscilloscope
         /// </summary>
-        private bool ApplyChannel1Settings(Ch1Settings settings)
+        public bool ApplyChannel1Settings(Ch1Settings settings)  // Changed from private to public
         {
             try
             {
@@ -630,7 +628,7 @@ namespace DS1000Z_E_USB_Control
         /// <summary>
         /// Apply Channel 2 settings to oscilloscope
         /// </summary>
-        private bool ApplyChannel2Settings(Ch2Settings settings)
+        public bool ApplyChannel2Settings(Ch2Settings settings)  // Changed from private to public
         {
             try
             {
@@ -664,7 +662,7 @@ namespace DS1000Z_E_USB_Control
         /// <summary>
         /// Apply Trigger settings to oscilloscope
         /// </summary>
-        private bool ApplyTriggerSettings(TriggerSettings settings)
+        public bool ApplyTriggerSettings(TriggerSettings settings)  // Changed from private to public
         {
             try
             {
@@ -710,7 +708,7 @@ namespace DS1000Z_E_USB_Control
         /// <summary>
         /// Apply TimeBase settings to oscilloscope
         /// </summary>
-        private bool ApplyTimeBaseSettings(TimeBaseSettings settings)
+        public bool ApplyTimeBaseSettings(TimeBaseSettings settings)  // Changed from private to public
         {
             try
             {

@@ -240,18 +240,7 @@
                 Width="100" Height="30" Margin="2"
                 Click="ShowMemoryStatus_Click"/>
 
-                    <Button Name="ExportLatestButton" 
-                Content="Export Latest" 
-                Width="100" Height="30" Margin="2"
-                Click="ExportLatestWaveform_Click"/>
 
-                    <Button Name="ClearMemoryButton" 
-                Content="Clear Memory" 
-                Width="100" Height="30" Margin="2"
-                Click="ClearMemory_Click"/>
-               
-
-               
                     <Label Content="Export Format:" VerticalAlignment="Center" Margin="0,0,5,0"/>
                     <ComboBox x:Name="ExportFormatComboBox" 
               Width="120" 
@@ -264,11 +253,11 @@
                         <ComboBoxItem Content="With Preamble" Tag="preamble"/>
                     </ComboBox>
 
-                    <!-- Your existing export button -->
                     <Button x:Name="ExportLatestWaveformButton" 
             Content="Export Latest" 
             Click="ExportLatestWaveform_Click" 
-            Margin="10,0,0,0"/>
+            Margin="10,0,0,0"/> >
+
                 </StackPanel>
 
             </GroupBox>

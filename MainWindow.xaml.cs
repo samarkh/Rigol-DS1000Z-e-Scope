@@ -747,12 +747,20 @@ namespace Rigol_DS1000Z_E_Control
             MessageBox.Show(status, "Memory Status", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
+        // ============================================================================
+        // Replace your ExportLatestWaveform_Click method in MainWindow.xaml.cs with this:
+        // ============================================================================
+
         /// <summary>
-        /// Export latest waveform to CSV
+        /// Export latest waveform with format selection (DEBUGGED VERSION)
         /// </summary>
         private void ExportLatestWaveform_Click(object sender, RoutedEventArgs e)
         {
-            if (captureSystem == null) return;
+            if (captureSystem == null)
+            {
+                Log("❌ Capture system not initialized");
+                return;
+            }
 
             var waveforms = captureSystem.GetStoredWaveforms();
             if (waveforms.Count == 0)
@@ -761,24 +769,126 @@ namespace Rigol_DS1000Z_E_Control
                 return;
             }
 
-            var latest = waveforms.Last();
-
-            var dialog = new Microsoft.Win32.SaveFileDialog
+            // DEBUG: Check if ComboBox exists
+            if (ExportFormatComboBox == null)
             {
-                FileName = $"Waveform_{latest.ChannelNumber}_{DateTime.Now:yyyyMMdd_HHmmss}.csv",
-                DefaultExt = ".csv",
-                Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*"
-            };
+                Log("❌ Export format ComboBox not found - using CSV default");
+                // Fallback to CSV if ComboBox doesn't exist
+                ExportWithFormat(waveforms.Last(), ExportFormat.CSV);
+                return;
+            }
 
-            if (dialog.ShowDialog() == true)
+            // Get selected format with debugging
+            var selectedItem = ExportFormatComboBox.SelectedItem as ComboBoxItem;
+            if (selectedItem == null)
             {
-                if (captureSystem.ExportToCSV(latest, dialog.FileName))
+                Log("❌ No format selected - using CSV default");
+                ExportWithFormat(waveforms.Last(), ExportFormat.CSV);
+                return;
+            }
+
+            // DEBUG: Log selected item details
+            string formatTag = selectedItem.Tag?.ToString() ?? "csv";
+            string formatContent = selectedItem.Content?.ToString() ?? "CSV";
+            Log($"🔍 Selected format: {formatContent} (tag: {formatTag})");
+
+            // Convert tag to enum with detailed logging
+            ExportFormat exportFormat;
+            switch (formatTag.ToLower())
+            {
+                case "csv":
+                    exportFormat = ExportFormat.CSV;
+                    Log("📄 Using CSV format");
+                    break;
+                case "json":
+                    exportFormat = ExportFormat.JSON;
+                    Log("📄 Using JSON format");
+                    break;
+                case "matlab":
+                    exportFormat = ExportFormat.MATLAB;
+                    Log("📄 Using MATLAB format");
+                    break;
+                case "binary":
+                    exportFormat = ExportFormat.RawBinary;
+                    Log("📄 Using Raw Binary format");
+                    break;
+                case "preamble":
+                    exportFormat = ExportFormat.WithPreamble;
+                    Log("📄 Using With Preamble format");
+                    break;
+                default:
+                    Log($"⚠️ Unknown format tag '{formatTag}' - defaulting to CSV");
+                    exportFormat = ExportFormat.CSV;
+                    break;
+            }
+
+            // Export with the selected format
+            ExportWithFormat(waveforms.Last(), exportFormat);
+        }
+
+
+        /// <summary>
+        /// Helper method to handle the actual export with proper file handling
+        /// </summary>
+        private void ExportWithFormat(CapturedWaveform waveform, ExportFormat format)
+        {
+            try
+            {
+                // Get format-specific file info
+                string extension = SimpleWaveformCapture.GetFileExtension(format);
+                string filter = SimpleWaveformCapture.GetFileFilter(format);
+                string formatName = format.ToString();
+
+                Log($"🔧 Setting up export: Format={formatName}, Extension={extension}");
+
+                // Create save dialog with format-specific settings
+                var dialog = new Microsoft.Win32.SaveFileDialog
                 {
-                    MessageBox.Show($"Exported to:\n{dialog.FileName}", "Export Complete",
-                                  MessageBoxButton.OK, MessageBoxImage.Information);
+                    FileName = $"Waveform_CH{waveform.ChannelNumber}_{DateTime.Now:yyyyMMdd_HHmmss}{extension}",
+                    DefaultExt = extension,
+                    Filter = filter,
+                    Title = $"Export Waveform as {formatName}"
+                };
+
+                Log($"💾 Save dialog: File={dialog.FileName}, Filter={filter}");
+
+                if (dialog.ShowDialog() == true)
+                {
+                    Log($"📁 User selected file: {dialog.FileName}");
+                    Log($"🔄 Starting export in {formatName} format...");
+
+                    // Call the export method with explicit format
+                    bool success = captureSystem.ExportWaveform(waveform, dialog.FileName, format);
+
+                    if (success)
+                    {
+                        Log($"✅ Export successful: {dialog.FileName}");
+                        MessageBox.Show($"Waveform exported successfully!\n\nFile: {dialog.FileName}\nFormat: {formatName}\nSize: {new FileInfo(dialog.FileName).Length} bytes",
+                                      "Export Complete",
+                                      MessageBoxButton.OK,
+                                      MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        Log($"❌ Export failed for format {formatName}");
+                        MessageBox.Show($"Export failed for {formatName} format. Check the log for details.",
+                                      "Export Error",
+                                      MessageBoxButton.OK,
+                                      MessageBoxImage.Error);
+                    }
+                }
+                else
+                {
+                    Log("🚫 Export cancelled by user");
                 }
             }
+            catch (Exception ex)
+            {
+                Log($"❌ Export error: {ex.Message}");
+                MessageBox.Show($"Export error: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
+
 
         /// <summary>
         /// Clear all stored waveforms

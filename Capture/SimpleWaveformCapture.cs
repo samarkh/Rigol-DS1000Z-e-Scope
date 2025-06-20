@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Windows;
+using System.Xml;
 
 namespace DS1000Z_E_USB_Control
 {
@@ -151,34 +152,34 @@ namespace DS1000Z_E_USB_Control
 
         #region Export Methods
 
-        /// <summary>
-        /// Export waveform in the specified format
-        /// </summary>
-        public bool ExportWaveform(CapturedWaveform waveform, string filePath, ExportFormat format)
-        {
-            if (waveform == null)
-            {
-                Log("❌ Cannot export: No waveform data");
-                return false;
-            }
+        ///// <summary>
+        ///// Export waveform in the specified format
+        ///// </summary>
+        //public bool ExportWaveform(CapturedWaveform waveform, string filePath, ExportFormat format)
+        //{
+        //    if (waveform == null)
+        //    {
+        //        Log("❌ Cannot export: No waveform data");
+        //        return false;
+        //    }
 
-            switch (format)
-            {
-                case ExportFormat.CSV:
-                    return ExportToCSV(waveform, filePath);
-                case ExportFormat.JSON:
-                    return ExportToJSON(waveform, filePath);
-                case ExportFormat.MATLAB:
-                    return ExportToMAT(waveform, filePath);
-                case ExportFormat.RawBinary:
-                    return ExportRawBinary(waveform, filePath);
-                case ExportFormat.WithPreamble:
-                    return ExportWithPreamble(waveform, filePath);
-                default:
-                    Log($"❌ Unknown export format: {format}");
-                    return false;
-            }
-        }
+        //    switch (format)
+        //    {
+        //        case ExportFormat.CSV:
+        //            return ExportToCSV(waveform, filePath);
+        //        case ExportFormat.JSON:
+        //            return ExportToJSON(waveform, filePath);
+        //        case ExportFormat.MATLAB:
+        //            return ExportToMAT(waveform, filePath);
+        //        case ExportFormat.RawBinary:
+        //            return ExportRawBinary(waveform, filePath);
+        //        case ExportFormat.WithPreamble:
+        //            return ExportWithPreamble(waveform, filePath);
+        //        default:
+        //            Log($"❌ Unknown export format: {format}");
+        //            return false;
+        //    }
+        //}
 
         /// <summary>
         /// Export waveform to CSV file (original format)
@@ -216,42 +217,54 @@ namespace DS1000Z_E_USB_Control
             }
         }
 
+        // STEP 1: Replace your ExportToJSON method with this (around line 240-250):
+
         /// <summary>
-        /// Export as JSON for web applications
+        /// Export as JSON for web applications (manual serialization - no dependencies)
         /// </summary>
         public bool ExportToJSON(CapturedWaveform waveform, string filePath)
         {
             try
             {
-                var data = new
+                using (var writer = new StreamWriter(filePath))
                 {
-                    metadata = new
+                    writer.WriteLine("{");
+                    writer.WriteLine("  \"metadata\": {");
+                    writer.WriteLine($"    \"channel\": {waveform.ChannelNumber},");
+                    writer.WriteLine($"    \"captureTime\": \"{waveform.CaptureTime:yyyy-MM-ddTHH:mm:ss.fffZ}\",");
+                    writer.WriteLine($"    \"sampleCount\": {waveform.SampleCount},");
+                    writer.WriteLine($"    \"description\": \"{EscapeJsonString(waveform.Description)}\",");
+                    writer.WriteLine($"    \"exportFormat\": \"JSON\",");
+                    writer.WriteLine($"    \"exportTime\": \"{DateTime.Now:yyyy-MM-ddTHH:mm:ss.fffZ}\",");
+                    writer.WriteLine($"    \"software\": \"Rigol DS1000Z-E Control\"");
+                    writer.WriteLine("  },");
+                    writer.WriteLine("  \"waveform\": {");
+                    writer.WriteLine("    \"timeUnit\": \"seconds\",");
+                    writer.WriteLine("    \"voltageUnit\": \"volts\",");
+                    writer.WriteLine("    \"data\": [");
+
+                    // Write data points
+                    for (int i = 0; i < waveform.VoltageData.Count; i++)
                     {
-                        channel = waveform.ChannelNumber,
-                        captureTime = waveform.CaptureTime.ToString("o"), // ISO format
-                        sampleCount = waveform.SampleCount,
-                        description = waveform.Description,
-                        exportFormat = "JSON",
-                        exportTime = DateTime.Now.ToString("o"),
-                        software = "Rigol DS1000Z-E Control"
-                    },
-                    waveform = new
-                    {
-                        timeUnit = "seconds",
-                        voltageUnit = "volts",
-                        data = waveform.TimeData.Zip(waveform.VoltageData, (t, v) => new {
-                            time = Math.Round(t, 9),
-                            voltage = Math.Round(v, 6)
-                        }).ToArray()
+                        double time = i < waveform.TimeData.Count ? waveform.TimeData[i] : i * 1e-6;
+                        double voltage = waveform.VoltageData[i];
+
+                        writer.Write($"      {{\"time\": {time:E6}, \"voltage\": {voltage:F6}}}");
+
+                        if (i < waveform.VoltageData.Count - 1)
+                        {
+                            writer.WriteLine(",");
+                        }
+                        else
+                        {
+                            writer.WriteLine();
+                        }
                     }
-                };
 
-                string json = System.Text.Json.JsonSerializer.Serialize(data, new System.Text.Json.JsonSerializerOptions
-                {
-                    WriteIndented = true
-                });
-
-                File.WriteAllText(filePath, json);
+                    writer.WriteLine("    ]");
+                    writer.WriteLine("  }");
+                    writer.WriteLine("}");
+                }
 
                 Log($"📁 Exported JSON to: {filePath}");
                 return true;
@@ -261,6 +274,77 @@ namespace DS1000Z_E_USB_Control
                 Log($"❌ JSON export error: {ex.Message}");
                 return false;
             }
+        }
+
+
+        // ============================================================================
+        // Also add this debugging version to SimpleWaveformCapture.cs:
+        // ============================================================================
+
+        /// <summary>
+        /// Export waveform in the specified format (DEBUGGED VERSION)
+        /// </summary>
+        public bool ExportWaveform(CapturedWaveform waveform, string filePath, ExportFormat format)
+        {
+            if (waveform == null)
+            {
+                Log("❌ Cannot export: No waveform data");
+                return false;
+            }
+
+            Log($"🔄 Starting export: Format={format}, File={filePath}");
+
+            try
+            {
+                switch (format)
+                {
+                    case ExportFormat.CSV:
+                        Log("📄 Exporting as CSV...");
+                        return ExportToCSV(waveform, filePath);
+
+                    case ExportFormat.JSON:
+                        Log("📄 Exporting as JSON...");
+                        return ExportToJSON(waveform, filePath);
+
+                    case ExportFormat.MATLAB:
+                        Log("📄 Exporting as MATLAB...");
+                        return ExportToMAT(waveform, filePath);
+
+                    case ExportFormat.RawBinary:
+                        Log("📄 Exporting as Raw Binary...");
+                        return ExportRawBinary(waveform, filePath);
+
+                    case ExportFormat.WithPreamble:
+                        Log("📄 Exporting with Preamble...");
+                        return ExportWithPreamble(waveform, filePath);
+
+                    default:
+                        Log($"❌ Unknown export format: {format}");
+                        return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Export method error for {format}: {ex.Message}");
+                return false;
+            }
+        }
+
+        // STEP 2: Add this helper method anywhere in your SimpleWaveformCapture class:
+
+        /// <summary>
+        /// Helper method to escape strings for JSON
+        /// </summary>
+        private string EscapeJsonString(string input)
+        {
+            if (string.IsNullOrEmpty(input))
+                return "";
+
+            return input.Replace("\\", "\\\\")
+                        .Replace("\"", "\\\"")
+                        .Replace("\n", "\\n")
+                        .Replace("\r", "\\r")
+                        .Replace("\t", "\\t");
         }
 
         /// <summary>

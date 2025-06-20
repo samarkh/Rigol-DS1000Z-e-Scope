@@ -199,43 +199,52 @@ namespace Rigol_DS1000Z_E_Control
                 TimeBasePanel.IsEnabled = false;
             }
         }
+        // Replace the UpdateDeviceInfo method in your MainWindow.xaml.cs with this:
 
         /// <summary>
-        /// Update device information display
+        /// Update device information display (simplified for new UI)
         /// </summary>
         private void UpdateDeviceInfo()
         {
-            if (isConnected)
+            try
             {
-                string deviceInfo = settingsManager.GetDeviceID();
-                string acquisitionInfo = settingsManager.GetAcquisitionInfo();
+                if (settingsManager != null)
+                {
+                    string deviceId = settingsManager.GetDeviceID();
+                    string acquisitionInfo = settingsManager.GetAcquisitionInfo();
 
-                if (DeviceInfoText != null)
-                    DeviceInfoText.Text = $"Device: {deviceInfo}";
-
-                if (AcquisitionInfoText != null)
-                    AcquisitionInfoText.Text = $"Acquisition: {acquisitionInfo}";
+                    // Update the main status text instead of separate device info controls
+                    if (!string.IsNullOrEmpty(deviceId))
+                    {
+                        // Log the device info instead of showing in separate controls
+                        Log($"📱 Device: {deviceId}");
+                        Log($"📊 Acquisition: {acquisitionInfo}");
+                    }
+                    else
+                    {
+                        Log("📱 Device: Not Connected");
+                        Log("📊 Acquisition: Unknown");
+                    }
+                }
             }
-            else
+            catch (Exception ex)
             {
-                if (DeviceInfoText != null)
-                    DeviceInfoText.Text = "Device: Not Connected";
-
-                if (AcquisitionInfoText != null)
-                    AcquisitionInfoText.Text = "Acquisition: Unknown";
+                Log($"❌ Error updating device info: {ex.Message}");
             }
         }
 
         /// <summary>
-        /// Update last update time display
+        /// Update last update time display (simplified for new UI)
         /// </summary>
         private void UpdateLastUpdateTime()
         {
-            if (LastUpdateText != null)
-            {
-                LastUpdateText.Text = $"Last Settings Update: {DateTime.Now:HH:mm:ss}";
-            }
+            // Log the update time instead of showing in a separate control
+            Log($"🕒 Settings updated at: {DateTime.Now:HH:mm:ss}");
         }
+
+
+
+
         #endregion
 
       #region Settings Management

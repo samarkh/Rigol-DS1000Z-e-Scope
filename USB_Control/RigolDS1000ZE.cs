@@ -46,6 +46,8 @@ namespace Rigol_DS1000Z_E_Control
             return result;
         }
 
+
+
         public byte[] SendBinaryQuery(string query, int maxBufferSize = 100000)
         {
             if (visaManager == null)

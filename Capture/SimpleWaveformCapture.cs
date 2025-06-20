@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Windows;
-using System.Xml;
 
 namespace DS1000Z_E_USB_Control
 {
@@ -152,34 +151,34 @@ namespace DS1000Z_E_USB_Control
 
         #region Export Methods
 
-        ///// <summary>
-        ///// Export waveform in the specified format
-        ///// </summary>
-        //public bool ExportWaveform(CapturedWaveform waveform, string filePath, ExportFormat format)
-        //{
-        //    if (waveform == null)
-        //    {
-        //        Log("❌ Cannot export: No waveform data");
-        //        return false;
-        //    }
+        /// <summary>
+        /// Export waveform in the specified format
+        /// </summary>
+        public bool ExportWaveform(CapturedWaveform waveform, string filePath, ExportFormat format)
+        {
+            if (waveform == null)
+            {
+                Log("❌ Cannot export: No waveform data");
+                return false;
+            }
 
-        //    switch (format)
-        //    {
-        //        case ExportFormat.CSV:
-        //            return ExportToCSV(waveform, filePath);
-        //        case ExportFormat.JSON:
-        //            return ExportToJSON(waveform, filePath);
-        //        case ExportFormat.MATLAB:
-        //            return ExportToMAT(waveform, filePath);
-        //        case ExportFormat.RawBinary:
-        //            return ExportRawBinary(waveform, filePath);
-        //        case ExportFormat.WithPreamble:
-        //            return ExportWithPreamble(waveform, filePath);
-        //        default:
-        //            Log($"❌ Unknown export format: {format}");
-        //            return false;
-        //    }
-        //}
+            switch (format)
+            {
+                case ExportFormat.CSV:
+                    return ExportToCSV(waveform, filePath);
+                case ExportFormat.JSON:
+                    return ExportToJSON(waveform, filePath);
+                case ExportFormat.MATLAB:
+                    return ExportToMAT(waveform, filePath);
+                case ExportFormat.RawBinary:
+                    return ExportRawBinary(waveform, filePath);
+                case ExportFormat.WithPreamble:
+                    return ExportWithPreamble(waveform, filePath);
+                default:
+                    Log($"❌ Unknown export format: {format}");
+                    return false;
+            }
+        }
 
         /// <summary>
         /// Export waveform to CSV file (original format)
@@ -216,8 +215,6 @@ namespace DS1000Z_E_USB_Control
                 return false;
             }
         }
-
-        // STEP 1: Replace your ExportToJSON method with this (around line 240-250):
 
         /// <summary>
         /// Export as JSON for web applications (manual serialization - no dependencies)
@@ -274,77 +271,6 @@ namespace DS1000Z_E_USB_Control
                 Log($"❌ JSON export error: {ex.Message}");
                 return false;
             }
-        }
-
-
-        // ============================================================================
-        // Also add this debugging version to SimpleWaveformCapture.cs:
-        // ============================================================================
-
-        /// <summary>
-        /// Export waveform in the specified format (DEBUGGED VERSION)
-        /// </summary>
-        public bool ExportWaveform(CapturedWaveform waveform, string filePath, ExportFormat format)
-        {
-            if (waveform == null)
-            {
-                Log("❌ Cannot export: No waveform data");
-                return false;
-            }
-
-            Log($"🔄 Starting export: Format={format}, File={filePath}");
-
-            try
-            {
-                switch (format)
-                {
-                    case ExportFormat.CSV:
-                        Log("📄 Exporting as CSV...");
-                        return ExportToCSV(waveform, filePath);
-
-                    case ExportFormat.JSON:
-                        Log("📄 Exporting as JSON...");
-                        return ExportToJSON(waveform, filePath);
-
-                    case ExportFormat.MATLAB:
-                        Log("📄 Exporting as MATLAB...");
-                        return ExportToMAT(waveform, filePath);
-
-                    case ExportFormat.RawBinary:
-                        Log("📄 Exporting as Raw Binary...");
-                        return ExportRawBinary(waveform, filePath);
-
-                    case ExportFormat.WithPreamble:
-                        Log("📄 Exporting with Preamble...");
-                        return ExportWithPreamble(waveform, filePath);
-
-                    default:
-                        Log($"❌ Unknown export format: {format}");
-                        return false;
-                }
-            }
-            catch (Exception ex)
-            {
-                Log($"❌ Export method error for {format}: {ex.Message}");
-                return false;
-            }
-        }
-
-        // STEP 2: Add this helper method anywhere in your SimpleWaveformCapture class:
-
-        /// <summary>
-        /// Helper method to escape strings for JSON
-        /// </summary>
-        private string EscapeJsonString(string input)
-        {
-            if (string.IsNullOrEmpty(input))
-                return "";
-
-            return input.Replace("\\", "\\\\")
-                        .Replace("\"", "\\\"")
-                        .Replace("\n", "\\n")
-                        .Replace("\r", "\\r")
-                        .Replace("\t", "\\t");
         }
 
         /// <summary>
@@ -648,6 +574,130 @@ namespace DS1000Z_E_USB_Control
 
         #endregion
 
+        #region USB Storage Methods (Direct to Oscilloscope)
+
+        /// <summary>
+        /// Save waveform directly to USB drive connected to oscilloscope
+        /// </summary>
+        public bool SaveWaveformToUSB(int channelNumber, string filename)
+        {
+            try
+            {
+                if (!oscilloscope.IsConnected)
+                {
+                    Log("❌ Oscilloscope not connected");
+                    return false;
+                }
+
+                // Stop acquisition for stable save
+                oscilloscope.SendCommand(":STOP");
+                System.Threading.Thread.Sleep(100);
+
+                // Set the file format (CSV, BIN, etc.)
+                oscilloscope.SendCommand(":STORage:WAVeform:FORMat CSV");
+
+                // Set the source channel
+                oscilloscope.SendCommand($":STORage:WAVeform:SOURce CHANnel{channelNumber}");
+
+                // Set the filename (without extension - oscilloscope adds it)
+                oscilloscope.SendCommand($":STORage:WAVeform:FNAMe \"{filename}\"");
+
+                // Execute the save command - this saves to USB drive on oscilloscope
+                bool success = oscilloscope.SendCommand(":STORage:WAVeform:SAVE");
+
+                if (success)
+                {
+                    Log($"✅ Waveform saved to oscilloscope USB: {filename}");
+                }
+                else
+                {
+                    Log($"❌ Failed to save waveform to USB");
+                }
+
+                return success;
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ USB save error: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Save oscilloscope screen image to USB drive
+        /// </summary>
+        public bool SaveScreenToUSB(string filename, string format = "PNG")
+        {
+            try
+            {
+                if (!oscilloscope.IsConnected)
+                {
+                    Log("❌ Oscilloscope not connected");
+                    return false;
+                }
+
+                // Set image format (BMP24, BMP8, PNG, JPEG, TIFF)
+                oscilloscope.SendCommand($":STORage:IMAGe:TYPE {format}");
+
+                // Set filename
+                oscilloscope.SendCommand($":STORage:IMAGe:FNAMe \"{filename}\"");
+
+                // Save image to USB
+                bool success = oscilloscope.SendCommand(":STORage:IMAGe:SAVE");
+
+                if (success)
+                {
+                    Log($"✅ Screen image saved to oscilloscope USB: {filename}.{format.ToLower()}");
+                }
+                else
+                {
+                    Log($"❌ Failed to save image to USB");
+                }
+
+                return success;
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ USB image save error: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Check if USB drive is connected to oscilloscope
+        /// </summary>
+        public bool CheckUSBStatus()
+        {
+            try
+            {
+                // Query system status - this might include USB info
+                string status = oscilloscope.SendQuery(":SYSTem:ERRor?");
+                Log($"System status: {status}");
+
+                // Try to list files (if USB is connected, this should work)
+                // Note: Exact command may vary - check oscilloscope manual
+                string files = oscilloscope.SendQuery(":STORage:CATalog?");
+
+                if (!string.IsNullOrEmpty(files))
+                {
+                    Log($"📁 Files on USB: {files}");
+                    return true;
+                }
+                else
+                {
+                    Log("📁 No USB drive detected or empty");
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ USB status check error: {ex.Message}");
+                return false;
+            }
+        }
+
+        #endregion
+
         #region Memory Management Methods
 
         /// <summary>
@@ -813,6 +863,21 @@ namespace DS1000Z_E_USB_Control
         private void Log(string message)
         {
             LogEvent?.Invoke(this, message);
+        }
+
+        /// <summary>
+        /// Helper method to escape strings for JSON
+        /// </summary>
+        private string EscapeJsonString(string input)
+        {
+            if (string.IsNullOrEmpty(input))
+                return "";
+
+            return input.Replace("\\", "\\\\")
+                        .Replace("\"", "\\\"")
+                        .Replace("\n", "\\n")
+                        .Replace("\r", "\\r")
+                        .Replace("\t", "\\t");
         }
 
         #endregion

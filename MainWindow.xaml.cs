@@ -13,7 +13,7 @@ using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Windows.Forms; // For FolderBrowserDialog
+//using System.Windows.Forms; // For FolderBrowserDialog
 using System.Text.Json;      // For JSON serialization
 
 namespace Rigol_DS1000Z_E_Control
@@ -1305,15 +1305,23 @@ namespace Rigol_DS1000Z_E_Control
             };
         }
 
+        // Replace GetExportFolder() method with:
         private string GetExportFolder()
         {
-            var dialog = new FolderBrowserDialog
+            var dialog = new Microsoft.Win32.OpenFileDialog
             {
-                Description = "Select folder for batch export",
-                ShowNewFolderButton = true
+                CheckFileExists = false,
+                CheckPathExists = true,
+                FileName = "Select Folder",
+                Filter = "Folders|*.",
+                Title = "Select folder for batch export"
             };
 
-            return dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK ? dialog.SelectedPath : null;
+            if (dialog.ShowDialog() == true)
+            {
+                return System.IO.Path.GetDirectoryName(dialog.FileName);
+            }
+            return null;
         }
 
         #endregion

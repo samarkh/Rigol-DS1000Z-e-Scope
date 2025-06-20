@@ -751,7 +751,7 @@ namespace Rigol_DS1000Z_E_Control
         /// <summary>
         /// Helper method to handle the actual export with proper file handling
         /// </summary>
-        private void ExportWithFormat(CapturedWaveform waveform, SimpleWaveformCapture.ExportFormat format)
+        private void ExportWithFormat(CapturedWaveform waveform, ExportFormat format)
         {
             try
             {
@@ -1291,17 +1291,17 @@ namespace Rigol_DS1000Z_E_Control
             return Enum.Parse<SetupFileFormat>(tag);
         }
 
-        private SimpleWaveformCapture.ExportFormat GetSelectedExportFormat()
+        private ExportFormat GetSelectedExportFormat()
         {
             string tag = ((ComboBoxItem)ExportFormatComboBox?.SelectedItem)?.Tag?.ToString() ?? "csv";
             return tag switch
             {
-                "csv" => SimpleWaveformCapture.ExportFormat.CSV,
-                "json" => SimpleWaveformCapture.ExportFormat.JSON,
-                "matlab" => SimpleWaveformCapture.ExportFormat.MATLAB,
-                "binary" => SimpleWaveformCapture.ExportFormat.RawBinary,
-                "preamble" => SimpleWaveformCapture.ExportFormat.WithPreamble,
-                _ => SimpleWaveformCapture.ExportFormat.CSV
+                "csv" => ExportFormat.CSV,
+                "json" => ExportFormat.JSON,
+                "matlab" => ExportFormat.MATLAB,
+                "binary" => ExportFormat.RawBinary,
+                "preamble" => ExportFormat.WithPreamble,
+                _ => ExportFormat.CSV
             };
         }
 

@@ -219,7 +219,7 @@
         </GroupBox>
 
         <!-- Row 3: Channel, Trigger, and TimeBase Controls -->
-        <GroupBox Grid.Row="3" Header="📡 Channel & Trigger Controls" Margin="5" FontWeight="Bold">
+        <GroupBox Grid.Row="3" Header="📡 Channel and Trigger Controls" Margin="5" FontWeight="Bold">
             <Grid Margin="10">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -256,7 +256,7 @@
         </GroupBox>
 
         <!-- Row 4: Waveform Capture Controls -->
-        <GroupBox Grid.Row="4" Header="📈 Waveform Capture & Export" Margin="5" FontWeight="Bold">
+        <GroupBox Grid.Row="4" Header="📈 Waveform Capture and Export" Margin="5" FontWeight="Bold">
             <Grid Margin="10">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>

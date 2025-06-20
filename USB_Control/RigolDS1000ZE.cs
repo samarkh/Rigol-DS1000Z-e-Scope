@@ -46,6 +46,16 @@ namespace Rigol_DS1000Z_E_Control
             return result;
         }
 
+        public byte[] SendBinaryQuery(string query, int maxBufferSize = 100000)
+        {
+            if (visaManager == null)
+            {
+                return new byte[0];
+            }
+
+            return visaManager.SendBinaryQuery(query, maxBufferSize);
+        }
+
         public bool Disconnect()
         {
             return visaManager.Disconnect();

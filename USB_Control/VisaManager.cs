@@ -231,5 +231,43 @@ namespace Rigol_DS1000Z_E_Control
         {
             Disconnect();
         }
+
+
+        // Add this method to your VisaManager.cs class
+
+        public byte[] SendBinaryQuery(string query, int maxBufferSize = 100000)
+        {
+            if (!SendCommand(query))
+            {
+                return new byte[0];
+            }
+
+            try
+            {
+                // Use larger buffer for waveform data
+                byte[] readBuffer = new byte[maxBufferSize];
+                int retReadCount = 0;
+                int status = viRead(instrumentHandle, readBuffer, readBuffer.Length, out retReadCount);
+
+                if (status != VI_SUCCESS)
+                {
+                    Log($"Binary read failed. Error code: {status}");
+                    return new byte[0];
+                }
+
+                // Return only the actual data received
+                byte[] actualData = new byte[retReadCount];
+                Array.Copy(readBuffer, actualData, retReadCount);
+
+                Log($"Received {retReadCount} bytes of binary data");
+                return actualData;
+            }
+            catch (Exception ex)
+            {
+                Log($"Binary query error: {ex.Message}");
+                return new byte[0];
+            }
+        }
+
     }
 }

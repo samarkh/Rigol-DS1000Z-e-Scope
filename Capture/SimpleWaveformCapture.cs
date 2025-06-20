@@ -55,6 +55,8 @@ namespace DS1000Z_E_USB_Control
         /// </summary>
         /// <param name="channelNumber">Channel number (1 or 2)</param>
         /// <returns>Captured waveform data, or null if failed</returns>
+        // Replace your CaptureWaveform method with this fixed version
+
         public CapturedWaveform CaptureWaveform(int channelNumber = 1)
         {
             if (!oscilloscope.IsConnected)
@@ -76,19 +78,32 @@ namespace DS1000Z_E_USB_Control
                 oscilloscope.SendCommand(":WAVeform:MODE NORMal");
                 oscilloscope.SendCommand(":WAVeform:FORMat BYTE");
 
-                // Get waveform parameters
+                // Get waveform parameters (this is text data)
                 string preambleResponse = oscilloscope.SendQuery(":WAVeform:PREamble?");
+                Log($"📊 Preamble: {preambleResponse}");
                 double[] preamble = ParsePreamble(preambleResponse);
 
-                // Get waveform data
-                string dataResponse = oscilloscope.SendQuery(":WAVeform:DATA?");
-                byte[] rawData = ParseWaveformData(dataResponse);
+                // Get waveform data (this is BINARY data) - need to use new method
+                byte[] binaryData = oscilloscope.SendBinaryQuery(":WAVeform:DATA?");
+
+                if (binaryData == null || binaryData.Length == 0)
+                {
+                    Log("❌ No binary data received");
+                    return null;
+                }
+
+                Log($"📈 Received {binaryData.Length} bytes of raw data");
+
+                // Parse the binary data correctly
+                byte[] rawData = ParseBinaryWaveformData(binaryData);
 
                 if (rawData == null || rawData.Length == 0)
                 {
-                    Log("❌ No waveform data received");
+                    Log("❌ Failed to parse waveform data");
                     return null;
                 }
+
+                Log($"✅ Parsed {rawData.Length} data points");
 
                 // Convert to voltages
                 double[] voltages = ConvertToVoltages(rawData, preamble);
@@ -119,7 +134,6 @@ namespace DS1000Z_E_USB_Control
                 return null;
             }
         }
-
         /// <summary>
         /// Get all stored waveforms
         /// </summary>
@@ -226,23 +240,51 @@ namespace DS1000Z_E_USB_Control
             }
         }
 
-        private byte[] ParseWaveformData(string response)
+        private byte[] ParseBinaryWaveformData(byte[] binaryResponse)
         {
             try
             {
-                if (string.IsNullOrEmpty(response) || response.Length < 10) return new byte[0];
+                if (binaryResponse == null || binaryResponse.Length < 10)
+                {
+                    Log("❌ Binary data too short");
+                    return new byte[0];
+                }
 
-                // Skip TMC header (e.g., "#9000001200")
-                int headerLength = 2 + int.Parse(response.Substring(1, 1));
+                // Check for TMC header starting with '#'
+                if (binaryResponse[0] != (byte)'#')
+                {
+                    Log("❌ Invalid TMC header - doesn't start with #");
+                    return new byte[0];
+                }
 
-                if (response.Length <= headerLength) return new byte[0];
+                // Get the length of the length field
+                int lengthDigits = binaryResponse[1] - (byte)'0';
+                if (lengthDigits < 1 || lengthDigits > 9)
+                {
+                    Log($"❌ Invalid TMC header length digits: {lengthDigits}");
+                    return new byte[0];
+                }
 
-                // Convert remaining string to bytes
-                var dataString = response.Substring(headerLength);
-                return Encoding.ASCII.GetBytes(dataString);
+                // Calculate total header length
+                int headerLength = 2 + lengthDigits;
+
+                if (binaryResponse.Length <= headerLength)
+                {
+                    Log($"❌ Binary data too short for header length {headerLength}");
+                    return new byte[0];
+                }
+
+                // Extract the actual data (skip TMC header)
+                int dataLength = binaryResponse.Length - headerLength;
+                byte[] actualData = new byte[dataLength];
+                Array.Copy(binaryResponse, headerLength, actualData, 0, dataLength);
+
+                Log($"📋 TMC Header length: {headerLength}, Data points: {dataLength}");
+                return actualData;
             }
-            catch
+            catch (Exception ex)
             {
+                Log($"❌ Binary parsing error: {ex.Message}");
                 return new byte[0];
             }
         }

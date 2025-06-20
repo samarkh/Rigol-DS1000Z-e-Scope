@@ -240,12 +240,11 @@
                 Width="100" Height="30" Margin="2"
                 Click="ShowMemoryStatus_Click"/>
 
-
                     <Label Content="Export Format:" VerticalAlignment="Center" Margin="0,0,5,0"/>
                     <ComboBox x:Name="ExportFormatComboBox" 
-              Width="120" 
-              VerticalAlignment="Center"
-              SelectedIndex="0">
+                  Width="120" 
+                  VerticalAlignment="Center"
+                  SelectedIndex="0">
                         <ComboBoxItem Content="CSV" Tag="csv"/>
                         <ComboBoxItem Content="JSON" Tag="json"/>
                         <ComboBoxItem Content="MATLAB" Tag="matlab"/>
@@ -253,13 +252,13 @@
                         <ComboBoxItem Content="With Preamble" Tag="preamble"/>
                     </ComboBox>
 
+                    <!-- FIX: Remove the extra ">" at the end of this button -->
                     <Button x:Name="ExportLatestWaveformButton" 
-            Content="Export Latest" 
-            Click="ExportLatestWaveform_Click" 
-            Margin="10,0,0,0"/> >
+                Content="Export Latest" 
+                Click="ExportLatestWaveform_Click" 
+                Margin="10,0,0,0"/>
 
                 </StackPanel>
-
             </GroupBox>
         </Grid>
 

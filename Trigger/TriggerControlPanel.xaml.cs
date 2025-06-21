@@ -12,6 +12,7 @@ namespace DS1000Z_E_USB_Control.Trigger
     /// <summary>
     /// Enhanced TriggerControlPanel with support for all trigger modes
     /// Updated to handle Edge, Pulse, Slope, Video, Pattern, Advanced, and Serial triggers
+    /// CORRECTED: Using actual method names from existing codebase
     /// </summary>
     public partial class TriggerControlPanel : UserControl
     {
@@ -398,6 +399,7 @@ namespace DS1000Z_E_USB_Control.Trigger
 
         /// <summary>
         /// Handle edge source selection changes
+        /// CORRECTED: Using SetEdgeSource method
         /// </summary>
         private void EdgeSource_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -409,7 +411,7 @@ namespace DS1000Z_E_USB_Control.Trigger
 
             if (!string.IsNullOrEmpty(source))
             {
-                controller?.SetSource(source);
+                controller?.SetEdgeSource(source);  // CORRECTED: SetEdgeSource not SetSource
                 TriggerSourceChanged?.Invoke(this, EventArgs.Empty);
                 UpdateTriggerStepsFromUI();
             }
@@ -417,6 +419,7 @@ namespace DS1000Z_E_USB_Control.Trigger
 
         /// <summary>
         /// Handle edge slope selection changes
+        /// CORRECTED: Using SetEdgeSlope method
         /// </summary>
         private void EdgeSlope_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -428,7 +431,7 @@ namespace DS1000Z_E_USB_Control.Trigger
 
             if (!string.IsNullOrEmpty(slope))
             {
-                controller?.SetSlope(slope);
+                controller?.SetEdgeSlope(slope);  // CORRECTED: SetEdgeSlope not SetSlope
             }
         }
 
@@ -451,6 +454,7 @@ namespace DS1000Z_E_USB_Control.Trigger
 
         /// <summary>
         /// Handle trigger level arrow movements
+        /// CORRECTED: Using HandleTriggerLevelChanged method
         /// </summary>
         private void TriggerLevelArrows_GraticuleMovement(object sender, GraticuleMovementEventArgs e)
         {
@@ -459,7 +463,7 @@ namespace DS1000Z_E_USB_Control.Trigger
             try
             {
                 var newLevel = e.NewValue;
-                controller?.SetLevel(newLevel);
+                controller?.HandleTriggerLevelChanged(newLevel);  // CORRECTED: HandleTriggerLevelChanged not SetLevel
                 LogEvent?.Invoke(this, $"Trigger level adjusted to {newLevel:F3}V");
             }
             catch (Exception ex)
@@ -921,7 +925,7 @@ namespace DS1000Z_E_USB_Control.Trigger
             try
             {
                 SendSCPICommand($":TRIGger:MODE {mode}");
-                controller?.RefreshSettingsFromOscilloscope();
+                controller?.RefreshSettings();  // CORRECTED: RefreshSettings not RefreshSettingsFromOscilloscope
                 LogEvent?.Invoke(this, $"Oscilloscope trigger mode updated to: {mode}");
             }
             catch (Exception ex)
@@ -1004,6 +1008,7 @@ namespace DS1000Z_E_USB_Control.Trigger
 
         /// <summary>
         /// Update trigger steps from UI
+        /// CORRECTED: Using UpdateRange method and individual properties
         /// </summary>
         public void UpdateTriggerStepsFromUI()
         {
@@ -1015,21 +1020,26 @@ namespace DS1000Z_E_USB_Control.Trigger
                 var sourceItem = EdgeSourceComboBox.SelectedItem as ComboBoxItem;
                 string source = sourceItem?.Tag?.ToString() ?? "CHAN1";
 
-                // Set appropriate step sizes based on trigger source
+                // Set appropriate range and step sizes based on trigger source
                 switch (source)
                 {
                     case "CHAN1":
                     case "CHAN2":
-                        TriggerLevelArrows.SetStepsAndRange(-5.0, 5.0, 0.02, 0.2); // Channel voltage range
+                        // CORRECTED: Using UpdateRange and setting GraticuleSize
+                        TriggerLevelArrows.UpdateRange(-5.0, 5.0);
+                        TriggerLevelArrows.GraticuleSize = 0.02; // Channel voltage step
                         break;
                     case "EXT":
-                        TriggerLevelArrows.SetStepsAndRange(-2.0, 2.0, 0.01, 0.1); // External input range
+                        TriggerLevelArrows.UpdateRange(-2.0, 2.0);
+                        TriggerLevelArrows.GraticuleSize = 0.01; // External input step
                         break;
                     case "ACLine":
-                        TriggerLevelArrows.SetStepsAndRange(0.0, 1.0, 0.01, 0.1); // AC line range
+                        TriggerLevelArrows.UpdateRange(0.0, 1.0);
+                        TriggerLevelArrows.GraticuleSize = 0.01; // AC line step
                         break;
                     default:
-                        TriggerLevelArrows.SetStepsAndRange(-5.0, 5.0, 0.02, 0.2); // Default range
+                        TriggerLevelArrows.UpdateRange(-5.0, 5.0);
+                        TriggerLevelArrows.GraticuleSize = 0.02; // Default step
                         break;
                 }
 
@@ -1067,7 +1077,7 @@ namespace DS1000Z_E_USB_Control.Trigger
         /// </summary>
         public void UpdateFromSettings(object triggerSettings)
         {
-            controller?.RefreshSettingsFromOscilloscope();
+            controller?.RefreshSettings();  // CORRECTED: RefreshSettings not RefreshSettingsFromOscilloscope
             LogEvent?.Invoke(this, "Trigger panel updated from settings");
         }
 

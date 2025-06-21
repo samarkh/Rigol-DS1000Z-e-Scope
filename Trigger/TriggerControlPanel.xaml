@@ -526,11 +526,17 @@
                                HorizontalAlignment="Center" 
                                Margin="0,0,0,5"/>
 
-                    <!-- Multimedia Arrow Control (EmojiArrows) -->
-                    <local:EmojiArrows x:Name="TriggerLevelArrows" 
-                                       Grid.Row="1" 
-                                       Orientation="Vertical"
-                                       Margin="5"/>
+                    <!-- Multimedia Emoji Arrow Control (Vertical orientation) -->
+                    <local:EmojiArrows x:Name="TriggerLevelArrows"
+                                       Grid.Row="1"
+                                       CurrentValue="0"
+                                       GraticuleSize="0.1"
+                                       MinValue="-10"
+                                       MaxValue="10"
+                                       RotationAngle="270"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Margin="10"/>
 
                     <!-- Current Level Value -->
                     <TextBlock x:Name="LevelValueText" 

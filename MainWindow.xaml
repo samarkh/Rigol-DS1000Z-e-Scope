@@ -6,7 +6,7 @@
         xmlns:trigger="clr-namespace:DS1000Z_E_USB_Control.Trigger"
         xmlns:timebase="clr-namespace:DS1000Z_E_USB_Control.TimeBase"
         Title="Rigol DS1000Z-E USB Control - Enhanced Storage Edition" 
-        Height="1600" Width="1600"
+        Height="2000" Width="1600"
         WindowStartupLocation="CenterScreen"
         Background="#F8F9FA">
 

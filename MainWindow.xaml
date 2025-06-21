@@ -567,6 +567,15 @@
                             <!-- File List -->
                             <StackPanel Grid.Row="0">
                                 <Label Content="Files on USB:" FontWeight="Bold" FontSize="9"/>
+                                <!-- ADD THE USB STATUS TEXTBLOCK HERE -->
+                                <TextBlock x:Name="USBStatusTextBlock" 
+                                               Text="USB Status: Disconnected" 
+                                               FontSize="9" 
+                                               FontWeight="Normal"
+                                               Foreground="#666666"
+                                               Margin="0,2,0,5"
+                                               TextWrapping="Wrap"/>
+
                                 <ListBox x:Name="USBFileListBox" Height="60" FontSize="8"
                                          ScrollViewer.VerticalScrollBarVisibility="Auto"
                                          SelectionChanged="USBFileListBox_SelectionChanged"/>

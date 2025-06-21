@@ -226,7 +226,7 @@ namespace Rigol_DS1000Z_E_Control
                 GetSettingsButton.IsEnabled = true;
                 ExportSettingsButton.IsEnabled = true;
                 PresetButton.IsEnabled = true;
-                TriggerControlButton.IsEnabled = true;
+                TriggerPanel.IsEnabled = true;
 
                 // Enable oscilloscope control buttons
                 RunButton.IsEnabled = true;
@@ -257,7 +257,7 @@ namespace Rigol_DS1000Z_E_Control
                 GetSettingsButton.IsEnabled = false;
                 ExportSettingsButton.IsEnabled = false;
                 PresetButton.IsEnabled = false;
-                TriggerControlButton.IsEnabled = false;
+                TriggerPanel.IsEnabled = false;
 
                 // Disable oscilloscope control buttons
                 RunButton.IsEnabled = false;
@@ -608,6 +608,43 @@ namespace Rigol_DS1000Z_E_Control
                           "Use the Trigger Control Panel on the right side of the main window.",
                           "Trigger Control", MessageBoxButton.OK, MessageBoxImage.Information);
         }
+
+
+
+        /// <summary>
+        /// Force trigger button click handler
+        /// </summary>
+        private void ForceTriggerButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!isConnected)
+            {
+                MessageBox.Show("Please connect to the oscilloscope first.", "Force Trigger",
+                              MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            try
+            {
+                Log("⚡ Forcing trigger...");
+
+                // Send force trigger command to oscilloscope
+                if (oscilloscope != null)
+                {
+                    oscilloscope.SendCommand(":TRIG:FORC");
+                    Log("✅ Force trigger sent");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Force trigger error: {ex.Message}");
+                MessageBox.Show($"Error forcing trigger: {ex.Message}", "Force Trigger Error",
+                              MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+
+
+
         #endregion
 
         #region Waveform Capture

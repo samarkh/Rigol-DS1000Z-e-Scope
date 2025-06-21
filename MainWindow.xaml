@@ -6,7 +6,7 @@
         xmlns:trigger="clr-namespace:DS1000Z_E_USB_Control.Trigger"
         xmlns:timebase="clr-namespace:DS1000Z_E_USB_Control.TimeBase"
         Title="Rigol DS1000Z-E USB Control - Enhanced Storage Edition" 
-        Height="1400" Width="1600"
+        Height="1600" Width="1600"
         WindowStartupLocation="CenterScreen"
         Background="#F8F9FA">
 
@@ -21,7 +21,7 @@
             <RowDefinition Height="Auto"/>
             <!-- Channel/Trigger/TimeBase Controls -->
             <RowDefinition Height="Auto"/>
-            <!-- Waveform Capture -->
+            <!-- Waveform Capture, Export & Quick Actions -->
             <RowDefinition Height="Auto"/>
             <!-- Enhanced Storage Management -->
             <RowDefinition Height="*"/>
@@ -127,22 +127,22 @@
                         IsEnabled="False"
                         Click="PresetButton_Click"/>
 
-                <!-- Trigger Control Button -->
-                <Button x:Name="TriggerControlButton" Grid.Column="8"
-                        Content="🎯 Trigger Control" 
+                <!-- Single Button -->
+                <Button x:Name="SingleButton" Grid.Column="8"
+                        Content="🎯 Single" 
                         Height="40" 
                         FontSize="14"
                         FontWeight="Bold"
-                        Background="#FFEBEE"
-                        BorderBrush="#F44336"
+                        Background="#E1F5FE"
+                        BorderBrush="#03A9F4"
                         BorderThickness="2"
                         IsEnabled="False"
-                        Click="TriggerControlButton_Click"/>
+                        Click="SingleButton_Click"/>
             </Grid>
         </GroupBox>
 
-        <!-- Row 2: Oscilloscope Control Buttons -->
-        <GroupBox Grid.Row="2" Header="🔬 Oscilloscope Controls" Margin="5" FontWeight="Bold">
+        <!-- Row 2: Oscilloscope Operation Controls -->
+        <GroupBox Grid.Row="2" Header="🔬 Oscilloscope Operations" Margin="5" FontWeight="Bold">
             <Grid Margin="10">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -180,9 +180,9 @@
                         IsEnabled="False"
                         Click="StopButton_Click"/>
 
-                <!-- Single Button -->
-                <Button x:Name="SingleButton" Grid.Column="4"
-                        Content="⏯️ Single" 
+                <!-- Force Trigger Button -->
+                <Button x:Name="ForceTriggerButton" Grid.Column="4"
+                        Content="⚡ Force Trigger" 
                         Height="35" 
                         FontSize="12"
                         FontWeight="Bold"
@@ -190,7 +190,7 @@
                         BorderBrush="#FF9800"
                         BorderThickness="2"
                         IsEnabled="False"
-                        Click="SingleButton_Click"/>
+                        Click="ForceTriggerButton_Click"/>
 
                 <!-- Clear Button -->
                 <Button x:Name="ClearButton" Grid.Column="6"
@@ -250,325 +250,356 @@
 
                 <!-- Second Row: TimeBase Panel (spans all columns) -->
                 <timebase:TimeBaseControlPanel x:Name="TimeBasePanel" 
-                                               Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="5"
+                                              Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="5"
                                                IsEnabled="False"/>
             </Grid>
         </GroupBox>
 
-        <!-- Row 4: Waveform Capture Controls -->
-        <GroupBox Grid.Row="4" Header="📈 Waveform Capture and Export" Margin="5" FontWeight="Bold">
+        <!-- Row 4: Waveform Capture, Export and Quick Actions -->
+        <GroupBox Grid.Row="4" Header="📈 Waveform Capture, Export and Quick Actions" Margin="5" FontWeight="Bold">
             <Grid Margin="10">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="10"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <!-- Capture & Export Controls -->
+                    <ColumnDefinition Width="15"/>
+                    <!-- Spacer -->
+                    <ColumnDefinition Width="Auto"/>
+                    <!-- Quick Actions -->
+                </Grid.ColumnDefinitions>
 
-                <!-- First Row: Capture Controls -->
-                <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Left">
-                    <Button x:Name="CaptureChannel1Button" 
-                            Content="📈 Capture CH1" 
-                            Width="120" Height="35" 
-                            Margin="5,0"
-                            Background="#E8F5E8"
-                            BorderBrush="#4CAF50"
-                            BorderThickness="2"
-                            FontWeight="Bold"
-                            Click="CaptureChannel1_Click"/>
+                <!-- Left Column: Capture & Export Controls -->
+                <Grid Grid.Column="0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="10"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-                    <Button x:Name="CaptureChannel2Button" 
-                            Content="📈 Capture CH2" 
-                            Width="120" Height="35" 
-                            Margin="5,0"
-                            Background="#E3F2FD"
-                            BorderBrush="#2196F3"
-                            BorderThickness="2"
-                            FontWeight="Bold"
-                            Click="CaptureChannel2_Click"/>
+                    <!-- Row 1: Capture Controls -->
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Left">
+                        <Button x:Name="CaptureChannel1Button" 
+                                Content="📈 Capture CH1" 
+                                Width="120" Height="35" 
+                                Margin="5,0"
+                                Background="#E8F5E8"
+                                BorderBrush="#4CAF50"
+                                BorderThickness="2"
+                                FontWeight="Bold"
+                                Click="CaptureChannel1_Click"/>
 
-                    <Button x:Name="ShowMemoryStatusButton" 
-                            Content="💾 Memory Status" 
-                            Width="130" Height="35" 
-                            Margin="5,0"
-                            Background="#FFF3E0"
-                            BorderBrush="#FF9800"
-                            BorderThickness="2"
-                            FontWeight="Bold"
-                            Click="ShowMemoryStatus_Click"/>
+                        <Button x:Name="CaptureChannel2Button" 
+                                Content="📈 Capture CH2" 
+                                Width="120" Height="35" 
+                                Margin="5,0"
+                                Background="#E3F2FD"
+                                BorderBrush="#2196F3"
+                                BorderThickness="2"
+                                FontWeight="Bold"
+                                Click="CaptureChannel2_Click"/>
 
-                    <Button x:Name="ClearMemoryButton" 
-                            Content="🗑️ Clear Memory" 
-                            Width="120" Height="35" 
-                            Margin="5,0"
-                            Background="#FFEBEE"
-                            BorderBrush="#F44336"
-                            BorderThickness="2"
-                            FontWeight="Bold"
-                            Click="ClearMemory_Click"/>
-                </StackPanel>
+                        <Button x:Name="ShowMemoryStatusButton" 
+                                Content="💾 Memory Status" 
+                                Width="130" Height="35" 
+                                Margin="5,0"
+                                Background="#FFF3E0"
+                                BorderBrush="#FF9800"
+                                BorderThickness="2"
+                                FontWeight="Bold"
+                                Click="ShowMemoryStatus_Click"/>
 
-                <!-- Second Row: Export Controls -->
-                <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Left">
-                    <Label Content="Export Format:" 
-                           VerticalAlignment="Center" 
-                           FontWeight="Bold"
-                           Margin="5,0"/>
+                        <Button x:Name="ClearMemoryButton" 
+                                Content="🗑️ Clear Memory" 
+                                Width="120" Height="35" 
+                                Margin="5,0"
+                                Background="#FFEBEE"
+                                BorderBrush="#F44336"
+                                BorderThickness="2"
+                                FontWeight="Bold"
+                                Click="ClearMemory_Click"/>
+                    </StackPanel>
 
-                    <ComboBox x:Name="ExportFormatComboBox" 
-                              Width="140" 
-                              Height="30"
-                              VerticalAlignment="Center"
-                              SelectedIndex="0"
-                              Margin="5,0">
-                        <ComboBoxItem Content="CSV" Tag="csv"/>
-                        <ComboBoxItem Content="JSON" Tag="json"/>
-                        <ComboBoxItem Content="MATLAB" Tag="matlab"/>
-                        <ComboBoxItem Content="Raw Binary" Tag="binary"/>
-                        <ComboBoxItem Content="With Preamble" Tag="preamble"/>
-                    </ComboBox>
+                    <!-- Row 3: Export Controls -->
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Left">
+                        <Label Content="Export Format:" 
+                               VerticalAlignment="Center" 
+                               FontWeight="Bold"
+                               Margin="5,0"/>
 
-                    <Button x:Name="ExportLatestWaveformButton" 
-                            Content="📤 Export Latest" 
-                            Width="120" Height="30"
-                            Margin="10,0,5,0"
-                            Background="#F3E5F5"
-                            BorderBrush="#9C27B0"
-                            BorderThickness="2"
-                            FontWeight="Bold"
-                            Click="ExportLatestWaveform_Click"/>
+                        <ComboBox x:Name="ExportFormatComboBox" 
+                                  Width="140" 
+                                  Height="30"
+                                  VerticalAlignment="Center"
+                                  SelectedIndex="0"
+                                  Margin="5,0">
+                            <ComboBoxItem Content="CSV" Tag="csv"/>
+                            <ComboBoxItem Content="JSON" Tag="json"/>
+                            <ComboBoxItem Content="MATLAB" Tag="matlab"/>
+                            <ComboBoxItem Content="Raw Binary" Tag="binary"/>
+                            <ComboBoxItem Content="With Preamble" Tag="preamble"/>
+                        </ComboBox>
 
-                    <Button x:Name="ExportAllWaveformsButton" 
-                            Content="📦 Export All" 
-                            Width="100" Height="30"
-                            Margin="5,0"
-                            Background="#E1F5FE"
-                            BorderBrush="#03A9F4"
-                            BorderThickness="2"
-                            FontWeight="Bold"
-                            Click="ExportAllWaveforms_Click"/>
-                </StackPanel>
+                        <Button x:Name="ExportLatestWaveformButton" 
+                                Content="📤 Export Latest" 
+                                Width="120" Height="30"
+                                Margin="10,0,5,0"
+                                Background="#F3E5F5"
+                                BorderBrush="#9C27B0"
+                                BorderThickness="2"
+                                FontWeight="Bold"
+                                Click="ExportLatestWaveform_Click"/>
+
+                        <Button x:Name="ExportAllWaveformsButton" 
+                                Content="📦 Export All" 
+                                Width="100" Height="30"
+                                Margin="5,0"
+                                Background="#E1F5FE"
+                                BorderBrush="#03A9F4"
+                                BorderThickness="2"
+                                FontWeight="Bold"
+                                Click="ExportAllWaveforms_Click"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Right Column: Quick Actions -->
+                <GroupBox Grid.Column="2" Header="⚡ Quick Actions" FontSize="12" FontWeight="SemiBold" Margin="0,0,-32,0">
+                    <Grid Margin="8">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Button x:Name="QuickBackupButton" 
+                                Grid.Row="0" Grid.Column="0"
+                                Content="🎯 Quick Backup" 
+                                Width="140" Height="32" Margin="2"
+                                Background="#E8F5E8" BorderBrush="#4CAF50"
+                                BorderThickness="2" FontWeight="Bold" FontSize="11"
+                                Click="QuickBackup_Click"/>
+                        <Button x:Name="QuickRestoreButton" 
+                                Grid.Row="0" Grid.Column="1"
+                                Content="📥 Quick Restore" 
+                                Width="140" Height="32" Margin="2"
+                                Background="#E3F2FD" BorderBrush="#2196F3"
+                                BorderThickness="2" FontWeight="Bold" FontSize="11"
+                                Click="QuickRestore_Click"/>
+                        <Button x:Name="BatchExportButton" 
+                                Grid.Row="1" Grid.Column="0"
+                                Content="📦 Batch Export" 
+                                Width="140" Height="32" Margin="2"
+                                Background="#FFF3E0" BorderBrush="#FF9800"
+                                BorderThickness="2" FontWeight="Bold" FontSize="11"
+                                Click="BatchExport_Click"/>
+                        <Button x:Name="StorageSettingsButton" 
+                                Grid.Row="1" Grid.Column="1"
+                                Content="⚙️ Storage Settings" 
+                                Width="140" Height="32" Margin="2"
+                                Background="#F3E5F5" BorderBrush="#9C27B0"
+                                BorderThickness="2" FontWeight="Bold" FontSize="11"
+                                Click="StorageSettings_Click"/>
+                    </Grid>
+                </GroupBox>
             </Grid>
         </GroupBox>
 
         <!-- Row 5: Enhanced Storage Management -->
         <GroupBox Grid.Row="5" Header="💾 Enhanced Storage Management" Margin="5" FontWeight="Bold" Background="#FAFBFC">
             <Grid Margin="10">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
+                <!-- Main Storage Row: All storage components in a single row -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <!-- USB Waveform Storage -->
+                        <ColumnDefinition Width="*"/>
+                        <!-- USB Image Storage -->
+                        <ColumnDefinition Width="*"/>
+                        <!-- System Storage (swapped) -->
+                        <ColumnDefinition Width="*"/>
+                        <!-- USB File Management (swapped) -->
+                    </Grid.ColumnDefinitions>
 
-                <!-- Row 1: USB Waveform Storage -->
-                <GroupBox Grid.Row="0" Header="💾 USB Waveform Storage" Margin="0,0,0,8" FontSize="12" FontWeight="SemiBold">
-                    <Grid Margin="8">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="120"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
+                    <!-- Column 1: USB Waveform Storage -->
+                    <GroupBox Grid.Column="0" Header="💾 USB Waveform Storage" Margin="0,0,4,0" FontSize="11" FontWeight="SemiBold">
+                        <Grid Margin="6">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
 
-                        <StackPanel Grid.Column="0" Orientation="Horizontal">
-                            <Label Content="Format:" VerticalAlignment="Center" FontWeight="Bold" Width="50"/>
-                            <ComboBox x:Name="USBWaveformFormatComboBox" Width="80" Height="28" Margin="5,0"
-                                      SelectedIndex="0" VerticalAlignment="Center">
-                                <ComboBoxItem Content="CSV" Tag="CSV"/>
-                                <ComboBoxItem Content="Binary" Tag="BIN"/>
-                                <ComboBoxItem Content="Text" Tag="TXT"/>
-                            </ComboBox>
-                        </StackPanel>
+                            <!-- Format Selection -->
+                            <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,5">
+                                <Label Content="Format:" VerticalAlignment="Center" FontWeight="Bold" FontSize="10" Width="45"/>
+                                <ComboBox x:Name="USBWaveformFormatComboBox" Width="70" Height="24" 
+                                          SelectedIndex="0" VerticalAlignment="Center" FontSize="10">
+                                    <ComboBoxItem Content="CSV" Tag="CSV"/>
+                                    <ComboBoxItem Content="Binary" Tag="BIN"/>
+                                    <ComboBoxItem Content="Text" Tag="TXT"/>
+                                </ComboBox>
+                            </StackPanel>
 
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="10,0">
-                            <Button x:Name="SaveCH1ToUSBButton" 
-                                    Content="CH1→USB" 
-                                    Width="55" Height="28" Margin="2"
-                                    Background="#E8F5E8" BorderBrush="#4CAF50"
-                                    BorderThickness="2" FontWeight="Bold" 
-                                    Click="SaveCH1ToUSB_Click"/>
-                            <Button x:Name="SaveCH2ToUSBButton" 
-                                    Content="CH2→USB" 
-                                    Width="55" Height="28" Margin="2"
-                                    Background="#E3F2FD" BorderBrush="#2196F3"
-                                    BorderThickness="2" FontWeight="Bold" 
-                                    Click="SaveCH2ToUSB_Click"/>
-                        </StackPanel>
+                            <!-- Channel Buttons -->
+                            <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,5">
+                                <Button x:Name="SaveCH1ToUSBButton" 
+                                        Content="CH1→USB" 
+                                        Width="50" Height="24" Margin="2"
+                                        Background="#E8F5E8" BorderBrush="#4CAF50"
+                                        BorderThickness="1" FontWeight="Bold" FontSize="9"
+                                        Click="SaveCH1ToUSB_Click"/>
+                                <Button x:Name="SaveCH2ToUSBButton" 
+                                        Content="CH2→USB" 
+                                        Width="50" Height="24" Margin="2"
+                                        Background="#E3F2FD" BorderBrush="#2196F3"
+                                        BorderThickness="1" FontWeight="Bold" FontSize="9"
+                                        Click="SaveCH2ToUSB_Click"/>
+                            </StackPanel>
 
-                        <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button x:Name="SaveBothChannelsToUSBButton" 
-                                    Content="📊 Save Both Channels" 
-                                    Width="150" Height="28" Margin="5,0"
+                            <!-- Both Channels Button -->
+                            <Button Grid.Row="2" x:Name="SaveBothChannelsToUSBButton" 
+                                    Content="📊 Save Both" 
+                                    Width="120" Height="24"
                                     Background="#FFF3E0" BorderBrush="#FF9800"
-                                    BorderThickness="2" FontWeight="Bold" 
+                                    BorderThickness="1" FontWeight="Bold" FontSize="9"
                                     Click="SaveBothChannelsToUSB_Click"/>
-                        </StackPanel>
-                    </Grid>
-                </GroupBox>
+                        </Grid>
+                    </GroupBox>
 
-                <!-- Row 2: USB Image Storage -->
-                <GroupBox Grid.Row="1" Header="📸 USB Image Storage" Margin="0,0,0,8" FontSize="12" FontWeight="SemiBold">
-                    <Grid Margin="8">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
+                    <!-- Column 2: USB Image Storage -->
+                    <GroupBox Grid.Column="1" Header="📸 USB Image Storage" Margin="2,0" FontSize="11" FontWeight="SemiBold">
+                        <Grid Margin="6">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
 
-                        <StackPanel Grid.Column="0" Orientation="Horizontal">
-                            <Label Content="Format:" VerticalAlignment="Center" FontWeight="Bold" Width="50"/>
-                            <ComboBox x:Name="USBImageFormatComboBox" Width="80" Height="28" Margin="5,0"
-                                      SelectedIndex="0" VerticalAlignment="Center">
-                                <ComboBoxItem Content="PNG" Tag="PNG"/>
-                                <ComboBoxItem Content="BMP24" Tag="BMP24"/>
-                                <ComboBoxItem Content="BMP8" Tag="BMP8"/>
-                                <ComboBoxItem Content="JPEG" Tag="JPEG"/>
-                                <ComboBoxItem Content="TIFF" Tag="TIFF"/>
-                            </ComboBox>
-                        </StackPanel>
+                            <!-- Image Format Selection -->
+                            <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,5">
+                                <Label Content="Format:" VerticalAlignment="Center" FontWeight="Bold" FontSize="10" Width="45"/>
+                                <ComboBox x:Name="USBImageFormatComboBox" Width="70" Height="24" 
+                                          SelectedIndex="0" VerticalAlignment="Center" FontSize="10">
+                                    <ComboBoxItem Content="PNG" Tag="PNG"/>
+                                    <ComboBoxItem Content="BMP24" Tag="BMP24"/>
+                                    <ComboBoxItem Content="JPEG" Tag="JPEG"/>
+                                    <ComboBoxItem Content="TIFF" Tag="TIFF"/>
+                                </ComboBox>
+                            </StackPanel>
 
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="10,0">
-                            <CheckBox x:Name="ColorModeCheckBox" Content="Color" IsChecked="True" 
-                                      VerticalAlignment="Center" Margin="5,0"/>
-                            <CheckBox x:Name="InvertColorsCheckBox" Content="Invert" IsChecked="False" 
-                                      VerticalAlignment="Center" Margin="5,0"/>
-                        </StackPanel>
+                            <!-- Image Options -->
+                            <StackPanel Grid.Row="1" Orientation="Vertical" HorizontalAlignment="Center" Margin="0,0,0,5">
+                                <CheckBox x:Name="ColorModeCheckBox" Content="Color Mode" 
+                                          IsChecked="True" FontSize="9" HorizontalAlignment="Center"/>
+                                <CheckBox x:Name="InvertColorsCheckBox" Content="Invert Colors" 
+                                          FontSize="9" HorizontalAlignment="Center"/>
+                            </StackPanel>
 
-                        <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button x:Name="SaveScreenToUSBButton" 
+                            <!-- Save Image Button -->
+                            <Button Grid.Row="2" x:Name="SaveScreenToUSBButton" 
                                     Content="📷 Save Screen" 
-                                    Width="120" Height="28" Margin="5,0"
+                                    Width="120" Height="24"
                                     Background="#F3E5F5" BorderBrush="#9C27B0"
-                                    BorderThickness="2" FontWeight="Bold" 
+                                    BorderThickness="1" FontWeight="Bold" FontSize="9"
                                     Click="SaveScreenToUSB_Click"/>
-                        </StackPanel>
-                    </Grid>
-                </GroupBox>
+                        </Grid>
+                    </GroupBox>
 
-                <!-- Row 3: System Setup Storage -->
-                <GroupBox Grid.Row="2" Header="⚙️ System Setup Storage" Margin="0,0,0,8" FontSize="12" FontWeight="SemiBold">
-                    <Grid Margin="8">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
+                    <!-- Column 3: System Storage (swapped from column 4) -->
+                    <GroupBox Grid.Column="2" Header="💾 System Storage" Margin="2,0" FontSize="11" FontWeight="SemiBold">
+                        <Grid Margin="6">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
 
-                        <StackPanel Grid.Column="0" Orientation="Horizontal">
-                            <Label Content="Format:" VerticalAlignment="Center" FontWeight="Bold" Width="50"/>
-                            <ComboBox x:Name="SetupFormatComboBox" Width="120" Height="28" Margin="5,0"
-                                      SelectedIndex="0" VerticalAlignment="Center">
-                                <ComboBoxItem Content="JSON" Tag="JSON"/>
-                                <ComboBoxItem Content="Text" Tag="Text"/>
-                                <ComboBoxItem Content="Native (.SET)" Tag="NativeOscilloscope"/>
-                                <ComboBoxItem Content="XML" Tag="XML"/>
-                                <ComboBoxItem Content="INI" Tag="INI"/>
-                            </ComboBox>
-                        </StackPanel>
+                            <!-- Setup Format Selection -->
+                            <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,5">
+                                <Label Content="Format:" VerticalAlignment="Center" FontWeight="Bold" FontSize="10" Width="45"/>
+                                <ComboBox x:Name="SetupFormatComboBox" Width="70" Height="24" 
+                                          SelectedIndex="0" VerticalAlignment="Center" FontSize="10">
+                                    <ComboBoxItem Content="JSON" Tag="JSON"/>
+                                    <ComboBoxItem Content="Text" Tag="Text"/>
+                                    <ComboBoxItem Content="Native" Tag="NativeOscilloscope"/>
+                                    <ComboBoxItem Content="XML" Tag="XML"/>
+                                    <ComboBoxItem Content="INI" Tag="INI"/>
+                                </ComboBox>
+                            </StackPanel>
 
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button x:Name="SaveSetupButton" 
-                                    Content="💾 Save Setup" 
-                                    Width="100" Height="28" Margin="5,0"
-                                    Background="#E8F5E8" BorderBrush="#4CAF50"
-                                    BorderThickness="2" FontWeight="Bold" 
-                                    Click="SaveSetup_Click"/>
-                            <Button x:Name="LoadSetupButton" 
-                                    Content="📂 Load Setup" 
-                                    Width="100" Height="28" Margin="5,0"
-                                    Background="#E3F2FD" BorderBrush="#2196F3"
-                                    BorderThickness="2" FontWeight="Bold" 
-                                    Click="LoadSetup_Click"/>
-                            <Button x:Name="SaveToUSBSetupButton" 
+                            <!-- Setup Action Buttons -->
+                            <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,5">
+                                <Button x:Name="SaveSetupButton" 
+                                        Content="💾" 
+                                        Width="35" Height="22" Margin="1"
+                                        Background="#E8F5E8" BorderBrush="#4CAF50"
+                                        BorderThickness="1" FontWeight="Bold" FontSize="8"
+                                        ToolTip="Save Setup"
+                                        Click="SaveSetup_Click"/>
+                                <Button x:Name="LoadSetupButton" 
+                                        Content="📂" 
+                                        Width="35" Height="22" Margin="1"
+                                        Background="#E3F2FD" BorderBrush="#2196F3"
+                                        BorderThickness="1" FontWeight="Bold" FontSize="8"
+                                        ToolTip="Load Setup"
+                                        Click="LoadSetup_Click"/>
+                            </StackPanel>
+
+                            <!-- USB Setup Button -->
+                            <Button Grid.Row="2" x:Name="SaveToUSBSetupButton" 
                                     Content="📀 Save to USB" 
-                                    Width="110" Height="28" Margin="5,0"
+                                    Width="120" Height="24"
                                     Background="#FFF3E0" BorderBrush="#FF9800"
-                                    BorderThickness="2" FontWeight="Bold" 
+                                    BorderThickness="1" FontWeight="Bold" FontSize="9"
                                     Click="SaveSetupToUSB_Click"/>
-                        </StackPanel>
-                    </Grid>
-                </GroupBox>
+                        </Grid>
+                    </GroupBox>
 
-                <!-- Row 4: USB File Management -->
-                <GroupBox Grid.Row="3" Header="🗂️ USB File Management" Margin="0,0,0,8" FontSize="12" FontWeight="SemiBold">
-                    <Grid Margin="8">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="220"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
+                    <!-- Column 4: USB File Management (swapped from column 3) -->
+                    <GroupBox Grid.Column="3" Header="🗂️ USB File Management" Margin="4,0,0,0" FontSize="11" FontWeight="SemiBold">
+                        <Grid Margin="6">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
 
-                        <!-- File List -->
-                        <StackPanel Grid.Column="0">
-                            <Label Content="Files on USB:" FontWeight="Bold" FontSize="10"/>
-                            <ListBox x:Name="USBFileListBox" Height="90" FontSize="10"
-                                     ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                     SelectionChanged="USBFileListBox_SelectionChanged"/>
-                        </StackPanel>
+                            <!-- File List -->
+                            <StackPanel Grid.Row="0">
+                                <Label Content="Files on USB:" FontWeight="Bold" FontSize="9"/>
+                                <ListBox x:Name="USBFileListBox" Height="60" FontSize="8"
+                                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                         SelectionChanged="USBFileListBox_SelectionChanged"/>
+                            </StackPanel>
 
-                        <!-- USB Status -->
-                        <StackPanel Grid.Column="1" Margin="15,0">
-                            <Label Content="USB Status:" FontWeight="Bold" FontSize="10"/>
-                            <TextBlock x:Name="USBStatusTextBlock" 
-                                       Text="Click 'Refresh' to check USB status" 
-                                       FontSize="10" TextWrapping="Wrap"
-                                       Height="90" VerticalAlignment="Top"
-                                       Background="#F8F9FA" Padding="8"/>
-                        </StackPanel>
-
-                        <!-- Action Buttons -->
-                        <StackPanel Grid.Column="2" Orientation="Vertical">
-                            <Button x:Name="RefreshUSBButton" 
-                                    Content="🔄 Refresh" 
-                                    Width="85" Height="28" Margin="0,2"
-                                    Background="#E8F5E8" BorderBrush="#4CAF50"
-                                    BorderThickness="2" FontSize="10" FontWeight="Bold" 
-                                    Click="RefreshUSB_Click"/>
-                            <Button x:Name="DeleteSelectedFileButton" 
-                                    Content="🗑️ Delete" 
-                                    Width="85" Height="28" Margin="0,2"
-                                    Background="#FFEBEE" BorderBrush="#F44336"
-                                    BorderThickness="2" FontSize="10" FontWeight="Bold" 
-                                    Click="DeleteSelectedFile_Click"
-                                    IsEnabled="False"/>
-                            <Button x:Name="CheckUSBStatusButton" 
-                                    Content="🔍 Check Status" 
-                                    Width="85" Height="28" Margin="0,2"
-                                    Background="#F3E5F5" BorderBrush="#9C27B0"
-                                    BorderThickness="2" FontSize="10" FontWeight="Bold" 
-                                    Click="CheckUSBStatus_Click"/>
-                        </StackPanel>
-                    </Grid>
-                </GroupBox>
-
-                <!-- Row 5: Quick Actions -->
-                <GroupBox Grid.Row="4" Header="⚡ Quick Actions" Margin="0,0,0,0" FontSize="12" FontWeight="SemiBold">
-                    <StackPanel Orientation="Horizontal" Margin="8" HorizontalAlignment="Center">
-                        <Button x:Name="QuickBackupButton" 
-                                Content="🎯 Quick Backup (All)" 
-                                Width="140" Height="32" Margin="5,0"
-                                Background="#E8F5E8" BorderBrush="#4CAF50"
-                                BorderThickness="2" FontWeight="Bold" 
-                                Click="QuickBackup_Click"/>
-                        <Button x:Name="QuickRestoreButton" 
-                                Content="📥 Quick Restore" 
-                                Width="120" Height="32" Margin="5,0"
-                                Background="#E3F2FD" BorderBrush="#2196F3"
-                                BorderThickness="2" FontWeight="Bold" 
-                                Click="QuickRestore_Click"/>
-                        <Button x:Name="BatchExportButton" 
-                                Content="📦 Batch Export" 
-                                Width="120" Height="32" Margin="5,0"
-                                Background="#FFF3E0" BorderBrush="#FF9800"
-                                BorderThickness="2" FontWeight="Bold" 
-                                Click="BatchExport_Click"/>
-                        <Button x:Name="StorageSettingsButton" 
-                                Content="⚙️ Storage Settings" 
-                                Width="130" Height="32" Margin="5,0"
-                                Background="#F3E5F5" BorderBrush="#9C27B0"
-                                BorderThickness="2" FontWeight="Bold" 
-                                Click="StorageSettings_Click"/>
-                    </StackPanel>
-                </GroupBox>
+                            <!-- Action Buttons -->
+                            <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,5,0,0">
+                                <Button x:Name="RefreshUSBButton" 
+                                        Content="🔄" 
+                                        Width="35" Height="22" Margin="1"
+                                        Background="#E8F5E8" BorderBrush="#4CAF50"
+                                        BorderThickness="1" FontSize="8" FontWeight="Bold" 
+                                        ToolTip="Refresh USB"
+                                        Click="RefreshUSB_Click"/>
+                                <Button x:Name="DeleteSelectedFileButton" 
+                                        Content="🗑️" 
+                                        Width="35" Height="22" Margin="1"
+                                        Background="#FFEBEE" BorderBrush="#F44336"
+                                        BorderThickness="1" FontSize="8" FontWeight="Bold" 
+                                        ToolTip="Delete Selected"
+                                        Click="DeleteSelectedFile_Click"
+                                        IsEnabled="False"/>
+                                <Button x:Name="CheckUSBStatusButton" 
+                                        Content="🔍" 
+                                        Width="35" Height="22" Margin="1"
+                                        Background="#F3E5F5" BorderBrush="#9C27B0"
+                                        BorderThickness="1" FontSize="8" FontWeight="Bold" 
+                                        ToolTip="Check Status"
+                                        Click="CheckUSBStatus_Click"/>
+                            </StackPanel>
+                        </Grid>
+                    </GroupBox>
+                </Grid>
             </Grid>
         </GroupBox>
 

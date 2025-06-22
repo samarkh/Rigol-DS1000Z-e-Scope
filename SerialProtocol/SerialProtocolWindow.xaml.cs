@@ -73,29 +73,20 @@ namespace DS1000Z_E_USB_Control.SerialProtocol
         /// </summary>
         private void Reset_Click(object sender, RoutedEventArgs e)
         {
-            var result = MessageBox.Show(
-                "Are you sure you want to reset all decoder settings to defaults?\n\n" +
-                "This will:\n" +
-                "• Reset all protocol configurations\n" +
-                "• Clear the command log\n" +
-                "• Return to UART mode with default settings",
-                "Reset Configuration",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question,
-                MessageBoxResult.No);
+            var result = MessageBox.Show("Reset all decoder settings to defaults?",
+                                       "Confirm Reset",
+                                       MessageBoxButton.YesNo,
+                                       MessageBoxImage.Question);
 
             if (result == MessageBoxResult.Yes)
             {
-                if (ProtocolPanel != null)
-                {
-                    ProtocolPanel.ResetToDefaults();
-                    UpdateStatus("Configuration reset to defaults");
-                }
+                ProtocolPanel?.ResetToDefaults();
+                UpdateStatus("All settings reset to defaults");
             }
         }
 
         /// <summary>
-        /// Save current decoder configuration to file
+        /// Save decoder configuration to file
         /// </summary>
         private void SaveConfig_Click(object sender, RoutedEventArgs e)
         {
@@ -196,65 +187,35 @@ namespace DS1000Z_E_USB_Control.SerialProtocol
         /// </summary>
         private void Help_Click(object sender, RoutedEventArgs e)
         {
-            string helpText = @"Serial Protocol Analysis Help
+            string helpMessage = @"Serial Protocol Analysis Tool
 
-DECODER CONFIGURATION:
-• Select decoder number (1 or 2)
-• Choose protocol type: UART, I²C, SPI, or Parallel
-• Configure protocol-specific settings
-• Set threshold levels for digital signals
+This tool helps you decode and analyze serial communication protocols on your Rigol oscilloscope.
 
-UART CONFIGURATION:
-• TX/RX Channels: Assign oscilloscope channels
-• Baud Rate: 1200 to 115200 bps
-• Data Width: 5-9 bits
-• Stop Bits: 1 or 2 bits
-• Parity: None, Even, or Odd
+Supported Protocols:
+• UART (RS232) - Universal Asynchronous Receiver-Transmitter
+• I²C (IIC) - Inter-Integrated Circuit
+• SPI - Serial Peripheral Interface  
+• Parallel - Parallel bus communication
 
-I²C CONFIGURATION:
-• Clock/Data Channels: Assign SCL and SDA
-• Address Type: 7-bit, 8-bit, or 10-bit
+Features:
+• Configure decoder settings for each protocol
+• Set threshold levels for accurate decoding
+• Customize display format (HEX, ASCII, DEC, BIN)
+• Event table for detailed packet analysis
+• Save/load configurations for different setups
 
-SPI CONFIGURATION:
-• Clock, MISO, MOSI, CS channel assignments
-• Clock polarity and edge settings
-• Data width and endianness
+Tips:
+• Ensure proper channel connections match your protocol setup
+• Adjust threshold levels for reliable signal detection
+• Use the event table to analyze captured packets
+• Save frequently used configurations for quick setup";
 
-EVENT TABLE:
-• Toggle event table display
-• Configure data format and view options
-• Export decoded data to CSV files
-
-SCPI COMMANDS:
-• All actions generate SCPI commands
-• Commands are logged and sent to oscilloscope
-• Use Save/Load to preserve configurations
-
-TIPS:
-• Adjust threshold levels for reliable decoding
-• Use the correct protocol settings for your signals
-• Export data for offline analysis";
-
-            MessageBox.Show(helpText,
-                          "Protocol Analysis Help",
-                          MessageBoxButton.OK,
-                          MessageBoxImage.Information);
+            MessageBox.Show(helpMessage, "Protocol Analysis Help",
+                          MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         /// <summary>
-        /// Window loaded event handler
-        /// </summary>
-        private void Window_Loaded(object sender, RoutedEventArgs e)
-        {
-            UpdateStatus("Serial Protocol Analysis ready");
-        }
-
-        #endregion
-
-        #region Window Events
-
-        /// <summary>
-        /// Clean up when window is closed
+        /// Handle window closing - clean up resources
         /// </summary>
         protected override void OnClosed(EventArgs e)
         {
@@ -309,28 +270,28 @@ TIPS:
                 {
                     Version = "1.0",
                     Timestamp = DateTime.Now,
-                    ProtocolType = ProtocolPanel.GetCurrentProtocolType(),
+                    ProtocolType = ParseEnum<ProtocolType>(ProtocolPanel.GetCurrentProtocolType()),
                     DecoderNumber = ProtocolPanel.GetDecoderNumber(),
                     Enabled = ProtocolPanel.DecoderEnabled,
-                    DisplayFormat = ProtocolPanel.GetDisplayFormat(),
-                    VerticalPosition = ProtocolPanel.GetVerticalPosition(),
+                    DisplayFormat = ParseEnum<DisplayFormat>(ProtocolPanel.GetDisplayFormat()),
+                    VerticalPosition = (int)ProtocolPanel.GetVerticalPosition(),
                     Thresholds = new ThresholdSettings
                     {
-                        Channel1 = ProtocolPanel.GetChannel1Threshold(),
-                        Channel2 = ProtocolPanel.GetChannel2Threshold()
+                        Channel1Threshold = ProtocolPanel.GetChannel1Threshold(),
+                        Channel2Threshold = ProtocolPanel.GetChannel2Threshold()
                     },
                     EventTable = new EventTableSettings
                     {
                         Enabled = ProtocolPanel.TableEnabled,
-                        Format = ProtocolPanel.GetTableFormat(),
-                        View = ProtocolPanel.GetTableView(),
-                        SortOrder = ProtocolPanel.GetTableSortOrder()
+                        Format = ParseEnum<DisplayFormat>(ProtocolPanel.GetTableFormat()),
+                        ViewMode = ParseEnum<EventTableView>(ProtocolPanel.GetTableView()),
+                        SortOrder = ParseEnum<SortOrder>(ProtocolPanel.GetTableSortOrder())
                     },
-                    // Add protocol-specific settings based on current protocol
-                    UARTSettings = ProtocolPanel.GetUARTSettings(),
-                    I2CSettings = ProtocolPanel.GetI2CSettings(),
-                    SPISettings = ProtocolPanel.GetSPISettings(),
-                    ParallelSettings = ProtocolPanel.GetParallelSettings()
+                    // Fixed: Use correct property names (UART, I2C, SPI, Parallel)
+                    UART = ProtocolPanel.GetUARTSettings(),
+                    I2C = ProtocolPanel.GetI2CSettings(),
+                    SPI = ProtocolPanel.GetSPISettings(),
+                    Parallel = ProtocolPanel.GetParallelSettings()
                 };
             }
 
@@ -348,8 +309,8 @@ TIPS:
                 {
                     // Apply basic settings
                     ProtocolPanel.SetDecoderNumber(settings.DecoderNumber);
-                    ProtocolPanel.SetProtocolType(settings.ProtocolType ?? "UART");
-                    ProtocolPanel.SetDisplayFormat(settings.DisplayFormat ?? "HEX");
+                    ProtocolPanel.SetProtocolType(settings.ProtocolType.ToString());
+                    ProtocolPanel.SetDisplayFormat(settings.DisplayFormat.ToString());
                     ProtocolPanel.SetVerticalPosition(settings.VerticalPosition);
 
                     // Apply threshold settings
@@ -363,9 +324,9 @@ TIPS:
                     if (settings.EventTable != null)
                     {
                         ProtocolPanel.TableEnabled = settings.EventTable.Enabled;
-                        ProtocolPanel.SetTableFormat(settings.EventTable.Format ?? "HEX");
-                        ProtocolPanel.SetTableView(settings.EventTable.ViewMode ?? "PACKet");
-                        ProtocolPanel.SetTableSortOrder(settings.EventTable.SortOrder ?? "ASCend");
+                        ProtocolPanel.SetTableFormat(settings.EventTable.Format.ToString());
+                        ProtocolPanel.SetTableView(settings.EventTable.ViewMode.ToString());
+                        ProtocolPanel.SetTableSortOrder(settings.EventTable.SortOrder.ToString());
                     }
 
                     // Apply protocol-specific settings
@@ -375,8 +336,9 @@ TIPS:
                     if (settings.I2C != null)
                         ProtocolPanel.ApplyI2CSettings(settings.I2C);
 
-                    if (settings.SPISettings != null)
-                        ProtocolPanel.ApplySPISettings(settings.SPISettings);
+                    // Fixed: Use correct property name (SPI instead of SPISettings)
+                    if (settings.SPI != null)
+                        ProtocolPanel.ApplySPISettings(settings.SPI);
 
                     if (settings.Parallel != null)
                         ProtocolPanel.ApplyParallelSettings(settings.Parallel);
@@ -392,6 +354,20 @@ TIPS:
                     throw; // Re-throw so the calling method can handle it
                 }
             }
+        }
+
+        /// <summary>
+        /// Helper method to parse enum values safely
+        /// </summary>
+        private T ParseEnum<T>(string value) where T : struct, Enum
+        {
+            if (string.IsNullOrEmpty(value))
+                return default(T);
+
+            if (Enum.TryParse<T>(value, true, out T result))
+                return result;
+
+            return default(T);
         }
 
         #endregion
@@ -425,6 +401,4 @@ TIPS:
 
         #endregion
     }
-
-
 }

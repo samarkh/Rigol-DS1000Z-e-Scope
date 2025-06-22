@@ -457,6 +457,17 @@ namespace DS1000Z_E_USB_Control.SerialProtocol
         public EventTableSettings EventTable { get; set; } = new EventTableSettings();
         public ThresholdSettings Thresholds { get; set; } = new ThresholdSettings();
 
+
+        /// <summary>
+        /// Configuration version for compatibility tracking
+        /// </summary>
+        public string Version { get; set; } = "1.0";
+
+        /// <summary>
+        /// Timestamp when configuration was created or last modified
+        /// </summary>
+        public DateTime Timestamp { get; set; } = DateTime.Now;
+
         #endregion
 
         #region Methods

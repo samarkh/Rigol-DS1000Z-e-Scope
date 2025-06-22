@@ -1,10 +1,12 @@
 ﻿using Microsoft.Win32;
-using System.Text.Json;  // ✅ Built-in .NET library
 using System;
+using System.Data;
 using System.IO;
-using System.Text.Json.Serialization;
+using System.Text.Json; // Using System.Text.Json consistently
 using System.Windows;
-using System.Xml;
+using System.Windows.Controls;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace DS1000Z_E_USB_Control.SerialProtocol
 {
@@ -19,11 +21,13 @@ namespace DS1000Z_E_USB_Control.SerialProtocol
             InitializeWindow();
         }
 
-
         private void InitializeWindow()
         {
             // Subscribe to the protocol panel's SCPI command events
-            ProtocolPanel.SCPICommandGenerated += OnProtocolPanelSCPICommand;
+            if (ProtocolPanel != null)
+            {
+                ProtocolPanel.SCPICommandGenerated += OnProtocolPanelSCPICommand;
+            }
 
             // Set initial status
             UpdateStatus("Serial Protocol Analysis window opened");
@@ -32,7 +36,7 @@ namespace DS1000Z_E_USB_Control.SerialProtocol
             try
             {
                 // Replace with your actual icon path
-                // this.Icon = new BitmapImage(new Uri("pack://application:,,,/Resources/protocol_icon.ico"));
+                this.Icon = new BitmapImage(new Uri("pack://application:,,,/Resources/protocol_icon.ico"));
             }
             catch
             {
@@ -61,8 +65,11 @@ namespace DS1000Z_E_USB_Control.SerialProtocol
 
             if (result == MessageBoxResult.Yes)
             {
-                ProtocolPanel.ResetToDefaults();
-                UpdateStatus("Configuration reset to defaults");
+                if (ProtocolPanel != null)
+                {
+                    ProtocolPanel.ResetToDefaults();
+                    UpdateStatus("Configuration reset to defaults");
+                }
             }
         }
 
@@ -80,8 +87,15 @@ namespace DS1000Z_E_USB_Control.SerialProtocol
             {
                 try
                 {
-                    var settings = new DecoderSettings(); // You might want to get current settings from the panel
-                    string json = JsonConvert.SerializeObject(settings, Formatting.Indented);
+                    // Get current settings from the panel
+                    var settings = GetCurrentSettings();
+
+                    // Use System.Text.Json consistently
+                    var options = new JsonSerializerOptions
+                    {
+                        WriteIndented = true
+                    };
+                    string json = JsonSerializer.Serialize(settings, options);
                     File.WriteAllText(saveDialog.FileName, json);
 
                     UpdateStatus($"Configuration saved to {Path.GetFileName(saveDialog.FileName)}");
@@ -111,10 +125,9 @@ namespace DS1000Z_E_USB_Control.SerialProtocol
                 try
                 {
                     string json = File.ReadAllText(openDialog.FileName);
-                    var settings = JsonConvert.DeserializeObject<DecoderSettings>(json);
+                    var settings = JsonSerializer.Deserialize<DecoderSettings>(json);
 
                     // Apply loaded settings to the panel
-                    // You might need to add a method to apply settings to the panel
                     ApplySettingsToPanel(settings);
 
                     UpdateStatus($"Configuration loaded from {Path.GetFileName(openDialog.FileName)}");
@@ -128,44 +141,6 @@ namespace DS1000Z_E_USB_Control.SerialProtocol
                     UpdateStatus("Error loading configuration");
                 }
             }
-        }
-
-        #endregion
-
-        #region Helper Methods
-
-        private void UpdateStatus(string message)
-        {
-            StatusText.Text = message;
-
-            // Update timestamp
-            TimestampText.Text = $"Last Updated: {DateTime.Now:HH:mm:ss}";
-        }
-
-        private void ApplySettingsToPanel(DecoderSettings settings)
-        {
-            // This method would apply the loaded settings to the protocol panel
-            // You might need to add public methods to SerialProtocolPanel for this
-
-            try
-            {
-                ProtocolPanel.SetProtocolType(settings.ProtocolType.ToString());
-                ProtocolPanel.SetDecoderEnabled(settings.Enabled);
-                ProtocolPanel.SetEventTableEnabled(settings.EventTable.Enabled);
-
-                // Apply other settings as needed
-                UpdateStatus("Settings applied to panel");
-            }
-            catch (Exception ex)
-            {
-                UpdateStatus($"Error applying settings: {ex.Message}");
-            }
-        }
-
-        public void UpdateConnectionStatus(bool connected)
-        {
-            ConnectionStatus.Text = connected ? "Connected" : "Disconnected";
-            ConnectionStatus.Foreground = connected ? System.Windows.Media.Brushes.Green : System.Windows.Media.Brushes.Red;
         }
 
         #endregion
@@ -190,7 +165,76 @@ namespace DS1000Z_E_USB_Control.SerialProtocol
 
         #endregion
 
-        #region Public Methods
+        #region Helper Methods
+
+        private void UpdateStatus(string message)
+        {
+            if (StatusText != null)
+            {
+                StatusText.Text = message;
+            }
+
+            // Update timestamp
+            if (TimestampText != null)
+            {
+                TimestampText.Text = $"Last Updated: {DateTime.Now:HH:mm:ss}";
+            }
+        }
+
+        private DecoderSettings GetCurrentSettings()
+        {
+            // Extract current settings from the protocol panel
+            if (ProtocolPanel != null)
+            {
+                return new DecoderSettings
+                {
+                    ProtocolType = ProtocolPanel.GetCurrentProtocolType(),
+                    Enabled = ProtocolPanel.DecoderEnabled,
+                    EventTable = new EventTableSettings
+                    {
+                        Enabled = ProtocolPanel.TableEnabled
+                    }
+                    // Add other settings as needed
+                };
+            }
+
+            return new DecoderSettings(); // Default settings
+        }
+
+        private void ApplySettingsToPanel(DecoderSettings settings)
+        {
+            // Apply loaded settings to the protocol panel
+            if (ProtocolPanel != null && settings != null)
+            {
+                try
+                {
+                    ProtocolPanel.SetProtocolType(settings.ProtocolType ?? "UART");
+                    ProtocolPanel.SetDecoderEnabled(settings.Enabled);
+
+                    if (settings.EventTable != null)
+                    {
+                        ProtocolPanel.SetEventTableEnabled(settings.EventTable.Enabled);
+                    }
+
+                    UpdateStatus("Settings applied to panel");
+                }
+                catch (Exception ex)
+                {
+                    UpdateStatus($"Error applying settings: {ex.Message}");
+                }
+            }
+        }
+
+        public void UpdateConnectionStatus(bool connected)
+        {
+            if (ConnectionStatus != null)
+            {
+                ConnectionStatus.Text = connected ? "Connected" : "Disconnected";
+                ConnectionStatus.Foreground = connected ?
+                    System.Windows.Media.Brushes.Green :
+                    System.Windows.Media.Brushes.Red;
+            }
+        }
 
         /// <summary>
         /// Method to be called from main application when connection status changes
@@ -214,9 +258,48 @@ namespace DS1000Z_E_USB_Control.SerialProtocol
         /// </summary>
         public string GetConfigurationSummary()
         {
-            return ProtocolPanel.GetConfigurationSummary();
+            if (ProtocolPanel != null)
+            {
+                return ProtocolPanel.GetConfigurationSummary();
+            }
+            return "No configuration available";
         }
 
         #endregion
     }
+
+    #region Supporting Classes
+
+    /// <summary>
+    /// Class to hold decoder configuration settings
+    /// </summary>
+    public class DecoderSettings
+    {
+        public string ProtocolType { get; set; } = "UART";
+        public bool Enabled { get; set; } = false;
+        public EventTableSettings EventTable { get; set; } = new EventTableSettings();
+        public ThresholdSettings Thresholds { get; set; } = new ThresholdSettings();
+        public string Position { get; set; } = "0";
+    }
+
+    /// <summary>
+    /// Event table configuration
+    /// </summary>
+    public class EventTableSettings
+    {
+        public bool Enabled { get; set; } = false;
+        public string Format { get; set; } = "HEX";
+    }
+
+    /// <summary>
+    /// Threshold settings for different channels
+    /// </summary>
+    public class ThresholdSettings
+    {
+        public double Channel1 { get; set; } = 1.5;
+        public double Channel2 { get; set; } = 1.5;
+        public bool AutoThreshold { get; set; } = true;
+    }
+
+    #endregion
 }

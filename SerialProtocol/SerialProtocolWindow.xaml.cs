@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 using System.Windows;
 using System.Xml;
 
-namespace DS1000Z_E.SerialProtocol
+namespace DS1000Z_E_USB_Control.SerialProtocol
 {
     public partial class SerialProtocolWindow : Window
     {

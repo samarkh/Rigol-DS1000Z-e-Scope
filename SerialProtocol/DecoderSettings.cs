@@ -1,7 +1,7 @@
 ﻿using System;
 using System.ComponentModel;
 
-namespace DS1000Z_E.SerialProtocol
+namespace DS1000Z_E_USB_Control.SerialProtocol
 {
     #region Enums
 

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 
-namespace DS1000Z_E.SerialProtocol
+namespace DS1000Z_E_USB_Control.SerialProtocol
 {
     /// <summary>
     /// Static class for generating SCPI commands for the Rigol DS1000z-e decoder functionality

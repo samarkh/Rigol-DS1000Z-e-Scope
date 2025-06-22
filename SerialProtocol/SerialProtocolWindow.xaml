@@ -9,7 +9,7 @@
         Height="900" Width="1300"
         WindowStartupLocation="CenterOwner"
         Background="#F5F5F5"
-        Loaded="Window_Loaded">
+        
 
     <Window.Resources>
         <Style x:Key="MenuButtonStyle" TargetType="Button">

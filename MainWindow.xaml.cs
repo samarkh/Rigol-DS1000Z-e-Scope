@@ -30,7 +30,7 @@ namespace Rigol_DS1000Z_E_Control
         private bool isConnected = false;
         private SimpleWaveformCapture captureSystem;
 
-        private SerialProtocolWindow _serialProtocolWindow;
+        private SerialProtocolWINDOW _serialProtocolWindow;
 
         // Enhanced storage managers
         private EnhancedUSBStorageManager usbStorageManager;
@@ -471,7 +471,7 @@ namespace Rigol_DS1000Z_E_Control
             // Check if window is already open
             if (_serialProtocolWindow == null || !_serialProtocolWindow.IsVisible)
             {
-                _serialProtocolWindow = new SerialProtocolWindow();
+                _serialProtocolWindow = new SerialProtocolWINDOW();
 
                 // Subscribe to SCPI command events
                 _serialProtocolWindow.SCPICommandGenerated += OnSCPICommandGenerated;

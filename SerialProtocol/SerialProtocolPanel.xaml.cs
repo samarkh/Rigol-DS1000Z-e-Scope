@@ -405,15 +405,15 @@ namespace DS1000Z_E_USB_Control.SerialProtocol
         #endregion
 
         #region Helper Methods
-        private int GetDecoderNumber()
-        {
-            if (DecoderNumberCombo?.SelectedItem is ComboBoxItem item &&
-                int.TryParse(item.Tag?.ToString(), out int number))
-            {
-                return number;
-            }
-            return 1; // Default
-        }
+        //private int GetDecoderNumber()
+        //{
+        //    if (DecoderNumberCombo?.SelectedItem is ComboBoxItem item &&
+        //        int.TryParse(item.Tag?.ToString(), out int number))
+        //    {
+        //        return number;
+        //    }
+        //    return 1; // Default
+        //}
 
         private string GetComboBoxTag(ComboBox comboBox)
         {
@@ -457,7 +457,12 @@ namespace DS1000Z_E_USB_Control.SerialProtocol
 
         public int GetDecoderNumber()
         {
-            return GetDecoderNumber();
+            if (DecoderNumberCombo?.SelectedItem is ComboBoxItem selectedItem &&
+                int.TryParse(selectedItem.Tag?.ToString(), out int number))
+            {
+                return number;
+            }
+            return 1; // Default decoder number
         }
 
         public void SetDecoderNumber(int number)

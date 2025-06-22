@@ -1651,5 +1651,10 @@ namespace Rigol_DS1000Z_E_Control
             }
         }
         #endregion
+
+        private void TimeBasePanel_Loaded(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 }

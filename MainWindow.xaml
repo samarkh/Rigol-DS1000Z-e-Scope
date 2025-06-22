@@ -250,8 +250,13 @@
 
                 <!-- Second Row: TimeBase Panel (spans all columns) -->
                 <timebase:TimeBaseControlPanel x:Name="TimeBasePanel" 
-                                              Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="5"
+                                              Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="1"
                                                IsEnabled="False"/>
+
+
+                <!-- Add Serial protocol enable here -->
+
+
             </Grid>
         </GroupBox>
 

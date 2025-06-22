@@ -405,15 +405,7 @@ namespace DS1000Z_E_USB_Control.SerialProtocol
         #endregion
 
         #region Helper Methods
-        //private int GetDecoderNumber()
-        //{
-        //    if (DecoderNumberCombo?.SelectedItem is ComboBoxItem item &&
-        //        int.TryParse(item.Tag?.ToString(), out int number))
-        //    {
-        //        return number;
-        //    }
-        //    return 1; // Default
-        //}
+
 
         private string GetComboBoxTag(ComboBox comboBox)
         {
@@ -682,94 +674,113 @@ namespace DS1000Z_E_USB_Control.SerialProtocol
         }
 
         // Methods for getting/setting protocol-specific settings
+        // Fix the settings getter methods:
+
         public UARTSettings GetUARTSettings()
         {
             return new UARTSettings
             {
-                TxChannel = GetComboBoxTag(UARTTxCombo),
-                RxChannel = GetComboBoxTag(UARTRxCombo),
-                BaudRate = GetComboBoxTag(UARTBaudCombo),
-                DataWidth = GetComboBoxTag(UARTWidthCombo),
-                StopBits = GetComboBoxTag(UARTStopCombo),
-                Parity = GetComboBoxTag(UARTParityCombo),
-                Polarity = GetComboBoxTag(UARTPolarityCombo),
-                Endian = GetComboBoxTag(UARTEndianCombo)
+                TxChannel = ParseEnum<ChannelSource>(GetComboBoxTag(UARTTxCombo)),
+                RxChannel = ParseEnum<ChannelSource>(GetComboBoxTag(UARTRxCombo)),
+                BaudRate = int.TryParse(GetComboBoxTag(UARTBaudCombo), out int baud) ? baud : 9600,
+                DataWidth = int.TryParse(GetComboBoxTag(UARTWidthCombo), out int width) ? width : 8,
+                StopBits = int.TryParse(GetComboBoxTag(UARTStopCombo), out int stop) ? stop : 1,
+                Parity = ParseEnum<ParityType>(GetComboBoxTag(UARTParityCombo)),
+                Polarity = ParseEnum<PolarityType>(GetComboBoxTag(UARTPolarityCombo)),
+                Endian = ParseEnum<EndianType>(GetComboBoxTag(UARTEndianCombo))
             };
         }
 
         public void ApplyUARTSettings(UARTSettings settings)
         {
-            SetComboBoxByTag(UARTTxCombo, settings.TxChannel);
-            SetComboBoxByTag(UARTRxCombo, settings.RxChannel);
-            SetComboBoxByTag(UARTBaudCombo, settings.BaudRate);
-            SetComboBoxByTag(UARTWidthCombo, settings.DataWidth);
-            SetComboBoxByTag(UARTStopCombo, settings.StopBits);
-            SetComboBoxByTag(UARTParityCombo, settings.Parity);
-            SetComboBoxByTag(UARTPolarityCombo, settings.Polarity);
-            SetComboBoxByTag(UARTEndianCombo, settings.Endian);
+            SetComboBoxByTag(UARTTxCombo, EnumToString(settings.TxChannel));
+            SetComboBoxByTag(UARTRxCombo, EnumToString(settings.RxChannel));
+            SetComboBoxByTag(UARTBaudCombo, settings.BaudRate.ToString());
+            SetComboBoxByTag(UARTWidthCombo, settings.DataWidth.ToString());
+            SetComboBoxByTag(UARTStopCombo, settings.StopBits.ToString());
+            SetComboBoxByTag(UARTParityCombo, EnumToString(settings.Parity));
+            SetComboBoxByTag(UARTPolarityCombo, EnumToString(settings.Polarity));
+            SetComboBoxByTag(UARTEndianCombo, EnumToString(settings.Endian));
         }
 
         public I2CSettings GetI2CSettings()
         {
             return new I2CSettings
             {
-                ClockChannel = GetComboBoxTag(I2CClkCombo),
-                DataChannel = GetComboBoxTag(I2CDataCombo),
-                AddressType = GetComboBoxTag(I2CAddressCombo)
+                ClockChannel = ParseEnum<ChannelSource>(GetComboBoxTag(I2CClkCombo)),
+                DataChannel = ParseEnum<ChannelSource>(GetComboBoxTag(I2CDataCombo)),
+                AddressMode = ParseEnum<I2CAddressMode>(GetComboBoxTag(I2CAddressCombo)) // Fixed: AddressType -> AddressMode
             };
         }
 
         public void ApplyI2CSettings(I2CSettings settings)
         {
-            SetComboBoxByTag(I2CClkCombo, settings.ClockChannel);
-            SetComboBoxByTag(I2CDataCombo, settings.DataChannel);
-            SetComboBoxByTag(I2CAddressCombo, settings.AddressType);
+            SetComboBoxByTag(I2CClkCombo, EnumToString(settings.ClockChannel));
+            SetComboBoxByTag(I2CDataCombo, EnumToString(settings.DataChannel));
+            SetComboBoxByTag(I2CAddressCombo, EnumToString(settings.AddressMode)); // Fixed: AddressType -> AddressMode
         }
 
         public SPISettings GetSPISettings()
         {
             return new SPISettings
             {
-                ClockChannel = GetComboBoxTag(SPIClkCombo),
-                MisoChannel = GetComboBoxTag(SPIMisoCombo),
-                MosiChannel = GetComboBoxTag(SPIMosiCombo),
-                CsChannel = GetComboBoxTag(SPICsCombo),
-                DataWidth = SPIWidthText?.Text ?? "8",
-                Polarity = GetComboBoxTag(SPIPolarityCombo),
-                Edge = GetComboBoxTag(SPIEdgeCombo),
-                Endian = GetComboBoxTag(SPIEndianCombo)
+                ClockChannel = ParseEnum<ChannelSource>(GetComboBoxTag(SPIClkCombo)),
+                MisoChannel = ParseEnum<ChannelSource>(GetComboBoxTag(SPIMisoCombo)),
+                MosiChannel = ParseEnum<ChannelSource>(GetComboBoxTag(SPIMosiCombo)),
+                CsChannel = ParseEnum<ChannelSource>(GetComboBoxTag(SPICsCombo)),
+                DataWidth = int.TryParse(SPIWidthText?.Text, out int width) ? width : 8,
+                ClockPolarity = ParseEnum<PolarityType>(GetComboBoxTag(SPIPolarityCombo)), // Fixed: Polarity -> ClockPolarity
+                ClockEdge = ParseEnum<PolarityType>(GetComboBoxTag(SPIEdgeCombo)), // Fixed: Edge -> ClockEdge
+                Endian = ParseEnum<EndianType>(GetComboBoxTag(SPIEndianCombo))
             };
         }
 
         public void ApplySPISettings(SPISettings settings)
         {
-            SetComboBoxByTag(SPIClkCombo, settings.ClockChannel);
-            SetComboBoxByTag(SPIMisoCombo, settings.MisoChannel);
-            SetComboBoxByTag(SPIMosiCombo, settings.MosiChannel);
-            SetComboBoxByTag(SPICsCombo, settings.CsChannel);
-            if (SPIWidthText != null) SPIWidthText.Text = settings.DataWidth;
-            SetComboBoxByTag(SPIPolarityCombo, settings.Polarity);
-            SetComboBoxByTag(SPIEdgeCombo, settings.Edge);
-            SetComboBoxByTag(SPIEndianCombo, settings.Endian);
+            SetComboBoxByTag(SPIClkCombo, EnumToString(settings.ClockChannel));
+            SetComboBoxByTag(SPIMisoCombo, EnumToString(settings.MisoChannel));
+            SetComboBoxByTag(SPIMosiCombo, EnumToString(settings.MosiChannel));
+            SetComboBoxByTag(SPICsCombo, EnumToString(settings.CsChannel));
+            if (SPIWidthText != null) SPIWidthText.Text = settings.DataWidth.ToString();
+            SetComboBoxByTag(SPIPolarityCombo, EnumToString(settings.ClockPolarity)); // Fixed: Polarity -> ClockPolarity
+            SetComboBoxByTag(SPIEdgeCombo, EnumToString(settings.ClockEdge)); // Fixed: Edge -> ClockEdge
+            SetComboBoxByTag(SPIEndianCombo, EnumToString(settings.Endian));
         }
 
         public ParallelSettings GetParallelSettings()
         {
             return new ParallelSettings
             {
-                ClockChannel = GetComboBoxTag(ParallelClkCombo),
-                Edge = GetComboBoxTag(ParallelEdgeCombo),
-                DataWidth = ParallelWidthText?.Text ?? "8"
+                ClockChannel = ParseEnum<ChannelSource>(GetComboBoxTag(ParallelClkCombo)),
+                ClockEdge = ParseEnum<EdgeType>(GetComboBoxTag(ParallelEdgeCombo)), // Fixed: Edge -> ClockEdge
+                DataWidth = int.TryParse(ParallelWidthText?.Text, out int width) ? width : 8
             };
         }
 
         public void ApplyParallelSettings(ParallelSettings settings)
         {
-            SetComboBoxByTag(ParallelClkCombo, settings.ClockChannel);
-            SetComboBoxByTag(ParallelEdgeCombo, settings.Edge);
-            if (ParallelWidthText != null) ParallelWidthText.Text = settings.DataWidth;
+            SetComboBoxByTag(ParallelClkCombo, EnumToString(settings.ClockChannel));
+            SetComboBoxByTag(ParallelEdgeCombo, EnumToString(settings.ClockEdge)); // Fixed: Edge -> ClockEdge
+            if (ParallelWidthText != null) ParallelWidthText.Text = settings.DataWidth.ToString();
         }
 
         #endregion
+
+        #region Enum Conversion Helpers
+
+        private T ParseEnum<T>(string value) where T : struct, Enum
+        {
+            if (Enum.TryParse<T>(value, ignoreCase: true, out T result))
+                return result;
+            return default(T);
+        }
+
+        private string EnumToString<T>(T enumValue) where T : struct, Enum
+        {
+            return enumValue.ToString();
+        }
+
+        #endregion
+
     }
 }

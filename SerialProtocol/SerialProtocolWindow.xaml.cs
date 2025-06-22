@@ -19,6 +19,7 @@ namespace DS1000Z_E_USB_Control.SerialProtocol
             InitializeWindow();
         }
 
+
         private void InitializeWindow()
         {
             // Subscribe to the protocol panel's SCPI command events

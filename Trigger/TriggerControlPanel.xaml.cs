@@ -80,6 +80,10 @@ namespace DS1000Z_E_USB_Control.Trigger
 
                 isInitialized = true;
                 LogEvent?.Invoke(this, "Enhanced trigger control panel initialized with all trigger modes");
+
+
+
+
             }
             catch (Exception ex)
             {
@@ -397,9 +401,10 @@ namespace DS1000Z_E_USB_Control.Trigger
             }
         }
 
+
         /// <summary>
         /// Handle edge source selection changes
-        /// CORRECTED: Using SetEdgeSource method
+        /// FIXED: Removed call to non-existent UpdateTriggerStepsFromUI
         /// </summary>
         private void EdgeSource_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -411,11 +416,35 @@ namespace DS1000Z_E_USB_Control.Trigger
 
             if (!string.IsNullOrEmpty(source))
             {
-                controller?.SetEdgeSource(source);  // CORRECTED: SetEdgeSource not SetSource
+                controller?.SetEdgeSource(source);
                 TriggerSourceChanged?.Invoke(this, EventArgs.Empty);
-                UpdateTriggerStepsFromUI();
+
+                // FIXED: Removed the problematic UpdateTriggerStepsFromUI() call
+                LogEvent?.Invoke(this, $"Trigger source changed to: {source}");
             }
         }
+
+
+
+        ///// <summary>
+        ///// Handle edge source selection changes
+        ///// CORRECTED: Using SetEdgeSource method
+        ///// </summary>
+        //private void EdgeSource_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        //{
+        //    if (isUpdating || !isInitialized) return;
+
+        //    var comboBox = sender as ComboBox;
+        //    var selectedItem = comboBox?.SelectedItem as ComboBoxItem;
+        //    var source = selectedItem?.Tag?.ToString();
+
+        //    if (!string.IsNullOrEmpty(source))
+        //    {
+        //        controller?.SetEdgeSource(source);  // CORRECTED: SetEdgeSource not SetSource
+        //        TriggerSourceChanged?.Invoke(this, EventArgs.Empty);
+        //        UpdateTriggerStepsFromUI();
+        //    }
+        //}
 
         /// <summary>
         /// Handle edge slope selection changes
@@ -1006,50 +1035,7 @@ namespace DS1000Z_E_USB_Control.Trigger
             UpdateTriggerStepsFromUI();
         }
 
-        /// <summary>
-        /// Update trigger steps from UI
-        /// CORRECTED: Using UpdateRange method and individual properties
-        /// </summary>
-        public void UpdateTriggerStepsFromUI()
-        {
-            if (TriggerLevelArrows == null || EdgeSourceComboBox == null) return;
 
-            try
-            {
-                // Get current trigger source
-                var sourceItem = EdgeSourceComboBox.SelectedItem as ComboBoxItem;
-                string source = sourceItem?.Tag?.ToString() ?? "CHAN1";
-
-                // Set appropriate range and step sizes based on trigger source
-                switch (source)
-                {
-                    case "CHAN1":
-                    case "CHAN2":
-                        // CORRECTED: Using UpdateRange and setting GraticuleSize
-                        TriggerLevelArrows.UpdateRange(-5.0, 5.0);
-                        TriggerLevelArrows.GraticuleSize = 0.02; // Channel voltage step
-                        break;
-                    case "EXT":
-                        TriggerLevelArrows.UpdateRange(-2.0, 2.0);
-                        TriggerLevelArrows.GraticuleSize = 0.01; // External input step
-                        break;
-                    case "ACLine":
-                        TriggerLevelArrows.UpdateRange(0.0, 1.0);
-                        TriggerLevelArrows.GraticuleSize = 0.01; // AC line step
-                        break;
-                    default:
-                        TriggerLevelArrows.UpdateRange(-5.0, 5.0);
-                        TriggerLevelArrows.GraticuleSize = 0.02; // Default step
-                        break;
-                }
-
-                LogEvent?.Invoke(this, $"Trigger level steps updated for source: {source}");
-            }
-            catch (Exception ex)
-            {
-                LogEvent?.Invoke(this, $"Error updating trigger steps: {ex.Message}");
-            }
-        }
 
         /// <summary>
         /// Update holdoff display
@@ -1064,13 +1050,77 @@ namespace DS1000Z_E_USB_Control.Trigger
         #region Legacy Compatibility Methods
 
         /// <summary>
-        /// Update trigger level control settings (Legacy method for compatibility)
+        /// Update trigger level control settings - FIXED Implementation
         /// </summary>
         public void UpdateTriggerLevelControl(Ch1Settings ch1Settings, Ch2Settings ch2Settings)
         {
-            UpdateTriggerStepsFromUI();
-            LogEvent?.Invoke(this, "Trigger level control updated with dynamic steps");
+            try
+            {
+                if (controller == null)
+                {
+                    LogEvent?.Invoke(this, "❌ Cannot update trigger control - controller is null");
+                    return;
+                }
+
+                // FIXED: Call the controller's actual method instead of the non-existent UpdateTriggerStepsFromUI
+                controller.UpdateTriggerLevelControl(ch1Settings, ch2Settings);
+
+                LogEvent?.Invoke(this, "✅ Trigger level control updated with dynamic steps from channel settings");
+            }
+            catch (Exception ex)
+            {
+                LogEvent?.Invoke(this, $"❌ Error updating trigger level control: {ex.Message}");
+            }
         }
+
+        ///// <summary>
+        ///// Update trigger level control settings - FIXED to properly call controller method
+        ///// </summary>
+        //public void UpdateTriggerLevelControl(Ch1Settings ch1Settings, Ch2Settings ch2Settings)
+        //{
+        //    try
+        //    {
+        //        if (controller == null)
+        //        {
+        //            LogEvent?.Invoke(this, "❌ Cannot update trigger steps - controller is null");
+        //            return;
+        //        }
+
+        //        // Call the controller's proper method (not the legacy UpdateTriggerStepsFromUI)
+        //        controller.UpdateTriggerLevelControl(ch1Settings, ch2Settings);
+
+        //        LogEvent?.Invoke(this, "✅ Trigger level control updated with dynamic steps from channel settings");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        LogEvent?.Invoke(this, $"❌ Error updating trigger level control: {ex.Message}");
+        //    }
+        //}
+
+        // ADD this new method to your TriggerControlPanel class:
+
+        /// <summary>
+        /// Method for MainWindow to call when trigger source changes
+        /// This ensures step sizes are updated when source changes
+        /// </summary>
+        public void OnTriggerSourceChanged(Ch1Settings ch1Settings, Ch2Settings ch2Settings)
+        {
+            try
+            {
+                if (controller == null) return;
+
+                // Update trigger control with current channel settings
+                controller.UpdateTriggerLevelControl(ch1Settings, ch2Settings);
+
+                LogEvent?.Invoke(this, "🔄 Trigger step sizes updated for new source");
+            }
+            catch (Exception ex)
+            {
+                LogEvent?.Invoke(this, $"❌ Error updating trigger steps after source change: {ex.Message}");
+            }
+        }
+
+
 
         /// <summary>
         /// Update from settings (legacy compatibility)

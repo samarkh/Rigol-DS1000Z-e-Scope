@@ -176,6 +176,9 @@ namespace Rigol_DS1000Z_E_Control
                     // Automatically get current settings after connection
                     Log("🔄 Connection successful! Reading current oscilloscope settings...");
                     GetCurrentSettings();
+                    // Then establish the channel-trigger connection
+                    EstablishChannelTriggerConnection();
+
                 }
                 else
                 {
@@ -203,6 +206,34 @@ namespace Rigol_DS1000Z_E_Control
                 {
                     Log("❌ Error during disconnect");
                 }
+            }
+        }
+
+
+
+        // MODIFICATION: Update your disconnect method to clean up events
+        private void DisconnectFromOscilloscope()
+        {
+            try
+            {
+                // Clean up channel events before disconnecting
+                if (Channel1Panel?.GetController() != null)
+                {
+                    Channel1Panel.GetController().SettingsChanged -= OnChannelSettingsChanged;
+                }
+
+                if (Channel2Panel?.GetController() != null)
+                {
+                    Channel2Panel.GetController().SettingsChanged -= OnChannelSettingsChanged;
+                }
+
+                // ... rest of your existing disconnect code ...
+
+                Log("🔌 Channel-Trigger connection cleaned up");
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Error during disconnect cleanup: {ex.Message}");
             }
         }
 
@@ -297,6 +328,139 @@ namespace Rigol_DS1000Z_E_Control
             if (BatchExportButton != null) BatchExportButton.IsEnabled = isConnected;
         }
         #endregion
+
+
+        // Add this to your MainWindow.xaml.cs class in the connection/initialization section
+
+        #region Channel Settings Change Event Wiring
+
+        /// <summary>
+        /// Wire up channel controller events AND trigger source change events
+        /// Call this after initializing all panels
+        /// </summary>
+        private void WireUpChannelTriggerConnection()
+        {
+            try
+            {
+                // Subscribe to Channel 1 settings changes
+                if (Channel1Panel?.GetController() != null)
+                {
+                    Channel1Panel.GetController().SettingsChanged -= OnChannelSettingsChanged;
+                    Channel1Panel.GetController().SettingsChanged += OnChannelSettingsChanged;
+                    Log("✅ Channel 1 settings change events wired to trigger updates");
+                }
+
+                // Subscribe to Channel 2 settings changes  
+                if (Channel2Panel?.GetController() != null)
+                {
+                    Channel2Panel.GetController().SettingsChanged -= OnChannelSettingsChanged;
+                    Channel2Panel.GetController().SettingsChanged += OnChannelSettingsChanged;
+                    Log("✅ Channel 2 settings change events wired to trigger updates");
+                }
+
+                // Subscribe to trigger source changes (NEW)
+                if (TriggerPanel != null)
+                {
+                    TriggerPanel.TriggerSourceChanged -= OnTriggerSourceChanged;
+                    TriggerPanel.TriggerSourceChanged += OnTriggerSourceChanged;
+                    Log("✅ Trigger source change events wired");
+                }
+
+                Log("🔗 Enhanced Channel-Trigger connection established");
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Error wiring enhanced channel-trigger connection: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Handle trigger source changes and update step sizes immediately
+        /// </summary>
+        private void OnTriggerSourceChanged(object sender, EventArgs e)
+        {
+            try
+            {
+                if (!isConnected || TriggerPanel == null) return;
+
+                // Get current channel settings
+                var ch1Settings = Channel1Panel?.GetController()?.GetSettings() ?? new Ch1Settings();
+                var ch2Settings = Channel2Panel?.GetController()?.GetSettings() ?? new Ch2Settings();
+
+                // Update trigger panel immediately when source changes
+                TriggerPanel.OnTriggerSourceChanged(ch1Settings, ch2Settings);
+
+                Log("🎯 Trigger step sizes updated for source change");
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Error handling trigger source change: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Handle channel settings changes and update trigger step sizes
+        /// </summary>
+        private void OnChannelSettingsChanged(object sender, EventArgs e)
+        {
+            UpdateTriggerLevelStepSizes();
+        }
+
+        /// <summary>
+        /// Establish the enhanced channel-trigger connection
+        /// Call this after all panels are initialized and connected
+        /// </summary>
+        private void EstablishChannelTriggerConnection()
+        {
+            if (isConnected && TriggerPanel != null &&
+                Channel1Panel?.IsInitialized == true &&
+                Channel2Panel?.IsInitialized == true)
+            {
+                // Wire up all the events
+                WireUpChannelTriggerConnection();
+
+                // Do an initial update to set correct step sizes
+                UpdateTriggerLevelStepSizes();
+
+                Log("🎯 Enhanced Channel-Trigger dynamic step sizing connection restored");
+            }
+        }
+
+        /// <summary>
+        /// Enhanced disconnect cleanup
+        /// </summary>
+        private void CleanupChannelTriggerConnection()
+        {
+            try
+            {
+                // Clean up channel events
+                if (Channel1Panel?.GetController() != null)
+                {
+                    Channel1Panel.GetController().SettingsChanged -= OnChannelSettingsChanged;
+                }
+
+                if (Channel2Panel?.GetController() != null)
+                {
+                    Channel2Panel.GetController().SettingsChanged -= OnChannelSettingsChanged;
+                }
+
+                // Clean up trigger source events (NEW)
+                if (TriggerPanel != null)
+                {
+                    TriggerPanel.TriggerSourceChanged -= OnTriggerSourceChanged;
+                }
+
+                Log("🔌 Enhanced Channel-Trigger connection cleaned up");
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Error during enhanced connection cleanup: {ex.Message}");
+            }
+        }
+
+        #endregion
+
+
 
         #region Settings Management
         /// <summary>

@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="DS1000Z_E.SerialProtocol.SerialProtocolPanel"
+﻿<UserControl x:Class="DS1000Z_E_USB_Control.SerialProtocol.SerialProtocolPanel"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 

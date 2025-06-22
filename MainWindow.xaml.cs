@@ -13,6 +13,7 @@ using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using DS1000Z_E_USB_Control.SerialProtocol;
 //using System.Windows.Forms; // For FolderBrowserDialog
 using System.Text.Json;      // For JSON serialization
 
@@ -28,6 +29,8 @@ namespace Rigol_DS1000Z_E_Control
         private OscilloscopeSettingsManager settingsManager;
         private bool isConnected = false;
         private SimpleWaveformCapture captureSystem;
+
+        private SerialProtocolWindow _serialProtocolWindow;
 
         // Enhanced storage managers
         private EnhancedUSBStorageManager usbStorageManager;

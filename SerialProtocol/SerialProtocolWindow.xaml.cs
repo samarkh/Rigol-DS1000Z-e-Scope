@@ -355,8 +355,8 @@ TIPS:
                     // Apply threshold settings
                     if (settings.Thresholds != null)
                     {
-                        ProtocolPanel.SetChannel1Threshold(settings.Thresholds.Channel1);
-                        ProtocolPanel.SetChannel2Threshold(settings.Thresholds.Channel2);
+                        ProtocolPanel.SetChannel1Threshold(settings.Thresholds.Channel1Threshold);
+                        ProtocolPanel.SetChannel2Threshold(settings.Thresholds.Channel2Threshold);
                     }
 
                     // Apply event table settings
@@ -364,22 +364,22 @@ TIPS:
                     {
                         ProtocolPanel.TableEnabled = settings.EventTable.Enabled;
                         ProtocolPanel.SetTableFormat(settings.EventTable.Format ?? "HEX");
-                        ProtocolPanel.SetTableView(settings.EventTable.View ?? "PACKet");
+                        ProtocolPanel.SetTableView(settings.EventTable.ViewMode ?? "PACKet");
                         ProtocolPanel.SetTableSortOrder(settings.EventTable.SortOrder ?? "ASCend");
                     }
 
                     // Apply protocol-specific settings
-                    if (settings.UARTSettings != null)
-                        ProtocolPanel.ApplyUARTSettings(settings.UARTSettings);
+                    if (settings.UART != null)
+                        ProtocolPanel.ApplyUARTSettings(settings.UART);
 
-                    if (settings.I2CSettings != null)
-                        ProtocolPanel.ApplyI2CSettings(settings.I2CSettings);
+                    if (settings.I2C != null)
+                        ProtocolPanel.ApplyI2CSettings(settings.I2C);
 
                     if (settings.SPISettings != null)
                         ProtocolPanel.ApplySPISettings(settings.SPISettings);
 
-                    if (settings.ParallelSettings != null)
-                        ProtocolPanel.ApplyParallelSettings(settings.ParallelSettings);
+                    if (settings.Parallel != null)
+                        ProtocolPanel.ApplyParallelSettings(settings.Parallel);
 
                     // Set decoder enabled state
                     ProtocolPanel.DecoderEnabled = settings.Enabled;
@@ -426,81 +426,5 @@ TIPS:
         #endregion
     }
 
-    #region Data Classes for Settings
 
-    ///// <summary>
-    ///// Complete decoder settings data structure for save/load functionality
-    ///// </summary>
-    //public class DecoderSettings
-    //{
-    //    public string Version { get; set; } = "1.0";
-    //    public DateTime Timestamp { get; set; } = DateTime.Now;
-    //    public string ProtocolType { get; set; } = "UART";
-    //    public int DecoderNumber { get; set; } = 1;
-    //    public bool Enabled { get; set; } = false;
-    //    public string DisplayFormat { get; set; } = "HEX";
-    //    public double VerticalPosition { get; set; } = 0.0;
-    //    public ThresholdSettings Thresholds { get; set; } = new ThresholdSettings();
-    //    public EventTableSettings EventTable { get; set; } = new EventTableSettings();
-    //    public UARTSettings UARTSettings { get; set; } = new UARTSettings();
-    //    public I2CSettings I2CSettings { get; set; } = new I2CSettings();
-    //    public SPISettings SPISettings { get; set; } = new SPISettings();
-    //    public ParallelSettings ParallelSettings { get; set; } = new ParallelSettings();
-    //}
-
-    //public class ThresholdSettings
-    //{
-    //    public double Channel1 { get; set; } = 1.4;
-    //    public double Channel2 { get; set; } = 1.4;
-    //}
-
-    //public class EventTableSettings
-    //{
-    //    public bool Enabled { get; set; } = false;
-    //    public string Format { get; set; } = "HEX";
-    //    public string View { get; set; } = "PACKet";
-    //    public string SortOrder { get; set; } = "ASCend";
-    //    public string Column { get; set; } = "TIME";
-    //    public int CurrentRow { get; set; } = 1;
-    //}
-
-    //public class UARTSettings
-    //{
-    //    public string TxChannel { get; set; } = "CHANnel1";
-    //    public string RxChannel { get; set; } = "CHANnel2";
-    //    public string BaudRate { get; set; } = "9600";
-    //    public string DataWidth { get; set; } = "8";
-    //    public string StopBits { get; set; } = "1";
-    //    public string Parity { get; set; } = "NONE";
-    //    public string Polarity { get; set; } = "POS";
-    //    public string Endian { get; set; } = "LSB";
-    //}
-
-    //public class I2CSettings
-    //{
-    //    public string ClockChannel { get; set; } = "CHANnel1";
-    //    public string DataChannel { get; set; } = "CHANnel2";
-    //    public string AddressType { get; set; } = "ADDR7";
-    //}
-
-    //public class SPISettings
-    //{
-    //    public string ClockChannel { get; set; } = "CHANnel1";
-    //    public string MisoChannel { get; set; } = "CHANnel2";
-    //    public string MosiChannel { get; set; } = "CHANnel1";
-    //    public string CsChannel { get; set; } = "CHANnel1";
-    //    public string DataWidth { get; set; } = "8";
-    //    public string Polarity { get; set; } = "POSitive";
-    //    public string Edge { get; set; } = "POSitive";
-    //    public string Endian { get; set; } = "LSB";
-    //}
-
-    //public class ParallelSettings
-    //{
-    //    public string ClockChannel { get; set; } = "CHANnel1";
-    //    public string Edge { get; set; } = "POSitive";
-    //    public string DataWidth { get; set; } = "8";
-    //}
-
-    #endregion
 }

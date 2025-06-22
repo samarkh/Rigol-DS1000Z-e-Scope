@@ -460,7 +460,84 @@ namespace Rigol_DS1000Z_E_Control
 
         #endregion
 
+        #region Serial Protocol Button Handlers
 
+        // Add this event handler method
+        private void OpenSerialProtocol_Click(object sender, RoutedEventArgs e)
+        {
+            // Check if window is already open
+            if (_serialProtocolWindow == null || !_serialProtocolWindow.IsVisible)
+            {
+                _serialProtocolWindow = new SerialProtocolWindow();
+
+                // Subscribe to SCPI command events
+                _serialProtocolWindow.SCPICommandGenerated += OnSCPICommandGenerated;
+
+                // Position relative to main window
+                _serialProtocolWindow.Owner = this;
+                _serialProtocolWindow.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+
+                _serialProtocolWindow.Show();
+            }
+            else
+            {
+                // Bring existing window to front
+                _serialProtocolWindow.Activate();
+                _serialProtocolWindow.Focus();
+            }
+        }
+
+        private void OnSCPICommandGenerated(object sender, string command)
+        {
+            // This is where you integrate with your existing oscilloscope communication
+            try
+            {
+                // Replace this with your actual SCPI communication method
+                SendSCPICommand(command);
+
+                // Optional: Log the command
+                LogMessage($"Sent: {command}");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error sending SCPI command: {ex.Message}",
+                              "Communication Error",
+                              MessageBoxButton.OK,
+                              MessageBoxImage.Error);
+            }
+        }
+
+        // You probably already have a method like this for SCPI communication
+        private void SendSCPICommand(string command)
+        {
+            // Your existing SCPI communication code here
+            // For example:
+            // oscilloscope.WriteString(command);
+            // or
+            // visaSession.FormattedIO.WriteLine(command);
+
+            // Placeholder for your implementation
+            Console.WriteLine($"SCPI: {command}");
+        }
+
+        // Optional: Method to log messages to your existing logging system
+        private void LogMessage(string message)
+        {
+            // Your existing logging implementation
+            // For example:
+            // LogTextBox.AppendText($"[{DateTime.Now:HH:mm:ss}] {message}\n");
+            Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] {message}");
+        }
+
+        // Optional: Close protocol window when main window closes
+        protected override void OnClosed(EventArgs e)
+        {
+            _serialProtocolWindow?.Close();
+            base.OnClosed(e);
+        }
+
+
+        #endregion
 
         #region Settings Management
         /// <summary>

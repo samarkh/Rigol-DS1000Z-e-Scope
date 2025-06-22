@@ -1027,13 +1027,30 @@ namespace DS1000Z_E_USB_Control.Trigger
             }
         }
 
+        // FIND this method in your TriggerControlPanel.xaml.cs (around line 1035) and REPLACE it:
+
         /// <summary>
         /// Update trigger level arrow control
+        /// FIXED: Removed call to non-existent UpdateTriggerStepsFromUI
         /// </summary>
         private void UpdateTriggerLevelArrowControl()
         {
-            UpdateTriggerStepsFromUI();
+            // FIXED: Removed the problematic UpdateTriggerStepsFromUI() call
+            // The step size updates will happen through the MainWindow 
+            // channel-trigger connection system when channel settings change
+
+            LogEvent?.Invoke(this, "🎯 Trigger level arrow control refreshed");
         }
+
+
+
+        ///// <summary>
+        ///// Update trigger level arrow control
+        ///// </summary>
+        //private void UpdateTriggerLevelArrowControl()
+        //{
+        //    UpdateTriggerStepsFromUI();
+        //}
 
 
 

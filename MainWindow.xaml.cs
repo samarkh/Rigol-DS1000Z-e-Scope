@@ -35,7 +35,7 @@ namespace Rigol_DS1000Z_E_Control
         private SerialProtocolWINDOW _serialProtocolWindow;
 
         // Measurement controller and window
-        private MeasurementWindow _measurementWindow;
+        private Window _measurementWindow;
         private MeasurementController _measurementController;
 
         // Enhanced storage managers
@@ -552,13 +552,78 @@ namespace Rigol_DS1000Z_E_Control
 
         #region Measurements Window Management
 
-        /// <summary>
-        /// Open Measurements window button click handler
-        /// </summary>
+        // ================================
+        // CRITICAL FIX #3: MainWindow.xaml.cs OpenMeasurements_Click method
+        // ================================
+        // FIND this method around line 450 and REPLACE the entire method:
+
         private void OpenMeasurements_Click(object sender, RoutedEventArgs e)
         {
-            OpenMeasurementsWindow();
+            if (!isConnected)
+            {
+                MessageBox.Show("Please connect to the oscilloscope first.", "Open Measurements",
+                              MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            try
+            {
+                if (_measurementWindow == null || !_measurementWindow.IsVisible)
+                {
+                    // Initialize measurement controller if not already done
+                    if (_measurementController == null)
+                    {
+                        _measurementController = new MeasurementController(oscilloscope);
+                        _measurementController.LogEvent += (s, message) => Log(message);
+                    }
+
+                    // Create simple window with measurement panel (NO MeasurementWindow class)
+                    _measurementWindow = new Window
+                    {
+                        Title = "📊 Measurements & Statistics",
+                        Width = 900,
+                        Height = 700,
+                        Owner = this,
+                        WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                        Background = Brushes.White
+                    };
+
+                    // Create measurement panel directly
+                    var measurementPanel = new MeasurementPanel
+                    {
+                        Controller = _measurementController,
+                        Margin = new Thickness(10)
+                    };
+
+                    // Handle panel logging
+                    measurementPanel.LogEvent += (s, message) => Log(message);
+
+                    // Set panel as window content
+                    _measurementWindow.Content = measurementPanel;
+
+                    // Handle window closed event
+                    _measurementWindow.Closed += (s, ev) => _measurementWindow = null;
+
+                    Log("📊 Opening Measurements & Statistics window...");
+                }
+
+                // Show and bring to front
+                _measurementWindow.Show();
+                _measurementWindow.Activate();
+                _measurementWindow.Focus();
+
+                Log("📊 Measurements window opened");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error opening Measurements window: {ex.Message}",
+                              "Measurements Error",
+                              MessageBoxButton.OK,
+                              MessageBoxImage.Error);
+                Log($"❌ Error opening Measurements window: {ex.Message}");
+            }
         }
+
 
         /// <summary>
         /// Open or bring to front the Measurements window
@@ -584,10 +649,14 @@ namespace Rigol_DS1000Z_E_Control
                     }
 
                     // Create new measurement window
-                    _measurementWindow = new MeasurementWindow
+                    _measurementWindow = new Window
                     {
-                        Controller = _measurementController,
-                        Owner = this
+                        Title = "📊 Measurements & Statistics",
+                        Width = 900,
+                        Height = 700,
+                        Owner = this,
+                        WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                        Content = new MeasurementPanel { Controller = _measurementController }
                     };
 
                     // Update connection status
@@ -619,9 +688,11 @@ namespace Rigol_DS1000Z_E_Control
         /// <summary>
         /// Update measurement window connection status
         /// </summary>
+        // REPLACE WITH:
         private void UpdateMeasurementWindowConnection(bool connected)
         {
-            _measurementWindow?.UpdateConnectionStatus(connected);
+            // Simple approach - no special connection update needed
+            // The controller handles connection state internally
         }
 
         /// <summary>

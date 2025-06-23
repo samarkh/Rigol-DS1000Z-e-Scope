@@ -373,7 +373,7 @@ namespace DS1000Z_E_USB_Control.Measurements
         {
             try
             {
-                string command = $":MEASure:ADIS {(enabled ? "ON" : "OFF")}";
+                string command = $":MEASure:ADISplay {(enabled ? "ON" : "OFF")}";
                 if (oscilloscope.SendCommand(command))
                 {
                     Settings.AutoDisplayEnabled = enabled;

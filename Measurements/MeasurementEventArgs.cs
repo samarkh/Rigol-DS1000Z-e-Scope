@@ -177,7 +177,7 @@ namespace DS1000Z_E_USB_Control.Measurements
         /// <returns>True if voltage measurement</returns>
         public bool IsVoltageMeasurement()
         {
-            return MeasurementKey.StartsWith("V", StringComparison.OrdinalIgnoreCase);
+            return MeasurementKey.ToUpper().StartsWith("V");
         }
 
         /// <summary>
@@ -186,9 +186,10 @@ namespace DS1000Z_E_USB_Control.Measurements
         /// <returns>True if time measurement</returns>
         public bool IsTimeMeasurement()
         {
-            return MeasurementKey.Contains("Time", StringComparison.OrdinalIgnoreCase) ||
-                   MeasurementKey.Contains("PER", StringComparison.OrdinalIgnoreCase) ||
-                   MeasurementKey.Contains("Width", StringComparison.OrdinalIgnoreCase);
+            return MeasurementKey.ToUpper().Contains("TIME") ||
+                   MeasurementKey.ToUpper().Contains("PER") ||
+                   MeasurementKey.ToUpper().Contains("WIDTH");
+
         }
 
         #endregion

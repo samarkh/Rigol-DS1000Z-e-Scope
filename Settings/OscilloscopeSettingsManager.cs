@@ -830,6 +830,52 @@ namespace DS1000Z_E_USB_Control
             }
         }
 
+
+        /// <summary>
+        /// Parse source channel response from oscilloscope
+        /// </summary>
+        private string ParseSourceChannelResponse(string response)
+        {
+            if (string.IsNullOrEmpty(response)) return "CHAN1";
+
+            response = response.ToUpper().Trim();
+
+            // Handle different response formats
+            if (response.Contains("CHAN1") || response == "1")
+                return "CHAN1";
+            else if (response.Contains("CHAN2") || response == "2")
+                return "CHAN2";
+            else if (response.Contains("CHAN3") || response == "3")
+                return "CHAN3";
+            else if (response.Contains("CHAN4") || response == "4")
+                return "CHAN4";
+            else
+                return "CHAN1"; // Default fallback
+        }
+
+        /// <summary>
+        /// Parse statistic mode response from oscilloscope
+        /// </summary>
+        private string ParseStatisticModeResponse(string response)
+        {
+            if (string.IsNullOrEmpty(response)) return "OFF";
+
+            response = response.ToUpper().Trim();
+
+            // Handle different response formats
+            if (response == "DIFF" || response == "DIFFERENCE")
+                return "DIFFERENCE";
+            else if (response == "EXTR" || response == "EXTREMUM")
+                return "EXTREMUM";
+            else if (response == "OFF" || response == "0")
+                return "OFF";
+            else if (response == "ON" || response == "1")
+                return "EXTREMUM"; // Default when enabled
+            else
+                return "OFF"; // Default fallback
+        }
+
+
         #endregion
 
 

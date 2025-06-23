@@ -72,6 +72,21 @@ namespace DS1000Z_E_USB_Control.Measurements
         /// </summary>
         public bool CounterEnabled { get; set; } = false;
 
+        /// <summary>
+        /// Enable/disable automatic updates
+        /// </summary>
+        public bool AutoUpdateEnabled { get; set; } = true;
+
+        /// <summary>
+        /// Auto update interval in milliseconds
+        /// </summary>
+        public int AutoUpdateIntervalMs { get; set; } = 1000;
+
+        /// <summary>
+        /// Enable/disable statistics collection
+        /// </summary>
+        public bool StatisticsEnabled { get; set; } = true;
+
         #endregion
 
         #region Measurement Parameter Definitions

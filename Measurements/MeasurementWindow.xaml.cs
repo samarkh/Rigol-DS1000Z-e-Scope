@@ -1,6 +1,7 @@
 ﻿using Microsoft.Win32;
 using System;
 using System.IO;
+using System.Text;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
@@ -361,6 +362,11 @@ namespace DS1000Z_E_USB_Control.Measurements
             base.OnClosed(e);
         }
 
+
+
+
+
+
         #endregion
     }
 
@@ -443,6 +449,39 @@ namespace DS1000Z_E_USB_Control.Measurements
             DialogResult = true;
         }
     }
+
+
+            /// <summary>
+        /// Export statistics to file
+        /// </summary>
+        private void ExportStatisticsToFile(string fileName)
+        {
+            try
+            {
+                var sb = new StringBuilder();
+                sb.AppendLine("Measurement,Current Value,Min,Max,Average,Standard Deviation,Count");
+
+                if (controller?.Statistics != null)
+                {
+                    foreach (var kvp in controller.Statistics)
+                    {
+                        var stats = kvp.Value;
+                        var currentValue = controller.CurrentValues.ContainsKey(kvp.Key)
+                            ? controller.CurrentValues[kvp.Key]?.ToString() ?? "N/A"
+                            : "N/A";
+
+                        sb.AppendLine($"{kvp.Key},{currentValue},{stats.Minimum},{stats.Maximum},{stats.Average},{stats.StandardDeviation},{stats.Count}");
+                    }
+                }
+
+                File.WriteAllText(fileName, sb.ToString());
+            }
+            catch (Exception ex)
+            {
+                LogEvent?.Invoke(this, $"Error writing statistics file: {ex.Message}");
+            }
+        }
+
 
     /// <summary>
     /// Export data dialog

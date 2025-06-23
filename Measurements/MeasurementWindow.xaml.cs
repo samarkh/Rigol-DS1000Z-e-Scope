@@ -379,49 +379,40 @@ namespace DS1000Z_E_USB_Control.Measurements
     {
         public string SelectedPreset { get; private set; }
 
-        public QuickSetupDialog()
-        {
-            Title = "Quick Measurement Setup";
-            Width = 400;
-            Height = 300;
-            WindowStartupLocation = WindowStartupLocation.CenterParent;
-            ResizeMode = ResizeMode.NoResize;
+public QuickSetupDialog()
+{
+    Title = "Quick Measurement Setup";
+    Width = 400;
+    Height = 300;
+    WindowStartupLocation = WindowStartupLocation.CenterParent;  // ✅ FIXED
+    ResizeMode = ResizeMode.NoResize;
 
-            var stackPanel = new StackPanel { Margin = new Thickness(20) };
+    var stackPanel = new StackPanel { Margin = new Thickness(20) };
 
-            stackPanel.Children.Add(new TextBlock
-            {
-                Text = "Select a measurement preset:",
-                FontSize = 14,
-                FontWeight = FontWeights.Bold,
-                Margin = new Thickness(0, 0, 0, 15)
-            });
+    // ... rest of the constructor code with fixed Thickness constructors
+    var timeDomainButton = new Button
+    {
+        Content = "Time Domain\nFrequency, Period, Rise/Fall Time, Duty Cycle",
+        Height = 50,
+        Margin = new Thickness(0, 5, 0, 5),  // ✅ FIXED: 4 parameters
+        Tag = "TimeDomain"
+    };
 
-            var timeDomainButton = new Button
-            {
-                Content = "Time Domain\nFrequency, Period, Rise/Fall Time, Duty Cycle",
-                Height = 50,
-                Margin = new Thickness(0, 5),
-                Tag = "TimeDomain"
-            };
-            timeDomainButton.Click += PresetButton_Click;
+    var voltageButton = new Button
+    {
+        Content = "Voltage Analysis\nMax, Min, Peak-to-Peak, Average, RMS", 
+        Height = 50,
+        Margin = new Thickness(0, 5, 0, 5),  // ✅ FIXED: 4 parameters
+        Tag = "Voltage"
+    };
 
-            var voltageButton = new Button
-            {
-                Content = "Voltage Analysis\nMax, Min, Peak-to-Peak, Average, RMS",
-                Height = 50,
-                Margin = new Thickness(0, 5),
-                Tag = "Voltage"
-            };
-            voltageButton.Click += PresetButton_Click;
-
-            var comprehensiveButton = new Button
-            {
-                Content = "Comprehensive Analysis\nAll common measurements + Statistics",
-                Height = 50,
-                Margin = new Thickness(0, 5),
-                Tag = "Comprehensive"
-            };
+    var comprehensiveButton = new Button
+    {
+        Content = "Comprehensive Analysis\nAll common measurements + Statistics",
+        Height = 50,
+        Margin = new Thickness(0, 5, 0, 5),  // ✅ FIXED: 4 parameters
+        Tag = "Comprehensive"
+    };
             comprehensiveButton.Click += PresetButton_Click;
 
             var cancelButton = new Button
@@ -480,8 +471,8 @@ namespace DS1000Z_E_USB_Control.Measurements
             {
                 LogEvent?.Invoke(this, $"Error writing statistics file: {ex.Message}");
             }
-        }
 
+        }
 
     /// <summary>
     /// Export data dialog

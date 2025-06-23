@@ -264,21 +264,21 @@
 
                 <!-- With this compact button: -->
                 <Button x:Name="SerialProtocolButton"
-        Grid.Row="2" 
-        Grid.Column="5" 
-        Grid.ColumnSpan="1"
-        Click="OpenSerialProtocol_Click"
-        Background="#2196F3"
-        Foreground="White"
-        BorderBrush="#1976D2"
-        BorderThickness="1"
-        FontWeight="Bold"
-        Padding="3,2"
-        Margin="2"
-        Width="50"
-        Height="35"
-        ToolTip="Serial Protocol Analysis &amp; Decoding"
-        Cursor="Hand">
+                                Grid.Row="2" 
+                                Grid.Column="5" 
+                                Grid.ColumnSpan="1"
+                                Click="OpenSerialProtocol_Click"
+                                Background="#2196F3"
+                                Foreground="White"
+                                BorderBrush="#1976D2"
+                                BorderThickness="1"
+                                FontWeight="Bold"
+                                Padding="3,2"
+                                Margin="2"
+                                Width="50"
+                                Height="35"
+                                ToolTip="Serial Protocol Analysis &amp; Decoding"
+                                Cursor="Hand">
 
                     <Button.Style>
                         <Style TargetType="Button">
@@ -295,10 +295,10 @@
 
                     <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
                         <TextBlock Text="🔍" 
-                   FontSize="12" 
+                   FontSize="16" 
                    HorizontalAlignment="Center"
                    Margin="0,0,0,1"/>
-                        <TextBlock Text="Proto" 
+                        <TextBlock Text="Serial Decode" 
                    FontSize="7" 
                    FontWeight="Bold"
                    HorizontalAlignment="Center"/>

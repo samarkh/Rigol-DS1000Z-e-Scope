@@ -6,6 +6,7 @@ using DS1000Z_E_USB_Control.Channels.Ch1;
 using DS1000Z_E_USB_Control.Channels.Ch2;
 using DS1000Z_E_USB_Control.Trigger;
 using DS1000Z_E_USB_Control.TimeBase;
+using DS1000Z_E_USB_Control.Measurements;
 
 namespace DS1000Z_E_USB_Control
 {
@@ -17,7 +18,11 @@ namespace DS1000Z_E_USB_Control
         private readonly RigolDS1000ZE oscilloscope;
         private string deviceId = "Unknown";
         private string acquisitionInfo = "Unknown";
-
+                
+        /// Measurement settings
+        
+        public MeasurementSettings MeasurementSettings { get; set; } = new MeasurementSettings();
+        
         public event EventHandler<string> LogEvent;
 
         #region Settings Properties
@@ -754,6 +759,80 @@ namespace DS1000Z_E_USB_Control
         }
 
         #endregion
+
+
+        #region Measurements
+
+        // Add this method to read measurement settings:
+
+        /// <summary>
+        /// Read Measurement settings from oscilloscope
+        /// </summary>
+        private bool ReadMeasurementSettings()
+        {
+            try
+            {
+                // Read measurement display settings
+                string autoDisplay = oscilloscope.SendQuery(":MEASure:ADISplay?");
+                string autoSource = oscilloscope.SendQuery(":MEASure:AMSource?");
+                string statisticDisplay = oscilloscope.SendQuery(":MEASure:STATistic:DISPlay?");
+                string statisticMode = oscilloscope.SendQuery(":MEASure:STATistic:MODE?");
+
+                // Read measurement setup parameters
+                string thresholdMax = oscilloscope.SendQuery(":MEASure:SETup:MAX?");
+                string thresholdMid = oscilloscope.SendQuery(":MEASure:SETup:MID?");
+                string thresholdMin = oscilloscope.SendQuery(":MEASure:SETup:MIN?");
+                string pulseSetupB = oscilloscope.SendQuery(":MEASure:SETup:PSB?");
+                string delaySetupA = oscilloscope.SendQuery(":MEASure:SETup:DSA?");
+                string delaySetupB = oscilloscope.SendQuery(":MEASure:SETup:DSB?");
+
+                // Parse and set values
+                if (!string.IsNullOrEmpty(autoDisplay))
+                    MeasurementSettings.AutoDisplayEnabled = autoDisplay.Trim() == "1";
+
+                if (!string.IsNullOrEmpty(autoSource))
+                    MeasurementSettings.AutoMeasureSource = ParseSourceChannelResponse(autoSource.Trim());
+
+                if (!string.IsNullOrEmpty(statisticDisplay))
+                    MeasurementSettings.StatisticDisplayEnabled = statisticDisplay.Trim() == "1";
+
+                if (!string.IsNullOrEmpty(statisticMode))
+                    MeasurementSettings.StatisticMode = ParseStatisticModeResponse(statisticMode.Trim());
+
+                if (!string.IsNullOrEmpty(thresholdMax) && double.TryParse(thresholdMax, out double maxVal))
+                    MeasurementSettings.ThresholdMax = maxVal;
+
+                if (!string.IsNullOrEmpty(thresholdMid) && double.TryParse(thresholdMid, out double midVal))
+                    MeasurementSettings.ThresholdMid = midVal;
+
+                if (!string.IsNullOrEmpty(thresholdMin) && double.TryParse(thresholdMin, out double minVal))
+                    MeasurementSettings.ThresholdMin = minVal;
+
+                if (!string.IsNullOrEmpty(pulseSetupB) && double.TryParse(pulseSetupB, out double psbVal))
+                    MeasurementSettings.PulseSetupB = psbVal;
+
+                if (!string.IsNullOrEmpty(delaySetupA) && double.TryParse(delaySetupA, out double dsaVal))
+                    MeasurementSettings.DelaySetupA = dsaVal;
+
+                if (!string.IsNullOrEmpty(delaySetupB) && double.TryParse(delaySetupB, out double dsbVal))
+                    MeasurementSettings.DelaySetupB = dsbVal;
+
+                // Note: Enabled measurements list cannot be easily queried from DS1000Z-E
+                // They would need to be maintained by the application or queried individually
+
+                Log("✅ Measurement settings read successfully");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Error reading measurement settings: {ex.Message}");
+                return false;
+            }
+        }
+
+        #endregion
+
+
 
         private void Log(string message)
         {

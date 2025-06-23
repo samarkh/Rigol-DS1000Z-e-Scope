@@ -1,6 +1,8 @@
 ﻿using DS1000Z_E_USB_Control;
 using DS1000Z_E_USB_Control.Channels.Ch1;
 using DS1000Z_E_USB_Control.Channels.Ch2;
+using DS1000Z_E_USB_Control.Measurements;
+using DS1000Z_E_USB_Control.SerialProtocol;
 using DS1000Z_E_USB_Control.Storage;
 using DS1000Z_E_USB_Control.TimeBase;
 using DS1000Z_E_USB_Control.Trigger;
@@ -10,12 +12,11 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Text;
+//using System.Windows.Forms; // For FolderBrowserDialog
+using System.Text.Json;      // For JSON serialization
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using DS1000Z_E_USB_Control.SerialProtocol;
-//using System.Windows.Forms; // For FolderBrowserDialog
-using System.Text.Json;      // For JSON serialization
 
 namespace Rigol_DS1000Z_E_Control
 {
@@ -29,8 +30,13 @@ namespace Rigol_DS1000Z_E_Control
         private OscilloscopeSettingsManager settingsManager;
         private bool isConnected = false;
         private SimpleWaveformCapture captureSystem;
-
+        
+        // Serial protocol window for SCPI command testing
         private SerialProtocolWINDOW _serialProtocolWindow;
+
+        // Measurement controller and window
+        private MeasurementWindow _measurementWindow;
+        private MeasurementController _measurementController;
 
         // Enhanced storage managers
         private EnhancedUSBStorageManager usbStorageManager;
@@ -536,11 +542,99 @@ namespace Rigol_DS1000Z_E_Control
         protected override void OnClosed(EventArgs e)
         {
             _serialProtocolWindow?.Close();
+            CloseMeasurementWindow(); // Add this line
             base.OnClosed(e);
         }
 
 
         #endregion
+
+
+        #region Measurements Window Management
+
+        /// <summary>
+        /// Open Measurements window button click handler
+        /// </summary>
+        private void OpenMeasurements_Click(object sender, RoutedEventArgs e)
+        {
+            OpenMeasurementsWindow();
+        }
+
+        /// <summary>
+        /// Open or bring to front the Measurements window
+        /// </summary>
+        private void OpenMeasurementsWindow()
+        {
+            if (!isConnected)
+            {
+                MessageBox.Show("Please connect to the oscilloscope first.", "Open Measurements",
+                              MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            try
+            {
+                if (_measurementWindow == null || !_measurementWindow.IsLoaded)
+                {
+                    // Initialize measurement controller if not already done
+                    if (_measurementController == null)
+                    {
+                        _measurementController = new MeasurementController(oscilloscope);
+                        _measurementController.LogEvent += (s, message) => Log(message);
+                    }
+
+                    // Create new measurement window
+                    _measurementWindow = new MeasurementWindow
+                    {
+                        Controller = _measurementController,
+                        Owner = this
+                    };
+
+                    // Update connection status
+                    _measurementWindow.UpdateConnectionStatus(isConnected);
+
+                    // Handle window closed event
+                    _measurementWindow.Closed += (s, e) => _measurementWindow = null;
+
+                    Log("📊 Opening Measurements & Statistics window...");
+                }
+
+                // Show and bring to front
+                _measurementWindow.Show();
+                _measurementWindow.Activate();
+                _measurementWindow.Focus();
+
+                Log("📊 Measurements window opened");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error opening Measurements window: {ex.Message}",
+                              "Measurements Error",
+                              MessageBoxButton.OK,
+                              MessageBoxImage.Error);
+                Log($"❌ Error opening Measurements window: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Update measurement window connection status
+        /// </summary>
+        private void UpdateMeasurementWindowConnection(bool connected)
+        {
+            _measurementWindow?.UpdateConnectionStatus(connected);
+        }
+
+        /// <summary>
+        /// Close measurement window when main window closes
+        /// </summary>
+        private void CloseMeasurementWindow()
+        {
+            _measurementWindow?.Close();
+            _measurementWindow = null;
+        }
+
+        #endregion
+
 
         #region Settings Management
         /// <summary>

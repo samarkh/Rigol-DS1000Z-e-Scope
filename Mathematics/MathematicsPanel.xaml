@@ -1,0 +1,403 @@
+﻿<UserControl x:Class="DS1000Z_E_USB_Control.Mathematics.MathematicsPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d" 
+             d:DesignHeight="800" d:DesignWidth="1200"
+             Background="#F5F5F5">
+
+    <UserControl.Resources>
+        <!-- Section Style -->
+        <Style x:Key="SectionStyle" TargetType="GroupBox">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#37474F"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="Padding" Value="10"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="#37474F"/>
+        </Style>
+
+        <!-- Label Style -->
+        <Style x:Key="LabelStyle" TargetType="Label">
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Foreground" Value="#424242"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+
+        <!-- Input Style for Controls -->
+        <Style x:Key="InputStyle" TargetType="Control">
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Height" Value="25"/>
+        </Style>
+
+        <!-- Math Button Style -->
+        <Style x:Key="MathButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#4CAF50"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#45A049"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#45A049"/>
+                    <Setter Property="BorderBrush" Value="#388E3C"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="#388E3C"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Header Button Style -->
+        <Style x:Key="HeaderButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#455A64"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- TextBox Style -->
+        <Style x:Key="TextBoxStyle" TargetType="TextBox">
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Height" Value="25"/>
+            <Setter Property="Padding" Value="5,2"/>
+            <Setter Property="BorderBrush" Value="#BDBDBD"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+
+        <!-- ComboBox Style -->
+        <Style x:Key="ComboBoxStyle" TargetType="ComboBox">
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Height" Value="25"/>
+            <Setter Property="BorderBrush" Value="#BDBDBD"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <!-- Header -->
+            <RowDefinition Height="*"/>
+            <!-- Content -->
+        </Grid.RowDefinitions>
+
+        <!-- Collapsible Header -->
+        <Border Grid.Row="0" Background="#37474F" BorderBrush="#263238" BorderThickness="0,0,0,2">
+            <Grid Height="50">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="15,0">
+                    <TextBlock Text="🧮" FontSize="20" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="Math Functions" FontSize="16" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
+                    <TextBlock Text="(SCPI Commands)" FontSize="12" Foreground="#B0BEC5" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <Button x:Name="ToggleButton" Grid.Column="1" Click="ToggleButton_Click"
+                        Style="{StaticResource HeaderButtonStyle}"
+                        VerticalAlignment="Center" Margin="0,0,20,0">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock x:Name="ToggleIcon" Text="🔽" FontSize="16" Margin="0,0,5,0"/>
+                        <TextBlock x:Name="ToggleText" Text="Collapse" FontSize="14"/>
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- Main Content -->
+        <ScrollViewer Grid.Row="1" x:Name="MainContent" 
+                      VerticalScrollBarVisibility="Auto" 
+                      HorizontalScrollBarVisibility="Disabled"
+                      Background="White">
+            <Grid Margin="20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Basic Operations Section -->
+                <GroupBox Grid.Column="0" Grid.Row="0" Header="➕ Basic Operations" Style="{StaticResource SectionStyle}">
+                    <StackPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <Label Grid.Row="0" Grid.Column="0" Content="Source 1:" Style="{StaticResource LabelStyle}"/>
+                            <ComboBox x:Name="Source1Combo" Grid.Row="0" Grid.Column="1" Style="{StaticResource ComboBoxStyle}">
+                                <ComboBoxItem Content="Channel 1" Tag="CHANnel1" IsSelected="True"/>
+                                <ComboBoxItem Content="Channel 2" Tag="CHANnel2"/>
+                            </ComboBox>
+
+                            <Label Grid.Row="1" Grid.Column="0" Content="Source 2:" Style="{StaticResource LabelStyle}"/>
+                            <ComboBox x:Name="Source2Combo" Grid.Row="1" Grid.Column="1" Style="{StaticResource ComboBoxStyle}">
+                                <ComboBoxItem Content="Channel 1" Tag="CHANnel1"/>
+                                <ComboBoxItem Content="Channel 2" Tag="CHANnel2" IsSelected="True"/>
+                            </ComboBox>
+
+                            <Label Grid.Row="2" Grid.Column="0" Content="Operation:" Style="{StaticResource LabelStyle}"/>
+                            <ComboBox x:Name="OperationCombo" Grid.Row="2" Grid.Column="1" Style="{StaticResource ComboBoxStyle}">
+                                <ComboBoxItem Content="Add (CH1 + CH2)" Tag="ADD" IsSelected="True"/>
+                                <ComboBoxItem Content="Subtract (CH1 - CH2)" Tag="SUBtract"/>
+                                <ComboBoxItem Content="Multiply (CH1 × CH2)" Tag="MULtiply"/>
+                                <ComboBoxItem Content="Divide (CH1 ÷ CH2)" Tag="DIVide"/>
+                            </ComboBox>
+
+                            <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" 
+                                        HorizontalAlignment="Center" Margin="0,15,0,5">
+                                <Button Content="✅ Apply Operation" Style="{StaticResource MathButtonStyle}" 
+                                        Click="ApplyBasicOperation_Click"/>
+                                <Button Content="🔄 Reset Math" Style="{StaticResource MathButtonStyle}" 
+                                        Background="#FF5722" BorderBrush="#E64A19" Click="ResetMath_Click"/>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- FFT Analysis Section -->
+                <GroupBox Grid.Column="1" Grid.Row="0" Header="📊 FFT Analysis" Style="{StaticResource SectionStyle}">
+                    <StackPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <Label Grid.Row="0" Grid.Column="0" Content="FFT Source:" Style="{StaticResource LabelStyle}"/>
+                            <ComboBox x:Name="FFTSourceCombo" Grid.Row="0" Grid.Column="1" Style="{StaticResource ComboBoxStyle}">
+                                <ComboBoxItem Content="Channel 1" Tag="CHANnel1" IsSelected="True"/>
+                                <ComboBoxItem Content="Channel 2" Tag="CHANnel2"/>
+                            </ComboBox>
+
+                            <Label Grid.Row="1" Grid.Column="0" Content="Window:" Style="{StaticResource LabelStyle}"/>
+                            <ComboBox x:Name="FFTWindowCombo" Grid.Row="1" Grid.Column="1" Style="{StaticResource ComboBoxStyle}">
+                                <ComboBoxItem Content="Rectangular" Tag="RECTangular" IsSelected="True"/>
+                                <ComboBoxItem Content="Blackman" Tag="BLACkman"/>
+                                <ComboBoxItem Content="Hanning" Tag="HANNing"/>
+                                <ComboBoxItem Content="Hamming" Tag="HAMMing"/>
+                            </ComboBox>
+
+                            <Label Grid.Row="2" Grid.Column="0" Content="Display:" Style="{StaticResource LabelStyle}"/>
+                            <ComboBox x:Name="FFTSplitCombo" Grid.Row="2" Grid.Column="1" Style="{StaticResource ComboBoxStyle}">
+                                <ComboBoxItem Content="Full Screen" Tag="FULL" IsSelected="True"/>
+                                <ComboBoxItem Content="Center" Tag="CENTer"/>
+                            </ComboBox>
+
+                            <Label Grid.Row="3" Grid.Column="0" Content="Units:" Style="{StaticResource LabelStyle}"/>
+                            <ComboBox x:Name="FFTUnitCombo" Grid.Row="3" Grid.Column="1" Style="{StaticResource ComboBoxStyle}">
+                                <ComboBoxItem Content="VRMS" Tag="VRMS" IsSelected="True"/>
+                                <ComboBoxItem Content="dB" Tag="DB"/>
+                            </ComboBox>
+
+                            <Button Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2"
+                                    Content="📈 Apply FFT Analysis"
+                                    Style="{StaticResource MathButtonStyle}"
+                                    Background="#2196F3" BorderBrush="#1976D2"
+                                    Click="ApplyFFT_Click" Margin="0,15,0,5"/>
+                        </Grid>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- Digital Filter Section -->
+                <GroupBox Grid.Column="0" Grid.Row="1" Header="🔧 Digital Filters" Style="{StaticResource SectionStyle}">
+                    <StackPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <Label Grid.Row="0" Grid.Column="0" Content="Filter Type:" Style="{StaticResource LabelStyle}"/>
+                            <ComboBox x:Name="FilterTypeCombo" Grid.Row="0" Grid.Column="1" Style="{StaticResource ComboBoxStyle}">
+                                <ComboBoxItem Content="Low Pass" Tag="LPASs" IsSelected="True"/>
+                                <ComboBoxItem Content="High Pass" Tag="HPASs"/>
+                                <ComboBoxItem Content="Band Pass" Tag="BPASs"/>
+                                <ComboBoxItem Content="Band Stop" Tag="BSTop"/>
+                            </ComboBox>
+
+                            <Label Grid.Row="1" Grid.Column="0" Content="Lower Freq (Hz):" Style="{StaticResource LabelStyle}"/>
+                            <TextBox x:Name="FilterW1Text" Grid.Row="1" Grid.Column="1" Style="{StaticResource TextBoxStyle}" 
+                                     Text="1000" ToolTip="Enter frequency in Hz"/>
+
+                            <Label Grid.Row="2" Grid.Column="0" Content="Upper Freq (Hz):" Style="{StaticResource LabelStyle}"/>
+                            <TextBox x:Name="FilterW2Text" Grid.Row="2" Grid.Column="1" Style="{StaticResource TextBoxStyle}" 
+                                     Text="10000" ToolTip="Enter frequency in Hz"/>
+
+                            <Button Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2"
+                                    Content="🔧 Apply Filter"
+                                    Style="{StaticResource MathButtonStyle}"
+                                    Background="#9C27B0" BorderBrush="#7B1FA2"
+                                    Click="ApplyFilter_Click" Margin="0,15,0,5"/>
+                        </Grid>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- Advanced Math Section -->
+                <GroupBox Grid.Column="1" Grid.Row="1" Header="🔬 Advanced Math" Style="{StaticResource SectionStyle}">
+                    <StackPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <Label Grid.Row="0" Grid.Column="0" Content="Function:" Style="{StaticResource LabelStyle}"/>
+                            <ComboBox x:Name="AdvancedFunctionCombo" Grid.Row="0" Grid.Column="1" Style="{StaticResource ComboBoxStyle}">
+                                <ComboBoxItem Content="Integration" Tag="INTG" IsSelected="True"/>
+                                <ComboBoxItem Content="Differentiation" Tag="DIFF"/>
+                                <ComboBoxItem Content="Square Root" Tag="SQRT"/>
+                                <ComboBoxItem Content="Logarithm (base 10)" Tag="LG"/>
+                                <ComboBoxItem Content="Natural Log" Tag="LN"/>
+                                <ComboBoxItem Content="Exponential" Tag="EXP"/>
+                                <ComboBoxItem Content="Absolute Value" Tag="ABS"/>
+                            </ComboBox>
+
+                            <Label Grid.Row="1" Grid.Column="0" Content="Start Point:" Style="{StaticResource LabelStyle}"/>
+                            <TextBox x:Name="StartPointText" Grid.Row="1" Grid.Column="1" Style="{StaticResource TextBoxStyle}" 
+                                     Text="0" ToolTip="Integration/operation start point"/>
+
+                            <Label Grid.Row="2" Grid.Column="0" Content="End Point:" Style="{StaticResource LabelStyle}"/>
+                            <TextBox x:Name="EndPointText" Grid.Row="2" Grid.Column="1" Style="{StaticResource TextBoxStyle}" 
+                                     Text="100" ToolTip="Integration/operation end point"/>
+
+                            <Button Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2"
+                                    Content="🔬 Apply Function"
+                                    Style="{StaticResource MathButtonStyle}"
+                                    Background="#FF9800" BorderBrush="#F57C00"
+                                    Click="ApplyAdvancedMath_Click" Margin="0,15,0,5"/>
+                        </Grid>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- Math Display Control & SCPI Commands -->
+                <GroupBox Grid.Column="0" Grid.Row="2" Grid.ColumnSpan="2" Header="📋 Math Display Control &amp; Generated Commands" 
+                          Style="{StaticResource SectionStyle}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="150"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Display Controls -->
+                        <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Margin="10">
+                            <CheckBox x:Name="MathDisplayCheckbox" Content="Enable Math Display" IsChecked="True" 
+                                      VerticalAlignment="Center" FontWeight="Bold" Foreground="#424242"/>
+                            <CheckBox x:Name="InvertCheckbox" Content="Invert Waveform" Margin="20,0,0,0"
+                                      VerticalAlignment="Center" FontWeight="Bold" Foreground="#424242"/>
+                        </StackPanel>
+
+                        <!-- Scale and Offset -->
+                        <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Margin="10">
+                            <Label Content="Scale:" Style="{StaticResource LabelStyle}"/>
+                            <TextBox x:Name="ScaleText" Width="60" Text="1.0" Style="{StaticResource TextBoxStyle}" 
+                                     ToolTip="Vertical scale factor"/>
+                            <Label Content="Offset:" Style="{StaticResource LabelStyle}" Margin="10,0,0,0"/>
+                            <TextBox x:Name="OffsetText" Width="60" Text="0.0" Style="{StaticResource TextBoxStyle}"
+                                     ToolTip="Vertical offset value"/>
+                        </StackPanel>
+
+                        <!-- Action Buttons -->
+                        <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" 
+                                    HorizontalAlignment="Center" Margin="0,10,0,0">
+                            <Button Content="📺 Update Display" Style="{StaticResource MathButtonStyle}" 
+                                    Background="#607D8B" BorderBrush="#455A64" Click="UpdateDisplay_Click"
+                                    ToolTip="Apply display settings to oscilloscope"/>
+                            <Button Content="💾 Save Math Setup" Style="{StaticResource MathButtonStyle}" 
+                                    Background="#795548" BorderBrush="#5D4037" Click="SaveMathSetup_Click"
+                                    ToolTip="Save current configuration to file"/>
+                            <Button Content="📁 Load Math Setup" Style="{StaticResource MathButtonStyle}" 
+                                    Background="#009688" BorderBrush="#00796B" Click="LoadMathSetup_Click"
+                                    ToolTip="Load configuration from file"/>
+                        </StackPanel>
+
+                        <!-- SCPI Commands Output Label -->
+                        <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" 
+                                    Margin="10,10,10,0">
+                            <Label Content="📋 Generated SCPI Commands:" Style="{StaticResource LabelStyle}"/>
+                            <Button Content="📋 Copy Commands" 
+                                    Background="#455A64" Foreground="White" BorderThickness="0" 
+                                    Padding="8,2" FontSize="10" Click="CopyCommands_Click"
+                                    ToolTip="Copy commands to clipboard"/>
+                            <Button Content="🗑️ Clear" 
+                                    Background="#757575" Foreground="White" BorderThickness="0" 
+                                    Padding="8,2" FontSize="10" Margin="5,0,0,0" Click="ClearCommands_Click"
+                                    ToolTip="Clear command history"/>
+                        </StackPanel>
+
+                        <!-- SCPI Commands Output -->
+                        <ScrollViewer Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" 
+                                      VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                                      Margin="10,0,10,10" BorderBrush="#BDBDBD" BorderThickness="1">
+                            <TextBox x:Name="SCPICommandsText" 
+                                     IsReadOnly="True" 
+                                     Background="#F8F8F8" 
+                                     BorderThickness="0"
+                                     FontFamily="Consolas" 
+                                     FontSize="11"
+                                     TextWrapping="Wrap"
+                                     Padding="5"
+                                     Text="Ready to generate SCPI commands..."/>
+                        </ScrollViewer>
+                    </Grid>
+                </GroupBox>
+            </Grid>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

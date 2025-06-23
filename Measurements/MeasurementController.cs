@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using Rigol_DS1000Z_E_Control;
+using DS1000Z_E_USB_Control.Measurements;
 
 namespace DS1000Z_E_USB_Control.Measurements
 {

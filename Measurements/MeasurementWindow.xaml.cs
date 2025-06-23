@@ -1,6 +1,7 @@
 ﻿using Microsoft.Win32;
 using System;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Windows;
@@ -88,61 +89,65 @@ namespace DS1000Z_E_USB_Control.Measurements
         private void ResetAll_Click(object sender, RoutedEventArgs e)
         {
             if (MessageBox.Show("Reset all measurements and settings to defaults?\n\nThis will clear all enabled measurements and reset thresholds.",
-                "Confirm Reset", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+                "Reset All Measurements", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
             {
-                controller?.ClearAllMeasurements();
-
-                // Reset to default settings
-                if (controller?.Settings != null)
+                try
                 {
-                    controller.Settings.ThresholdMax = 90.0;
-                    controller.Settings.ThresholdMid = 50.0;
-                    controller.Settings.ThresholdMin = 10.0;
-                    controller.Settings.PulseSetupB = 50.0;
-                    controller.Settings.DelaySetupA = 50.0;
-                    controller.Settings.DelaySetupB = 50.0;
-                    controller.Settings.AutoDisplayEnabled = true;
-                    controller.Settings.StatisticDisplayEnabled = false;
-                    controller.Settings.AutoMeasureSource = "CHANnel1";
-                    controller.Settings.StatisticMode = "DIFF";
-
-                    // Apply settings to oscilloscope
-                    controller.SetAutoDisplay(true);
-                    controller.SetStatisticDisplay(false);
-                    controller.SetAutoMeasureSource("CHANnel1");
-                    controller.SetStatisticMode("DIFF");
-                    controller.SetThresholdMax(90.0);
-                    controller.SetThresholdMid(50.0);
-                    controller.SetThresholdMin(10.0);
-                    controller.SetPulseSetupB(50.0);
-                    controller.SetDelaySetupA(50.0);
-                    controller.SetDelaySetupB(50.0);
+                    controller?.ResetAllMeasurements();
+                    LogMessage("All measurements reset to defaults");
                 }
-
-                LogMessage("All measurements and settings reset to defaults");
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error resetting measurements: {ex.Message}", "Reset Error",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
         }
 
         private void QuickSetup_Click(object sender, RoutedEventArgs e)
         {
-            var setupDialog = new QuickSetupDialog();
-            if (setupDialog.ShowDialog() == true)
+            if (controller == null)
             {
-                switch (setupDialog.SelectedPreset)
+                MessageBox.Show("Measurement controller not available.", "Quick Setup",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            try
+            {
+                // Use the new separate dialog
+                var selectedPreset = QuickSetupDialog.ShowDialog(this);
+
+                if (!string.IsNullOrEmpty(selectedPreset))
                 {
-                    case "TimeDomain":
-                        controller?.ApplyTimeDomainPreset();
-                        LogMessage("Applied Time Domain preset");
-                        break;
-                    case "Voltage":
-                        controller?.ApplyVoltagePreset();
-                        LogMessage("Applied Voltage preset");
-                        break;
-                    case "Comprehensive":
-                        controller?.ApplyComprehensivePreset();
-                        LogMessage("Applied Comprehensive preset");
-                        break;
+                    // Get measurements for the selected preset
+                    var measurements = QuickSetupDialog.GetPresetMeasurements(selectedPreset);
+
+                    if (measurements.Length > 0)
+                    {
+                        // Apply the preset measurements
+                        ApplyPresetMeasurements(measurements, selectedPreset);
+
+                        LogMessage($"Applied {selectedPreset} preset with {measurements.Length} measurements");
+
+                        // Show confirmation
+                        var description = QuickSetupDialog.GetPresetDescription(selectedPreset);
+                        MessageBox.Show($"Quick Setup Complete!\n\nPreset: {selectedPreset}\n" +
+                                      $"Measurements: {measurements.Length}\n\n{description}",
+                                      "Setup Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        MessageBox.Show($"No measurements defined for preset: {selectedPreset}",
+                                      "Setup Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error during quick setup: {ex.Message}", "Quick Setup Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                LogMessage($"Quick setup error: {ex.Message}");
             }
         }
 
@@ -150,7 +155,7 @@ namespace DS1000Z_E_USB_Control.Measurements
         {
             if (controller?.Settings == null)
             {
-                MessageBox.Show("No measurement configuration to save.", "Save Configuration",
+                MessageBox.Show("No measurement configuration available to save.", "Save Configuration",
                     MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
@@ -199,28 +204,9 @@ namespace DS1000Z_E_USB_Control.Measurements
                     var json = File.ReadAllText(openDialog.FileName);
                     var settings = JsonSerializer.Deserialize<MeasurementSettings>(json);
 
-                    if (settings != null && controller != null)
+                    if (settings != null)
                     {
-                        controller.Settings = settings;
-
-                        // Apply loaded settings to oscilloscope
-                        controller.SetAutoDisplay(settings.AutoDisplayEnabled);
-                        controller.SetAutoMeasureSource(settings.AutoMeasureSource);
-                        controller.SetStatisticDisplay(settings.StatisticDisplayEnabled);
-                        controller.SetStatisticMode(settings.StatisticMode);
-                        controller.SetThresholdMax(settings.ThresholdMax);
-                        controller.SetThresholdMid(settings.ThresholdMid);
-                        controller.SetThresholdMin(settings.ThresholdMin);
-                        controller.SetPulseSetupB(settings.PulseSetupB);
-                        controller.SetDelaySetupA(settings.DelaySetupA);
-                        controller.SetDelaySetupB(settings.DelaySetupB);
-
-                        // Re-enable measurements
-                        foreach (var measurement in settings.EnabledMeasurements)
-                        {
-                            controller.EnableMeasurement(measurement);
-                        }
-
+                        controller.ApplySettings(settings);
                         LogMessage($"Configuration loaded from: {openDialog.FileName}");
                         MessageBox.Show($"Configuration loaded successfully from:\n{openDialog.FileName}",
                             "Load Complete", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -236,318 +222,47 @@ namespace DS1000Z_E_USB_Control.Measurements
 
         private void ExportData_Click(object sender, RoutedEventArgs e)
         {
-            if (controller?.CurrentValues == null || controller.CurrentValues.Count == 0)
+            if (controller?.Statistics == null || !controller.Statistics.Any())
             {
-                MessageBox.Show("No measurement data to export.", "Export Data",
+                MessageBox.Show("No measurement data available to export.", "Export Data",
                     MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
-            var exportDialog = new ExportDataDialog(controller);
-            exportDialog.ShowDialog();
+            var saveDialog = new SaveFileDialog
+            {
+                Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*",
+                DefaultExt = "csv",
+                FileName = $"MeasurementData_{DateTime.Now:yyyyMMdd_HHmmss}.csv"
+            };
+
+            if (saveDialog.ShowDialog() == true)
+            {
+                try
+                {
+                    ExportStatisticsToFile(saveDialog.FileName);
+                    LogMessage($"Data exported to: {saveDialog.FileName}");
+                    MessageBox.Show($"Measurement data exported successfully to:\n{saveDialog.FileName}",
+                        "Export Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error exporting data:\n{ex.Message}", "Export Error",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
         }
 
         private void LiveChart_Click(object sender, RoutedEventArgs e)
         {
-            // TODO: Implement live chart window
-            MessageBox.Show("Live Chart feature coming soon!", "Live Chart",
+            // TODO: Implement live chart functionality
+            MessageBox.Show("Live chart functionality coming soon!", "Live Chart",
                 MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         private void Help_Click(object sender, RoutedEventArgs e)
         {
-            var helpDialog = new MeasurementHelpDialog();
-            helpDialog.ShowDialog();
-        }
-
-        private void Close_Click(object sender, RoutedEventArgs e)
-        {
-            Close();
-        }
-
-        #endregion
-
-        #region Event Handlers - Controller
-
-        private void Controller_LogEvent(object sender, string message)
-        {
-            Dispatcher.Invoke(() =>
-            {
-                LogMessage(message);
-            });
-        }
-
-        private void Controller_MeasurementValueUpdated(object sender, MeasurementValueEventArgs e)
-        {
-            Dispatcher.Invoke(() =>
-            {
-                TimestampText.Text = $"Last Updated: {DateTime.Now:HH:mm:ss}";
-            });
-        }
-
-        private void Controller_MeasurementStatisticsUpdated(object sender, MeasurementStatisticsEventArgs e)
-        {
-            Dispatcher.Invoke(() =>
-            {
-                TimestampText.Text = $"Last Updated: {DateTime.Now:HH:mm:ss}";
-            });
-        }
-
-        #endregion
-
-        #region Status Updates
-
-        /// <summary>
-        /// Update connection status
-        /// </summary>
-        public void UpdateConnectionStatus(bool connected)
-        {
-            isConnected = connected;
-
-            if (ConnectionIndicator != null)
-            {
-                ConnectionIndicator.Fill = connected ? Brushes.Green : Brushes.Red;
-            }
-
-            if (StatusText != null)
-            {
-                StatusText.Text = connected ? "Connected" : "Disconnected";
-            }
-        }
-
-        /// <summary>
-        /// Status update timer tick
-        /// </summary>
-        private void StatusUpdateTimer_Tick(object sender, EventArgs e)
-        {
-            if (controller?.Settings != null)
-            {
-                var enabledCount = controller.Settings.EnabledMeasurements?.Count ?? 0;
-                MeasurementCountText.Text = enabledCount == 1 ? "1 active" : $"{enabledCount} active";
-            }
-            else
-            {
-                MeasurementCountText.Text = "0 active";
-            }
-        }
-
-        #endregion
-
-        #region Helper Methods
-
-        /// <summary>
-        /// Log a message to status
-        /// </summary>
-        private void LogMessage(string message)
-        {
-            StatusText.Text = message;
-            TimestampText.Text = $"Last Updated: {DateTime.Now:HH:mm:ss}";
-        }
-
-        #endregion
-
-        #region Window Events
-
-        protected override void OnClosed(EventArgs e)
-        {
-            statusUpdateTimer?.Stop();
-
-            if (controller != null)
-            {
-                controller.LogEvent -= Controller_LogEvent;
-                controller.MeasurementValueUpdated -= Controller_MeasurementValueUpdated;
-                controller.MeasurementStatisticsUpdated -= Controller_MeasurementStatisticsUpdated;
-            }
-
-            base.OnClosed(e);
-        }
-
-
-
-
-
-
-        #endregion
-    }
-
-    #region Helper Dialog Classes
-
-    /// <summary>
-    /// Quick setup dialog for measurement presets
-    /// </summary>
-    public partial class QuickSetupDialog : Window
-    {
-        public string SelectedPreset { get; private set; }
-
-public QuickSetupDialog()
-{
-    Title = "Quick Measurement Setup";
-    Width = 400;
-    Height = 300;
-    WindowStartupLocation = WindowStartupLocation.CenterParent;  // ✅ FIXED
-    ResizeMode = ResizeMode.NoResize;
-
-    var stackPanel = new StackPanel { Margin = new Thickness(20) };
-
-    // ... rest of the constructor code with fixed Thickness constructors
-    var timeDomainButton = new Button
-    {
-        Content = "Time Domain\nFrequency, Period, Rise/Fall Time, Duty Cycle",
-        Height = 50,
-        Margin = new Thickness(0, 5, 0, 5),  // ✅ FIXED: 4 parameters
-        Tag = "TimeDomain"
-    };
-
-    var voltageButton = new Button
-    {
-        Content = "Voltage Analysis\nMax, Min, Peak-to-Peak, Average, RMS", 
-        Height = 50,
-        Margin = new Thickness(0, 5, 0, 5),  // ✅ FIXED: 4 parameters
-        Tag = "Voltage"
-    };
-
-    var comprehensiveButton = new Button
-    {
-        Content = "Comprehensive Analysis\nAll common measurements + Statistics",
-        Height = 50,
-        Margin = new Thickness(0, 5, 0, 5),  // ✅ FIXED: 4 parameters
-        Tag = "Comprehensive"
-    };
-            comprehensiveButton.Click += PresetButton_Click;
-
-            var cancelButton = new Button
-            {
-                Content = "Cancel",
-                Width = 100,
-                Height = 30,
-                Margin = new Thickness(0, 20, 0, 0),
-                HorizontalAlignment = HorizontalAlignment.Center
-            };
-            cancelButton.Click += (s, e) => { DialogResult = false; };
-
-            stackPanel.Children.Add(timeDomainButton);
-            stackPanel.Children.Add(voltageButton);
-            stackPanel.Children.Add(comprehensiveButton);
-            stackPanel.Children.Add(cancelButton);
-
-            Content = stackPanel;
-        }
-
-        private void PresetButton_Click(object sender, RoutedEventArgs e)
-        {
-            var button = sender as Button;
-            SelectedPreset = button?.Tag?.ToString();
-            DialogResult = true;
-        }
-    }
-
-
-            /// <summary>
-        /// Export statistics to file
-        /// </summary>
-        private void ExportStatisticsToFile(string fileName)
-        {
-            try
-            {
-                var sb = new StringBuilder();
-                sb.AppendLine("Measurement,Current Value,Min,Max,Average,Standard Deviation,Count");
-
-                if (controller?.Statistics != null)
-                {
-                    foreach (var kvp in controller.Statistics)
-                    {
-                        var stats = kvp.Value;
-                        var currentValue = controller.CurrentValues.ContainsKey(kvp.Key)
-                            ? controller.CurrentValues[kvp.Key]?.ToString() ?? "N/A"
-                            : "N/A";
-
-                        sb.AppendLine($"{kvp.Key},{currentValue},{stats.Minimum},{stats.Maximum},{stats.Average},{stats.StandardDeviation},{stats.Count}");
-                    }
-                }
-
-                File.WriteAllText(fileName, sb.ToString());
-            }
-            catch (Exception ex)
-            {
-                LogEvent?.Invoke(this, $"Error writing statistics file: {ex.Message}");
-            }
-
-        }
-
-    /// <summary>
-    /// Export data dialog
-    /// </summary>
-    public partial class ExportDataDialog : Window
-    {
-        private readonly MeasurementController controller;
-
-        public ExportDataDialog(MeasurementController controller)
-        {
-            this.controller = controller;
-            Title = "Export Measurement Data";
-            Width = 500;
-            Height = 400;
-            WindowStartupLocation = WindowStartupLocation.CenterParent;
-
-            // Simple implementation - full export dialog would be more complex
-            var stackPanel = new StackPanel { Margin = new Thickness(20) };
-
-            var exportButton = new Button
-            {
-                Content = "Export Current Values & Statistics to CSV",
-                Height = 40,
-                Margin = new Thickness(0, 20)
-            };
-            exportButton.Click += ExportButton_Click;
-
-            stackPanel.Children.Add(new TextBlock
-            {
-                Text = "Export measurement data to file",
-                FontSize = 14,
-                Margin = new Thickness(0, 0, 0, 20)
-            });
-            stackPanel.Children.Add(exportButton);
-
-            Content = stackPanel;
-        }
-
-        private void ExportButton_Click(object sender, RoutedEventArgs e)
-        {
-            // Trigger the export functionality from the measurement panel
-            DialogResult = true;
-        }
-    }
-
-    /// <summary>
-    /// Measurement help dialog
-    /// </summary>
-    public partial class MeasurementHelpDialog : Window
-    {
-        public MeasurementHelpDialog()
-        {
-            Title = "Measurement Help";
-            Width = 600;
-            Height = 500;
-            WindowStartupLocation = WindowStartupLocation.CenterParent;
-
-            var scrollViewer = new ScrollViewer();
-            var textBlock = new TextBlock
-            {
-                Text = GetHelpText(),
-                Margin = new Thickness(20),
-                TextWrapping = TextWrapping.Wrap
-            };
-
-            scrollViewer.Content = textBlock;
-            Content = scrollViewer;
-        }
-
-        private string GetHelpText()
-        {
-            return @"RIGOL DS1000Z-E AUTOMATIC MEASUREMENTS HELP
-
-OVERVIEW:
-The automatic measurement system provides 37 different measurement parameters organized into categories:
+            var helpMessage = @"📊 MEASUREMENT WINDOW HELP
 
 TIME DOMAIN MEASUREMENTS:
 • Period/Frequency - Waveform period and frequency
@@ -568,27 +283,192 @@ SIGNAL QUALITY:
 • Overshoot/Preshoot - Signal overshoot and preshoot percentages
 • Variance - Voltage variance
 
-ADVANCED:
-• Area measurements - Waveform area calculations
-• Delay/Phase - Between-channel measurements
-
 MEASUREMENT SETUP:
 • Threshold Levels: Define measurement reference points (MAX, MID, MIN)
-• Pulse Setup: Configure pulse measurement parameters
-• Delay Setup: Configure delay measurement parameters
-
-STATISTICS:
-• Enable statistics to track min, max, average, and standard deviation
-• Reset statistics to clear accumulated data
-• Export statistics to CSV for analysis
+• Quick Setup: Use presets for common measurement scenarios
+• Statistics: Track min, max, average, and standard deviation
 
 TIPS:
-• Use presets for quick setup of common measurement scenarios
-• Enable auto-update for continuous measurement monitoring
+• Use Quick Setup for fast configuration
+• Enable auto-update for continuous monitoring
 • Configure thresholds based on your signal characteristics
-• Use statistics for long-term signal analysis";
-        }
-    }
+• Export data for analysis in external tools";
 
-    #endregion
+            MessageBox.Show(helpMessage, "Measurement Help",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void Close_Click(object sender, RoutedEventArgs e)
+        {
+            Close();
+        }
+
+        #endregion
+
+        #region Event Handlers - Controller Events
+
+        private void Controller_LogEvent(object sender, string message)
+        {
+            LogMessage(message);
+        }
+
+        private void Controller_MeasurementValueUpdated(object sender, (string measurement, object value) data)
+        {
+            // Handle measurement value updates
+            // This could update UI elements or trigger other actions
+        }
+
+        private void Controller_MeasurementStatisticsUpdated(object sender, EventArgs e)
+        {
+            // Handle statistics updates
+            // This could refresh statistics displays
+        }
+
+        #endregion
+
+        #region Helper Methods
+
+        /// <summary>
+        /// Apply preset measurements to the controller
+        /// </summary>
+        private void ApplyPresetMeasurements(string[] measurements, string presetName)
+        {
+            try
+            {
+                // Clear existing measurements
+                controller.Settings.EnabledMeasurements.Clear();
+
+                // Add preset measurements
+                foreach (var measurement in measurements)
+                {
+                    controller.Settings.EnabledMeasurements.Add(measurement);
+                }
+
+                // Enable statistics for comprehensive preset
+                if (presetName.ToLower() == "comprehensive")
+                {
+                    controller.Settings.StatisticDisplayEnabled = true;
+                    controller.Settings.StatisticMode = "DIFF";
+                }
+
+                // Apply settings to the oscilloscope
+                controller.ApplySettings(controller.Settings);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Failed to apply preset measurements: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Export statistics to file
+        /// </summary>
+        private void ExportStatisticsToFile(string fileName)
+        {
+            try
+            {
+                var sb = new StringBuilder();
+                sb.AppendLine("Measurement,Current Value,Min,Max,Average,Standard Deviation,Count");
+
+                if (controller?.Statistics != null)
+                {
+                    foreach (var kvp in controller.Statistics)
+                    {
+                        var stats = kvp.Value;
+                        var currentValue = controller.CurrentValues.ContainsKey(kvp.Key)
+                            ? controller.CurrentValues[kvp.Key]?.ToString() ?? "N/A"
+                            : "N/A";
+
+                        sb.AppendLine($"{kvp.Key},{currentValue},{stats.Min},{stats.Max},{stats.Average:F3},{stats.StandardDeviation:F3},{stats.Count}");
+                    }
+                }
+
+                File.WriteAllText(fileName, sb.ToString());
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Failed to export statistics: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Update connection status display
+        /// </summary>
+        public void UpdateConnectionStatus(bool connected)
+        {
+            isConnected = connected;
+
+            if (ConnectionIndicator != null)
+            {
+                ConnectionIndicator.Foreground = connected ? Brushes.Green : Brushes.Red;
+            }
+
+            if (StatusText != null)
+            {
+                StatusText.Text = connected ? "Connected" : "Disconnected";
+            }
+        }
+
+        /// <summary>
+        /// Log a message to status
+        /// </summary>
+        private void LogMessage(string message)
+        {
+            if (StatusText != null)
+            {
+                StatusText.Text = message;
+            }
+
+            if (TimestampText != null)
+            {
+                TimestampText.Text = $"Last Updated: {DateTime.Now:HH:mm:ss}";
+            }
+        }
+
+        #endregion
+
+        #region Timer Events
+
+        /// <summary>
+        /// Status update timer tick
+        /// </summary>
+        private void StatusUpdateTimer_Tick(object sender, EventArgs e)
+        {
+            if (controller?.Settings != null)
+            {
+                var enabledCount = controller.Settings.EnabledMeasurements?.Count ?? 0;
+                if (MeasurementCountText != null)
+                {
+                    MeasurementCountText.Text = enabledCount == 1 ? "1 active" : $"{enabledCount} active";
+                }
+            }
+            else
+            {
+                if (MeasurementCountText != null)
+                {
+                    MeasurementCountText.Text = "0 active";
+                }
+            }
+        }
+
+        #endregion
+
+        #region Window Events
+
+        protected override void OnClosed(EventArgs e)
+        {
+            statusUpdateTimer?.Stop();
+
+            if (controller != null)
+            {
+                controller.LogEvent -= Controller_LogEvent;
+                controller.MeasurementValueUpdated -= Controller_MeasurementValueUpdated;
+                controller.MeasurementStatisticsUpdated -= Controller_MeasurementStatisticsUpdated;
+            }
+
+            base.OnClosed(e);
+        }
+
+        #endregion
+    }
 }

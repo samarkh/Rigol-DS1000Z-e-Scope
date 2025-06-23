@@ -6,10 +6,9 @@
         xmlns:local="clr-namespace:DS1000Z_E_USB_Control.Mathematics"
         mc:Ignorable="d"
         Title="Mathematics Functions - Rigol DS1000Z-E" 
-        Height="750" Width="1100"
+        Height="1000" Width="1100"
         MinHeight="600" MinWidth="900"
         WindowStartupLocation="CenterScreen"
-        Icon="pack://application:,,,/Resources/math_icon.ico"
         WindowState="Normal"
         ResizeMode="CanResize">
 
@@ -191,7 +190,7 @@
 
                 <!-- THIS IS THE KEY: Contains the MathematicsPanel -->
                 <local:MathematicsPanel x:Name="MathPanel" 
-                                       Margin="5"/>
+                                       Margin="5" Loaded="MathPanel_Loaded"/>
             </Border>
         </ScrollViewer>
         <!-- #endregion -->

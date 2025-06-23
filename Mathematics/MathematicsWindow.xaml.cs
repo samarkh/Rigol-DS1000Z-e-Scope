@@ -23,6 +23,7 @@ namespace DS1000Z_E_USB_Control.Mathematics
         private MathematicsSettings lastSavedSettings;
         private DispatcherTimer statusTimer;
         private bool isConnectedToOscilloscope = false;
+        private MathematicsWindow _mathematicsWindow;
 
         #endregion
 
@@ -281,7 +282,9 @@ namespace DS1000Z_E_USB_Control.Mathematics
         {
             try
             {
-                if (MathPanel?.ValidateConfiguration(out List<string> errors) == true)
+                List<string> errors = new List<string>(); // Initialize the errors list
+
+                if (MathPanel?.ValidateConfiguration(out errors) == true)
                 {
                     MessageBox.Show("✅ Configuration validation passed!\n\nAll settings are valid and ready for use.",
                                   "Validation Success", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -289,7 +292,7 @@ namespace DS1000Z_E_USB_Control.Mathematics
                 }
                 else
                 {
-                    var errorMessage = "❌ Configuration validation failed:\n\n" + string.Join("\n• ", errors);
+                    var errorMessage = "❌ Configuration validation failed:\n\n• " + string.Join("\n• ", errors);
                     MessageBox.Show(errorMessage, "Validation Errors",
                                   MessageBoxButton.OK, MessageBoxImage.Warning);
                     UpdateStatus($"Configuration validation: FAILED ({errors.Count} errors)");
@@ -1087,5 +1090,10 @@ Select a template from the presets menu to apply these configurations automatica
         }
 
         #endregion
+
+        private void MathPanel_Loaded(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 }

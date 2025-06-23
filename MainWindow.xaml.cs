@@ -1,6 +1,7 @@
 ﻿using DS1000Z_E_USB_Control;
 using DS1000Z_E_USB_Control.Channels.Ch1;
 using DS1000Z_E_USB_Control.Channels.Ch2;
+using DS1000Z_E_USB_Control.Mathematics;
 using DS1000Z_E_USB_Control.Measurements;
 using DS1000Z_E_USB_Control.SerialProtocol;
 using DS1000Z_E_USB_Control.Storage;
@@ -17,6 +18,7 @@ using System.Text.Json;      // For JSON serialization
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using DS1000Z_E_USB_Control.Mathematics;
 
 namespace Rigol_DS1000Z_E_Control
 {
@@ -37,6 +39,9 @@ namespace Rigol_DS1000Z_E_Control
         // Measurement controller and window
         private Window _measurementWindow;
         private MeasurementController _measurementController;
+
+
+        private MathematicsWindow _mathematicsWindow;
 
         // Enhanced storage managers
         private EnhancedUSBStorageManager usbStorageManager;
@@ -337,6 +342,60 @@ namespace Rigol_DS1000Z_E_Control
             if (BatchExportButton != null) BatchExportButton.IsEnabled = isConnected;
         }
         #endregion
+
+
+        // Add this method anywhere in your MainWindow class
+        /// <summary>
+        /// Open Mathematics Functions window
+        /// </summary>
+        private void OpenMathematics_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (_mathematicsWindow == null || !_mathematicsWindow.IsLoaded)
+                {
+                    _mathematicsWindow = new MathematicsWindow();
+
+                    // Subscribe to events
+                    _mathematicsWindow.SCPICommandGenerated += (s, command) =>
+                    {
+                        // Forward SCPI commands to oscilloscope
+                        if (isConnected && oscilloscope != null)
+                        {
+                            oscilloscope.SendCommand(command);
+                            Log($"📊 Math Command: {command}");
+                        }
+                        else
+                        {
+                            Log("⚠️ Not connected to oscilloscope. Math command not sent.");
+                        }
+                    };
+
+                    _mathematicsWindow.ErrorOccurred += (s, error) =>
+                    {
+                        Log($"❌ Math Error: {error}");
+                    };
+
+                    _mathematicsWindow.StatusUpdated += (s, status) =>
+                    {
+                        Log($"📊 Math Status: {status}");
+                    };
+
+                    // Update connection status
+                    _mathematicsWindow.SetConnectionStatus(isConnected);
+                }
+
+                _mathematicsWindow.Show();
+                _mathematicsWindow.Activate();
+                Log("🧮 Mathematics Functions window opened");
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Error opening Mathematics window: {ex.Message}");
+                MessageBox.Show($"Error opening Mathematics Functions: {ex.Message}",
+                               "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
 
 
         // Add this to your MainWindow.xaml.cs class in the connection/initialization section

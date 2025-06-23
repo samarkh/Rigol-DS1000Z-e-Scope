@@ -258,19 +258,19 @@
                 <!-- Place this right before the SerialProtocolButton definition -->
 
                 <Button x:Name="MeasurementsButton"
-        Grid.Row="2" 
-        Grid.Column="4" 
-        Grid.ColumnSpan="1"
-        Click="OpenMeasurements_Click"
-        Background="#FF9800"
-        Foreground="White"
-        BorderBrush="#F57C00"
-        BorderThickness="1"
-        FontWeight="Bold"
-        Padding="3,2"
-        Margin="127,80,296,136"
-        ToolTip="Automatic Measurements &amp; Statistics"
-        Cursor="Hand">
+                                Grid.Row="2" 
+                                Grid.Column="4" 
+                                Grid.ColumnSpan="1"
+                                Click="OpenMeasurements_Click"
+                                Background="#FF9800"
+                                Foreground="White"
+                                BorderBrush="#F57C00"
+                                BorderThickness="1"
+                                FontWeight="Bold"
+                                Padding="3,2"
+                                Margin="124,80,272,136"
+                                ToolTip="Automatic Measurements &amp; Statistics"
+                                Cursor="Hand">
 
                     <Button.Style>
                         <Style TargetType="Button">
@@ -323,10 +323,17 @@
                                 BorderThickness="1"
                                 FontWeight="Bold"
                                 Padding="3,2"
-                                Margin="124,142,297,78"
+                                Margin="124,142,272,78"
                                 ToolTip="Serial Protocol Analysis &amp; Decoding"
                                 Cursor="Hand">
 
+                    
+                    
+                    
+                    
+                    
+                    
+                    
                     <Button.Style>
                         <Style TargetType="Button">
                             <Style.Triggers>
@@ -340,6 +347,12 @@
                         </Style>
                     </Button.Style>
 
+                    
+                    
+                    
+                    
+                    
+                    
                     <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
                         <TextBlock Text="🔍" 
                    FontSize="16" 
@@ -353,7 +366,46 @@
                 </Button>
 
 
+                <!-- ADD THIS MATHEMATICS BUTTON RIGHT HERE -->
+                <Button x:Name="MathematicsButton"
+        Grid.Row="2" 
+        Grid.Column="4" 
+        Grid.ColumnSpan="1"
+        Click="OpenMathematics_Click"
+        Background="#4CAF50"
+        Foreground="White"
+        BorderBrush="#45A049"
+        BorderThickness="1"
+        FontWeight="Bold"
+        Padding="3,2"
+        Margin="124,201,272,16"
+        ToolTip="Mathematical Functions &amp; Analysis"
+        Cursor="Hand">
 
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#45A049"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter Property="Background" Value="#388E3C"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+
+                    <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                        <TextBlock Text="🧮" 
+                   FontSize="16" 
+                   HorizontalAlignment="Center"
+                   Margin="0,0,0,1"/>
+                        <TextBlock Text="Math" 
+                   FontSize="7" 
+                   FontWeight="Bold"
+                   HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
 
             </Grid>
         </GroupBox>

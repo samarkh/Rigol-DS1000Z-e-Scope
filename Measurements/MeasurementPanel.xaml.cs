@@ -81,25 +81,25 @@ namespace DS1000Z_E_USB_Control.Measurements
             }
         }
 
-        /// <summary>
-        /// Reference to the current values panel
-        /// </summary>
-        public Panel CurrentValuesPanel { get; set; }
+        ///// <summary>
+        ///// Reference to the current values panel
+        ///// </summary>
+        //public Panel CurrentValuesPanel { get; set; }
 
-        /// <summary>
-        /// Reference to the statistics panel
-        /// </summary>
-        public Panel StatisticsPanel { get; set; }
+        ///// <summary>
+        ///// Reference to the statistics panel
+        ///// </summary>
+        //public Panel StatisticsPanel { get; set; }
 
-        /// <summary>
-        /// Reference to the "No measurements" text
-        /// </summary>
-        public TextBlock NoMeasurementsText { get; set; }
+        ///// <summary>
+        ///// Reference to the "No measurements" text
+        ///// </summary>
+        //public TextBlock NoMeasurementsText { get; set; }
 
-        /// <summary>
-        /// Reference to the "No statistics" text
-        /// </summary>
-        public TextBlock NoStatisticsText { get; set; }
+        ///// <summary>
+        ///// Reference to the "No statistics" text
+        ///// </summary>
+        //public TextBlock NoStatisticsText { get; set; }
 
         #endregion
 

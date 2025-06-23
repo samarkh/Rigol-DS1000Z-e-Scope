@@ -39,6 +39,41 @@ namespace DS1000Z_E_USB_Control.Measurements
 
         #endregion
 
+        #region Properties
+
+        /// <summary>
+        /// Gets or sets the measurement controller
+        /// </summary>
+        public MeasurementController Controller
+        {
+            get => controller;
+            set
+            {
+                if (controller != null)
+                {
+                    // Unsubscribe from old controller events
+                    controller.MeasurementValueUpdated -= Controller_MeasurementValueUpdated;
+                    controller.MeasurementStatisticsUpdated -= Controller_MeasurementStatisticsUpdated;
+                }
+
+                controller = value;
+
+                if (controller != null)
+                {
+                    // Subscribe to new controller events
+                    controller.MeasurementValueUpdated += Controller_MeasurementValueUpdated;
+                    controller.MeasurementStatisticsUpdated += Controller_MeasurementStatisticsUpdated;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets whether the panel is collapsed
+        /// </summary>
+        public bool IsCollapsed => panelCollapsed;
+
+        #endregion
+
         #region Constructor
 
         public MeasurementPanel()
@@ -54,55 +89,6 @@ namespace DS1000Z_E_USB_Control.Measurements
 
         #endregion
 
-        #region Properties
-
-        /// <summary>
-        /// Set the measurement controller
-        /// </summary>
-        public MeasurementController Controller
-        {
-            get => controller;
-            set
-            {
-                if (controller != null)
-                {
-                    controller.MeasurementValueUpdated -= Controller_MeasurementValueUpdated;
-                    controller.MeasurementStatisticsUpdated -= Controller_MeasurementStatisticsUpdated;
-                }
-
-                controller = value;
-
-                if (controller != null)
-                {
-                    controller.MeasurementValueUpdated += Controller_MeasurementValueUpdated;
-                    controller.MeasurementStatisticsUpdated += Controller_MeasurementStatisticsUpdated;
-                    UpdateUI();
-                }
-            }
-        }
-
-        ///// <summary>
-        ///// Reference to the current values panel
-        ///// </summary>
-        //public Panel CurrentValuesPanel { get; set; }
-
-        ///// <summary>
-        ///// Reference to the statistics panel
-        ///// </summary>
-        //public Panel StatisticsPanel { get; set; }
-
-        ///// <summary>
-        ///// Reference to the "No measurements" text
-        ///// </summary>
-        //public TextBlock NoMeasurementsText { get; set; }
-
-        ///// <summary>
-        ///// Reference to the "No statistics" text
-        ///// </summary>
-        //public TextBlock NoStatisticsText { get; set; }
-
-        #endregion
-
         #region Initialization
 
         /// <summary>
@@ -112,7 +98,7 @@ namespace DS1000Z_E_USB_Control.Measurements
         {
             autoUpdateTimer = new DispatcherTimer
             {
-                Interval = TimeSpan.FromMilliseconds(1000)
+                Interval = TimeSpan.FromMilliseconds(2000) // Update every 2 seconds
             };
             autoUpdateTimer.Tick += AutoUpdateTimer_Tick;
         }
@@ -128,7 +114,364 @@ namespace DS1000Z_E_USB_Control.Measurements
 
         #endregion
 
-        #region Event Handlers
+        #region Event Handlers - Auto Update
+
+        /// <summary>
+        /// Auto-update timer tick event
+        /// </summary>
+        private void AutoUpdateTimer_Tick(object sender, EventArgs e)
+        {
+            if (controller?.Settings?.AutoUpdateEnabled == true)
+            {
+                controller.UpdateAllMeasurements();
+            }
+        }
+
+        /// <summary>
+        /// Event handler for auto update checked
+        /// </summary>
+        private void AutoUpdate_Checked(object sender, RoutedEventArgs e)
+        {
+            if (controller?.Settings != null && isInitialized)
+            {
+                controller.Settings.AutoUpdateEnabled = true;
+                autoUpdateTimer.Start();
+                LogEvent?.Invoke(this, "Auto update enabled");
+            }
+        }
+
+        /// <summary>
+        /// Event handler for auto update unchecked
+        /// </summary>
+        private void AutoUpdate_Unchecked(object sender, RoutedEventArgs e)
+        {
+            if (controller?.Settings != null && isInitialized)
+            {
+                controller.Settings.AutoUpdateEnabled = false;
+                autoUpdateTimer.Stop();
+                LogEvent?.Invoke(this, "Auto update disabled");
+            }
+        }
+
+        #endregion
+
+        #region Event Handlers - Statistics
+
+        /// <summary>
+        /// Event handler for statistics display checked
+        /// </summary>
+        private void StatisticsDisplay_Checked(object sender, RoutedEventArgs e)
+        {
+            if (controller?.Settings != null && isInitialized)
+            {
+                controller.Settings.StatisticsEnabled = true;
+                controller.EnableStatistics(true);
+                UpdateStatisticsVisibility(true);
+                LogEvent?.Invoke(this, "Statistics display enabled");
+            }
+        }
+
+        /// <summary>
+        /// Event handler for statistics display unchecked
+        /// </summary>
+        private void StatisticsDisplay_Unchecked(object sender, RoutedEventArgs e)
+        {
+            if (controller?.Settings != null && isInitialized)
+            {
+                controller.Settings.StatisticsEnabled = false;
+                controller.EnableStatistics(false);
+                UpdateStatisticsVisibility(false);
+                LogEvent?.Invoke(this, "Statistics display disabled");
+            }
+        }
+
+        /// <summary>
+        /// Event handler for statistics mode selection changed
+        /// </summary>
+        private void StatisticsMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (controller == null || !isInitialized) return;
+
+            var comboBox = sender as ComboBox;
+            var selectedItem = comboBox?.SelectedItem as ComboBoxItem;
+            var mode = selectedItem?.Tag?.ToString();
+
+            if (!string.IsNullOrEmpty(mode))
+            {
+                controller.SetStatisticsMode(mode);
+                LogEvent?.Invoke(this, $"Statistics mode changed to: {mode}");
+            }
+        }
+
+        /// <summary>
+        /// Event handler for reset statistics button
+        /// </summary>
+        private void ResetStatistics_Click(object sender, RoutedEventArgs e)
+        {
+            if (controller == null) return;
+
+            try
+            {
+                controller.ResetStatistics();
+                LogEvent?.Invoke(this, "Measurement statistics reset");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error resetting statistics: {ex.Message}", "Reset Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        #endregion
+
+        #region Event Handlers - Preset Buttons
+
+        /// <summary>
+        /// Event handler for clear all button
+        /// </summary>
+        private void ClearAll_Click(object sender, RoutedEventArgs e)
+        {
+            if (controller == null) return;
+
+            if (MessageBox.Show("Clear all measurements?", "Confirm Clear",
+                MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+            {
+                try
+                {
+                    controller.ClearAllMeasurements();
+                    ClearAllValueDisplays();
+                    LogEvent?.Invoke(this, "All measurements cleared");
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error clearing measurements: {ex.Message}", "Clear Error",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Event handler for time domain preset button
+        /// </summary>
+        private void TimeDomainPreset_Click(object sender, RoutedEventArgs e)
+        {
+            if (controller == null) return;
+
+            try
+            {
+                var timeDomainMeasurements = new[] { "PERiod", "FREQuency", "RISetime", "FALLtime", "PWIDth", "NWIDth" };
+                ApplyPresetMeasurements(timeDomainMeasurements, "Time Domain");
+                LogEvent?.Invoke(this, "Time domain preset applied");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error applying time domain preset: {ex.Message}", "Preset Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Event handler for voltage preset button
+        /// </summary>
+        private void VoltagePreset_Click(object sender, RoutedEventArgs e)
+        {
+            if (controller == null) return;
+
+            try
+            {
+                var voltageMeasurements = new[] { "VMAX", "VMIN", "VPP", "VAVG", "VRMS" };
+                ApplyPresetMeasurements(voltageMeasurements, "Voltage");
+                LogEvent?.Invoke(this, "Voltage preset applied");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error applying voltage preset: {ex.Message}", "Preset Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Event handler for comprehensive preset button
+        /// </summary>
+        private void ComprehensivePreset_Click(object sender, RoutedEventArgs e)
+        {
+            if (controller == null) return;
+
+            try
+            {
+                var comprehensiveMeasurements = new[] {
+                    "VMAX", "VMIN", "VPP", "VAVG", "VRMS",
+                    "PERiod", "FREQuency", "RISetime", "FALLtime",
+                    "PWIDth", "NWIDth", "PDUTy", "NDUTy"
+                };
+                ApplyPresetMeasurements(comprehensiveMeasurements, "Comprehensive");
+
+                // Enable statistics for comprehensive analysis
+                if (controller.Settings != null)
+                {
+                    controller.Settings.StatisticsEnabled = true;
+                    controller.EnableStatistics(true);
+                    UpdateStatisticsVisibility(true);
+                }
+
+                LogEvent?.Invoke(this, "Comprehensive preset applied");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error applying comprehensive preset: {ex.Message}", "Preset Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        #endregion
+
+        #region Event Handlers - Update Buttons
+
+        /// <summary>
+        /// Event handler for update values button
+        /// </summary>
+        private void UpdateValues_Click(object sender, RoutedEventArgs e)
+        {
+            if (controller == null) return;
+
+            try
+            {
+                controller.UpdateAllMeasurements();
+                LogEvent?.Invoke(this, "Measurement values updated");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error updating values: {ex.Message}", "Update Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Event handler for update statistics button
+        /// </summary>
+        private void UpdateStatistics_Click(object sender, RoutedEventArgs e)
+        {
+            if (controller == null) return;
+
+            try
+            {
+                controller.UpdateStatistics();
+                LogEvent?.Invoke(this, "Measurement statistics updated");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error updating statistics: {ex.Message}", "Update Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        #endregion
+
+        #region Event Handlers - Source and Threshold
+
+        /// <summary>
+        /// Event handler for source channel selection changed
+        /// </summary>
+        private void SourceChannel_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (controller == null || !isInitialized) return;
+
+            var comboBox = sender as ComboBox;
+            var selectedItem = comboBox?.SelectedItem as ComboBoxItem;
+            var channel = selectedItem?.Tag?.ToString();
+
+            if (!string.IsNullOrEmpty(channel))
+            {
+                controller.SetSourceChannel(channel);
+                LogEvent?.Invoke(this, $"Source channel changed to: {channel}");
+            }
+        }
+
+        /// <summary>
+        /// Event handler for threshold max lost focus
+        /// </summary>
+        private void ThresholdMax_LostFocus(object sender, RoutedEventArgs e)
+        {
+            var textBox = sender as TextBox;
+            if (textBox != null && double.TryParse(textBox.Text, out double value))
+            {
+                controller?.SetThresholdMax(value);
+                LogEvent?.Invoke(this, $"Threshold max set to: {value:F3}V");
+            }
+        }
+
+        /// <summary>
+        /// Event handler for threshold mid lost focus
+        /// </summary>
+        private void ThresholdMid_LostFocus(object sender, RoutedEventArgs e)
+        {
+            var textBox = sender as TextBox;
+            if (textBox != null && double.TryParse(textBox.Text, out double value))
+            {
+                controller?.SetThresholdMid(value);
+                LogEvent?.Invoke(this, $"Threshold mid set to: {value:F3}V");
+            }
+        }
+
+        /// <summary>
+        /// Event handler for threshold min lost focus
+        /// </summary>
+        private void ThresholdMin_LostFocus(object sender, RoutedEventArgs e)
+        {
+            var textBox = sender as TextBox;
+            if (textBox != null && double.TryParse(textBox.Text, out double value))
+            {
+                controller?.SetThresholdMin(value);
+                LogEvent?.Invoke(this, $"Threshold min set to: {value:F3}V");
+            }
+        }
+
+        #endregion
+
+        #region Event Handlers - Setup Parameters
+
+        /// <summary>
+        /// Event handler for delay setup A lost focus
+        /// </summary>
+        private void DelaySetupA_LostFocus(object sender, RoutedEventArgs e)
+        {
+            var textBox = sender as TextBox;
+            if (textBox != null && double.TryParse(textBox.Text, out double value))
+            {
+                controller?.SetDelaySetupA(value);
+                LogEvent?.Invoke(this, $"Delay setup A set to: {value:F6}s");
+            }
+        }
+
+        /// <summary>
+        /// Event handler for delay setup B lost focus
+        /// </summary>
+        private void DelaySetupB_LostFocus(object sender, RoutedEventArgs e)
+        {
+            var textBox = sender as TextBox;
+            if (textBox != null && double.TryParse(textBox.Text, out double value))
+            {
+                controller?.SetDelaySetupB(value);
+                LogEvent?.Invoke(this, $"Delay setup B set to: {value:F6}s");
+            }
+        }
+
+        /// <summary>
+        /// Event handler for pulse setup B lost focus
+        /// </summary>
+        private void PulseSetupB_LostFocus(object sender, RoutedEventArgs e)
+        {
+            var textBox = sender as TextBox;
+            if (textBox != null && double.TryParse(textBox.Text, out double value))
+            {
+                controller?.SetPulseSetupB(value);
+                LogEvent?.Invoke(this, $"Pulse setup B set to: {value:F6}s");
+            }
+        }
+
+        #endregion
+
+        #region Controller Event Handlers
 
         /// <summary>
         /// Event handler for measurement value updates
@@ -158,446 +501,129 @@ namespace DS1000Z_E_USB_Control.Measurements
             UpdateStatisticsDisplay(e.MeasurementKey, e.Statistics);
         }
 
-        /// <summary>
-        /// Auto-update timer tick event
-        /// </summary>
-        private void AutoUpdateTimer_Tick(object sender, EventArgs e)
-        {
-            if (controller?.Settings?.AutoUpdateEnabled == true)
-            {
-                controller.UpdateAllMeasurements();
-            }
-        }
-
-        /// <summary>
-        /// Event handler for auto display checked
-        /// </summary>
-        private void AutoDisplay_Checked(object sender, RoutedEventArgs e)
-        {
-            if (controller?.Settings != null && isInitialized)
-            {
-                controller.Settings.AutoDisplayEnabled = true;
-                controller.SetAutoDisplay(true);
-                LogEvent?.Invoke(this, "Auto display enabled");
-            }
-        }
-
-        /// <summary>
-        /// Event handler for auto display unchecked
-        /// </summary>
-        private void AutoDisplay_Unchecked(object sender, RoutedEventArgs e)
-        {
-            if (controller?.Settings != null && isInitialized)
-            {
-                controller.Settings.AutoDisplayEnabled = false;
-                controller.SetAutoDisplay(false);
-                LogEvent?.Invoke(this, "Auto display disabled");
-            }
-        }
-
-        /// <summary>
-        /// Event handler for export statistics button
-        /// </summary>
-        private void ExportStatistics_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                var saveFileDialog = new SaveFileDialog
-                {
-                    Filter = "CSV files (*.csv)|*.csv|Text files (*.txt)|*.txt|All files (*.*)|*.*",
-                    DefaultExt = "csv",
-                    FileName = $"MeasurementStatistics_{DateTime.Now:yyyyMMdd_HHmmss}"
-                };
-
-                // Note: Removed .Owner property as it's causing compilation errors
-                if (saveFileDialog.ShowDialog() == true)
-                {
-                    ExportStatisticsToFile(saveFileDialog.FileName);
-                    LogEvent?.Invoke(this, $"Statistics exported to: {saveFileDialog.FileName}");
-                }
-            }
-            catch (Exception ex)
-            {
-                LogEvent?.Invoke(this, $"Error exporting statistics: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// Toggle button click event
-        /// </summary>
-        private void ToggleButton_Click(object sender, RoutedEventArgs e)
-        {
-            panelCollapsed = !panelCollapsed;
-            UpdatePanelVisibility();
-        }
-
         #endregion
 
-        #region UI Management
+        #region UI Update Methods
 
         /// <summary>
-        /// Update the entire UI based on current settings
-        /// </summary>
-        private void UpdateUI()
-        {
-            if (controller?.Settings == null) return;
-
-            UpdateAutoUpdateTimer();
-            UpdateCurrentValuesDisplay();
-            UpdateStatisticsDisplay();
-            UpdateVisibilityStates();
-        }
-
-        /// <summary>
-        /// Update the auto-update timer based on settings
-        /// </summary>
-        private void UpdateAutoUpdateTimer()
-        {
-            if (controller?.Settings?.AutoUpdateEnabled == true)
-            {
-                autoUpdateTimer.Interval = TimeSpan.FromMilliseconds(controller.Settings.AutoUpdateIntervalMs);
-                autoUpdateTimer.Start();
-            }
-            else
-            {
-                autoUpdateTimer.Stop();
-            }
-        }
-
-        /// <summary>
-        /// Update panel visibility based on collapsed state
-        /// </summary>
-        private void UpdatePanelVisibility()
-        {
-            if (MainContent != null)
-            {
-                MainContent.Visibility = panelCollapsed ? Visibility.Collapsed : Visibility.Visible;
-            }
-
-            // Update toggle button appearance
-            if (ToggleIcon != null && ToggleText != null)
-            {
-                ToggleIcon.Text = panelCollapsed ? "🔽" : "🔼";
-                ToggleText.Text = panelCollapsed ? "Expand" : "Collapse";
-            }
-        }
-
-        /// <summary>
-        /// Update visibility states for various UI elements
-        /// </summary>
-        private void UpdateVisibilityStates()
-        {
-            UpdateNoMeasurementsVisibility();
-            UpdateNoStatisticsVisibility();
-        }
-
-        /// <summary>
-        /// Update "No measurements" text visibility
-        /// </summary>
-        private void UpdateNoMeasurementsVisibility()
-        {
-            bool hasMeasurements = controller?.Settings?.EnabledMeasurements?.Any() == true;
-
-            if (NoMeasurementsText != null)
-                NoMeasurementsText.Visibility = hasMeasurements ? Visibility.Collapsed : Visibility.Visible;
-        }
-
-        /// <summary>
-        /// Update "No statistics" text visibility
-        /// </summary>
-        private void UpdateNoStatisticsVisibility()
-        {
-            bool hasMeasurements = controller?.Settings?.EnabledMeasurements?.Any() == true;
-
-            if (NoStatisticsText != null)
-                NoStatisticsText.Visibility = (hasMeasurements && controller.Settings.StatisticsEnabled) ?
-                    Visibility.Collapsed : Visibility.Visible;
-        }
-
-        #endregion
-
-        #region Value Display Management
-
-        /// <summary>
-        /// Create value display for a measurement
-        /// </summary>
-        private void CreateValueDisplay(string measurementKey)
-        {
-            if (valueDisplays.ContainsKey(measurementKey) || CurrentValuesPanel == null) return;
-
-            var parameters = MeasurementSettings.GetAvailableParameters();
-            if (!parameters.ContainsKey(measurementKey)) return;
-
-            var parameter = parameters[measurementKey];
-
-            var border = new Border
-            {
-                Background = Brushes.White,
-                BorderBrush = Brushes.LightGray,
-                BorderThickness = new Thickness(1, 1, 1, 1), // Fixed: all 4 parameters
-                Margin = new Thickness(2, 2, 2, 2), // Fixed: all 4 parameters
-                Padding = new Thickness(5, 5, 5, 5) // Fixed: all 4 parameters
-            };
-
-            var grid = new Grid();
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(150) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-
-            var label = new TextBlock
-            {
-                Text = parameter.DisplayName + ":",
-                FontWeight = FontWeights.Bold,
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            Grid.SetColumn(label, 0);
-
-            var value = new TextBlock
-            {
-                Text = "---",
-                FontFamily = new FontFamily("Consolas"),
-                VerticalAlignment = VerticalAlignment.Center,
-                Margin = new Thickness(10, 0, 0, 0)
-            };
-            Grid.SetColumn(value, 1);
-
-            grid.Children.Add(label);
-            grid.Children.Add(value);
-            border.Child = grid;
-            border.Tag = measurementKey;
-
-            valueDisplays[measurementKey] = border;
-            CurrentValuesPanel.Children.Add(border);
-        }
-
-        /// <summary>
-        /// Update value display for a measurement
+        /// Update value display for a specific measurement
         /// </summary>
         private void UpdateValueDisplay(string measurementKey, double value)
         {
-            if (!valueDisplays.ContainsKey(measurementKey)) return;
-
-            var border = valueDisplays[measurementKey];
-            var grid = border.Child as Grid;
-            var valueText = grid?.Children[1] as TextBlock;
-
-            if (valueText != null)
+            if (valueDisplays.TryGetValue(measurementKey, out Border display))
             {
-                var parameters = MeasurementSettings.GetAvailableParameters();
-                if (parameters.ContainsKey(measurementKey))
+                if (display.Child is TextBlock textBlock)
                 {
-                    var parameter = parameters[measurementKey];
-                    string formattedValue = FormatMeasurementValue(value, parameter.Unit);
-                    valueText.Text = formattedValue;
+                    textBlock.Text = FormatMeasurementValue(measurementKey, value);
                 }
             }
         }
 
         /// <summary>
-        /// Remove value display for a measurement
-        /// </summary>
-        private void RemoveValueDisplay(string measurementKey)
-        {
-            if (valueDisplays.ContainsKey(measurementKey) && CurrentValuesPanel != null)
-            {
-                CurrentValuesPanel.Children.Remove(valueDisplays[measurementKey]);
-                valueDisplays.Remove(measurementKey);
-            }
-        }
-
-        /// <summary>
-        /// Update current values display
-        /// </summary>
-        private void UpdateCurrentValuesDisplay()
-        {
-            if (CurrentValuesPanel == null) return;
-
-            // Clear existing displays
-            CurrentValuesPanel.Children.Clear();
-            valueDisplays.Clear();
-
-            // Add "No measurements" text back if exists
-            if (NoMeasurementsText != null)
-                CurrentValuesPanel.Children.Add(NoMeasurementsText);
-
-            // Create displays for enabled measurements
-            if (controller?.Settings?.EnabledMeasurements != null)
-            {
-                foreach (var measurementKey in controller.Settings.EnabledMeasurements)
-                {
-                    CreateValueDisplay(measurementKey);
-                }
-            }
-
-            UpdateNoMeasurementsVisibility();
-        }
-
-        #endregion
-
-        #region Statistics Display Management
-
-        /// <summary>
-        /// Create statistics display for a measurement
-        /// </summary>
-        private void CreateStatisticsDisplay(string measurementKey)
-        {
-            if (statisticsDisplays.ContainsKey(measurementKey) || StatisticsPanel == null) return;
-
-            var parameters = MeasurementSettings.GetAvailableParameters();
-            if (!parameters.ContainsKey(measurementKey)) return;
-
-            var parameter = parameters[measurementKey];
-
-            var expander = new Expander
-            {
-                Header = parameter.DisplayName,
-                Margin = new Thickness(2, 2, 2, 2), // Fixed: all 4 parameters
-                Background = Brushes.AliceBlue
-            };
-
-            var grid = new Grid();
-            grid.RowDefinitions.Add(new RowDefinition());
-            grid.RowDefinitions.Add(new RowDefinition());
-            grid.RowDefinitions.Add(new RowDefinition());
-            grid.RowDefinitions.Add(new RowDefinition());
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(80) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-
-            // Create statistics labels and values
-            var labels = new[] { "Min:", "Max:", "Avg:", "StdDev:" };
-            for (int i = 0; i < labels.Length; i++)
-            {
-                var label = new TextBlock
-                {
-                    Text = labels[i],
-                    FontWeight = FontWeights.Bold,
-                    Margin = new Thickness(5, 2, 5, 2) // Fixed: all 4 parameters
-                };
-                Grid.SetRow(label, i);
-                Grid.SetColumn(label, 0);
-
-                var valueBlock = new TextBlock
-                {
-                    Text = "---",
-                    FontFamily = new FontFamily("Consolas"),
-                    Margin = new Thickness(5, 2, 5, 2) // Fixed: all 4 parameters
-                };
-                Grid.SetRow(valueBlock, i);
-                Grid.SetColumn(valueBlock, 1);
-
-                grid.Children.Add(label);
-                grid.Children.Add(valueBlock);
-            }
-
-            expander.Content = grid;
-            expander.Tag = measurementKey;
-
-            var border = new Border
-            {
-                Child = expander,
-                BorderBrush = Brushes.LightGray,
-                BorderThickness = new Thickness(1, 1, 1, 1), // Fixed: all 4 parameters
-                Margin = new Thickness(2, 2, 2, 2) // Fixed: all 4 parameters
-            };
-
-            statisticsDisplays[measurementKey] = border;
-            StatisticsPanel.Children.Add(border);
-        }
-
-        /// <summary>
-        /// Update statistics display for a measurement
+        /// Update statistics display for a specific measurement
         /// </summary>
         private void UpdateStatisticsDisplay(string measurementKey, MeasurementStatistics statistics)
         {
-            if (!statisticsDisplays.ContainsKey(measurementKey)) return;
-
-            var border = statisticsDisplays[measurementKey];
-            var expander = border.Child as Expander;
-            var grid = expander?.Content as Grid;
-
-            if (grid != null)
+            if (statisticsDisplays.TryGetValue(measurementKey, out Border display))
             {
-                var parameters = MeasurementSettings.GetAvailableParameters();
-                if (parameters.ContainsKey(measurementKey))
+                if (display.Child is StackPanel panel)
                 {
-                    var parameter = parameters[measurementKey];
-
-                    // Update the statistics values
-                    var values = new[]
-                    {
-                        FormatMeasurementValue(statistics.Minimum, parameter.Unit),
-                        FormatMeasurementValue(statistics.Maximum, parameter.Unit),
-                        FormatMeasurementValue(statistics.Average, parameter.Unit),
-                        FormatMeasurementValue(statistics.StandardDeviation, parameter.Unit)
-                    };
-
-                    for (int i = 0; i < values.Length; i++)
-                    {
-                        var valueBlock = grid.Children.OfType<TextBlock>()
-                            .Where(tb => Grid.GetRow(tb) == i && Grid.GetColumn(tb) == 1)
-                            .FirstOrDefault();
-
-                        if (valueBlock != null)
-                            valueBlock.Text = values[i];
-                    }
+                    // Update statistics display - implementation depends on your UI structure
+                    UpdateStatisticsPanel(panel, statistics);
                 }
             }
         }
 
         /// <summary>
-        /// Update statistics display for all measurements
+        /// Format measurement value for display
         /// </summary>
-        private void UpdateStatisticsDisplay()
+        private string FormatMeasurementValue(string measurementType, double value)
         {
-            if (StatisticsPanel == null) return;
+            if (double.IsNaN(value) || double.IsInfinity(value))
+                return "---";
 
-            // Clear existing displays
-            StatisticsPanel.Children.Clear();
-            statisticsDisplays.Clear();
-
-            // Add "No statistics" text back if exists
-            if (NoStatisticsText != null)
-                StatisticsPanel.Children.Add(NoStatisticsText);
-
-            // Create displays for enabled measurements
-            if (controller?.Settings?.EnabledMeasurements != null && controller.Settings.StatisticsEnabled)
+            // Format based on measurement type
+            return measurementType.ToUpper() switch
             {
-                foreach (var measurementKey in controller.Settings.EnabledMeasurements)
-                {
-                    CreateStatisticsDisplay(measurementKey);
-                }
-            }
-
-            UpdateNoStatisticsVisibility();
+                "VMAX" or "VMIN" or "VPP" or "VAVG" or "VRMS" or "VTOP" or "VBASE" or "VAMP" => $"{value:F3} V",
+                "PERIOD" or "RISETIME" or "FALLTIME" or "PWIDTH" or "NWIDTH" => FormatTimeValue(value),
+                "FREQUENCY" => FormatFrequencyValue(value),
+                "PDUTY" or "NDUTY" => $"{value:F1} %",
+                _ => $"{value:F3}"
+            };
         }
 
         /// <summary>
-        /// Export statistics to file
+        /// Format time values with appropriate units
         /// </summary>
-        private void ExportStatisticsToFile(string fileName)
+        private string FormatTimeValue(double seconds)
         {
-            try
+            if (Math.Abs(seconds) >= 1)
+                return $"{seconds:F3} s";
+            else if (Math.Abs(seconds) >= 1e-3)
+                return $"{seconds * 1e3:F3} ms";
+            else if (Math.Abs(seconds) >= 1e-6)
+                return $"{seconds * 1e6:F3} μs";
+            else
+                return $"{seconds * 1e9:F3} ns";
+        }
+
+        /// <summary>
+        /// Format frequency values with appropriate units
+        /// </summary>
+        private string FormatFrequencyValue(double frequency)
+        {
+            if (Math.Abs(frequency) >= 1e6)
+                return $"{frequency / 1e6:F3} MHz";
+            else if (Math.Abs(frequency) >= 1e3)
+                return $"{frequency / 1e3:F3} kHz";
+            else
+                return $"{frequency:F3} Hz";
+        }
+
+        /// <summary>
+        /// Update statistics panel with new data
+        /// </summary>
+        private void UpdateStatisticsPanel(StackPanel panel, MeasurementStatistics statistics)
+        {
+            // Implementation depends on your statistics panel structure
+            // This is a placeholder - customize based on your UI needs
+        }
+
+        /// <summary>
+        /// Update statistics visibility
+        /// </summary>
+        private void UpdateStatisticsVisibility(bool visible)
+        {
+            foreach (var display in statisticsDisplays.Values)
             {
-                var sb = new StringBuilder();
-                sb.AppendLine("Measurement,Current Value,Min,Max,Average,Standard Deviation,Count");
+                display.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+            }
+        }
 
-                if (controller?.Statistics != null)
+        /// <summary>
+        /// Clear all value displays
+        /// </summary>
+        private void ClearAllValueDisplays()
+        {
+            foreach (var display in valueDisplays.Values)
+            {
+                if (display.Child is TextBlock textBlock)
                 {
-                    foreach (var kvp in controller.Statistics)
-                    {
-                        var stats = kvp.Value;
-                        var currentValue = controller.CurrentValues.ContainsKey(kvp.Key)
-                            ? controller.CurrentValues[kvp.Key]?.ToString() ?? "N/A"
-                            : "N/A";
+                    textBlock.Text = "---";
+                }
+            }
 
-                        sb.AppendLine($"{kvp.Key},{currentValue},{stats.Minimum},{stats.Maximum},{stats.Average},{stats.StandardDeviation},{stats.Count}");
+            foreach (var display in statisticsDisplays.Values)
+            {
+                if (display.Child is StackPanel panel)
+                {
+                    // Clear statistics display
+                    foreach (var child in panel.Children.OfType<TextBlock>())
+                    {
+                        child.Text = "---";
                     }
                 }
-
-                File.WriteAllText(fileName, sb.ToString());
-            }
-            catch (Exception ex)
-            {
-                LogEvent?.Invoke(this, $"Error writing statistics file: {ex.Message}");
             }
         }
 
@@ -606,31 +632,120 @@ namespace DS1000Z_E_USB_Control.Measurements
         #region Helper Methods
 
         /// <summary>
-        /// Format measurement value with appropriate units
+        /// Apply preset measurements
         /// </summary>
-        private string FormatMeasurementValue(double value, string unit)
+        private void ApplyPresetMeasurements(string[] measurements, string presetName)
         {
-            if (double.IsNaN(value) || double.IsInfinity(value))
-                return "---";
+            if (controller == null) return;
 
-            // Format based on the magnitude of the value
-            string formattedValue;
-            if (Math.Abs(value) >= 1e6)
-                formattedValue = (value / 1e6).ToString("F3") + "M";
-            else if (Math.Abs(value) >= 1e3)
-                formattedValue = (value / 1e3).ToString("F3") + "k";
-            else if (Math.Abs(value) >= 1)
-                formattedValue = value.ToString("F3");
-            else if (Math.Abs(value) >= 1e-3)
-                formattedValue = (value * 1e3).ToString("F3") + "m";
-            else if (Math.Abs(value) >= 1e-6)
-                formattedValue = (value * 1e6).ToString("F3") + "μ";
-            else if (Math.Abs(value) >= 1e-9)
-                formattedValue = (value * 1e9).ToString("F3") + "n";
-            else
-                formattedValue = value.ToString("E2");
+            try
+            {
+                // Clear existing measurements first
+                controller.ClearAllMeasurements();
 
-            return $"{formattedValue} {unit}";
+                // Add new measurements
+                foreach (var measurement in measurements)
+                {
+                    controller.AddMeasurement(measurement);
+                }
+
+                // Update the display
+                controller.UpdateAllMeasurements();
+
+                LogEvent?.Invoke(this, $"{presetName} preset applied: {string.Join(", ", measurements)}");
+            }
+            catch (Exception ex)
+            {
+                LogEvent?.Invoke(this, $"Error applying {presetName} preset: {ex.Message}");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Refresh the panel from controller settings
+        /// </summary>
+        public void RefreshFromController()
+        {
+            if (controller?.Settings == null) return;
+
+            try
+            {
+                // Update UI based on controller settings
+                isInitialized = false;
+
+                // Update auto update checkbox
+                if (AutoUpdateCheckBox != null)
+                {
+                    AutoUpdateCheckBox.IsChecked = controller.Settings.AutoUpdateEnabled;
+                }
+
+                // Update statistics checkbox
+                // Implementation depends on your XAML structure
+
+                // Update timer state
+                if (controller.Settings.AutoUpdateEnabled)
+                    autoUpdateTimer.Start();
+                else
+                    autoUpdateTimer.Stop();
+
+                isInitialized = true;
+
+                LogEvent?.Invoke(this, "Panel refreshed from controller settings");
+            }
+            catch (Exception ex)
+            {
+                LogEvent?.Invoke(this, $"Error refreshing panel: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Export measurement data
+        /// </summary>
+        public void ExportMeasurementData()
+        {
+            if (controller == null) return;
+
+            try
+            {
+                var saveFileDialog = new SaveFileDialog
+                {
+                    Filter = "CSV files (*.csv)|*.csv|Text files (*.txt)|*.txt|All files (*.*)|*.*",
+                    DefaultExt = "csv",
+                    FileName = $"MeasurementData_{DateTime.Now:yyyyMMdd_HHmmss}.csv"
+                };
+
+                if (saveFileDialog.ShowDialog() == true)
+                {
+                    controller.ExportMeasurementData(saveFileDialog.FileName);
+                    LogEvent?.Invoke(this, $"Measurement data exported to: {Path.GetFileName(saveFileDialog.FileName)}");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error exporting data: {ex.Message}", "Export Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        #endregion
+
+        #region Public Methods
+
+        /// <summary>
+        /// Set the enabled state of the panel
+        /// </summary>
+        public void SetEnabled(bool enabled)
+        {
+            this.IsEnabled = enabled;
+        }
+
+        /// <summary>
+        /// Collapse or expand the panel
+        /// </summary>
+        public void SetCollapsed(bool collapsed)
+        {
+            panelCollapsed = collapsed;
+            // Implementation depends on your UI structure
         }
 
         #endregion
@@ -638,13 +753,11 @@ namespace DS1000Z_E_USB_Control.Measurements
         #region Cleanup
 
         /// <summary>
-        /// Cleanup resources
+        /// Cleanup when the control is unloaded
         /// </summary>
-        public void Cleanup()
+        private void MeasurementPanel_Unloaded(object sender, RoutedEventArgs e)
         {
             autoUpdateTimer?.Stop();
-            autoUpdateTimer = null;
-
             if (controller != null)
             {
                 controller.MeasurementValueUpdated -= Controller_MeasurementValueUpdated;

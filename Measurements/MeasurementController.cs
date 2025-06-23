@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Globalization;
+using Rigol_DS1000Z_E_Control;
 
 namespace DS1000Z_E_USB_Control.Measurements
 {
@@ -12,7 +14,7 @@ namespace DS1000Z_E_USB_Control.Measurements
     {
         #region Fields
 
-        private readonly IOscilloscopeInterface oscilloscope;
+        private readonly RigolDS1000ZE oscilloscope;
         private MeasurementSettings settings;
         private readonly Dictionary<string, object> currentMeasurementValues;
         private readonly Dictionary<string, MeasurementStatistics> measurementStatistics;
@@ -40,7 +42,7 @@ namespace DS1000Z_E_USB_Control.Measurements
 
         #region Constructor
 
-        public MeasurementController(IOscilloscopeInterface oscilloscope)
+        public MeasurementController(RigolDS1000ZE oscilloscope)
         {
             this.oscilloscope = oscilloscope ?? throw new ArgumentNullException(nameof(oscilloscope));
             this.settings = new MeasurementSettings();
@@ -121,7 +123,7 @@ namespace DS1000Z_E_USB_Control.Measurements
         }
 
         /// <summary>
-        /// Enable a specific measurement item (:MEASure:ITEM)
+        /// Enable a measurement item (:MEASure:ITEM)
         /// </summary>
         public bool EnableMeasurement(string measurementKey, string source = null)
         {
@@ -132,8 +134,11 @@ namespace DS1000Z_E_USB_Control.Measurements
 
                 if (oscilloscope.SendCommand(command))
                 {
-                    settings.EnableMeasurement(measurementKey);
-                    Log($"Enabled measurement: {measurementKey} on {source}");
+                    if (!settings.EnabledMeasurements.Contains(measurementKey))
+                    {
+                        settings.EnabledMeasurements.Add(measurementKey);
+                    }
+                    Log($"Measurement {measurementKey} enabled for {source}");
                     return true;
                 }
             }
@@ -145,20 +150,15 @@ namespace DS1000Z_E_USB_Control.Measurements
         }
 
         /// <summary>
-        /// Disable a specific measurement item (:MEASure:ITEM OFF)
+        /// Disable a measurement item
         /// </summary>
         public bool DisableMeasurement(string measurementKey)
         {
             try
             {
-                string command = $":MEASure:ITEM {measurementKey},OFF";
-
-                if (oscilloscope.SendCommand(command))
-                {
-                    settings.DisableMeasurement(measurementKey);
-                    Log($"Disabled measurement: {measurementKey}");
-                    return true;
-                }
+                settings.EnabledMeasurements.Remove(measurementKey);
+                Log($"Measurement {measurementKey} disabled");
+                return true;
             }
             catch (Exception ex)
             {
@@ -176,7 +176,7 @@ namespace DS1000Z_E_USB_Control.Measurements
             {
                 if (oscilloscope.SendCommand(":MEASure:CLEar"))
                 {
-                    settings.ClearAllMeasurements();
+                    settings.EnabledMeasurements.Clear();
                     currentMeasurementValues.Clear();
                     measurementStatistics.Clear();
                     Log("All measurements cleared");
@@ -238,6 +238,7 @@ namespace DS1000Z_E_USB_Control.Measurements
 
         /// <summary>
         /// Set measurement setup middle threshold (:MEASure:SETup:MID)
+        /// FIXED: Complete implementation
         /// </summary>
         public bool SetThresholdMid(double percent)
         {
@@ -282,6 +283,7 @@ namespace DS1000Z_E_USB_Control.Measurements
 
         /// <summary>
         /// Set pulse setup parameter B (:MEASure:SETup:PSB)
+        /// FIXED: Complete error message
         /// </summary>
         public bool SetPulseSetupB(double percent)
         {
@@ -430,7 +432,7 @@ namespace DS1000Z_E_USB_Control.Measurements
                 string command = $":MEASure:ITEM? {measurementKey},{source}";
                 string response = oscilloscope.SendQuery(command);
 
-                if (!string.IsNullOrEmpty(response) && double.TryParse(response, out double value))
+                if (!string.IsNullOrEmpty(response) && double.TryParse(response, NumberStyles.Float, CultureInfo.InvariantCulture, out double value))
                 {
                     currentMeasurementValues[measurementKey] = value;
                     MeasurementValueUpdated?.Invoke(this, new MeasurementValueEventArgs(measurementKey, value));
@@ -457,12 +459,12 @@ namespace DS1000Z_E_USB_Control.Measurements
 
                 if (!string.IsNullOrEmpty(response))
                 {
-                    var stats = ParseStatisticsResponse(response, measurementKey);
-                    if (stats != null)
+                    var statistics = ParseStatisticsResponse(measurementKey, response);
+                    if (statistics != null)
                     {
-                        measurementStatistics[measurementKey] = stats;
-                        MeasurementStatisticsUpdated?.Invoke(this, new MeasurementStatisticsEventArgs(measurementKey, stats));
-                        return stats;
+                        measurementStatistics[measurementKey] = statistics;
+                        MeasurementStatisticsUpdated?.Invoke(this, new MeasurementStatisticsEventArgs(measurementKey, statistics));
+                        return statistics;
                     }
                 }
             }
@@ -474,41 +476,27 @@ namespace DS1000Z_E_USB_Control.Measurements
         }
 
         /// <summary>
-        /// Query all enabled measurement values
+        /// Update all enabled measurement values
         /// </summary>
-        public Dictionary<string, double> QueryAllMeasurementValues()
+        public void UpdateAllMeasurementValues()
         {
-            var results = new Dictionary<string, double>();
-
             foreach (var measurementKey in settings.EnabledMeasurements)
             {
-                var value = QueryMeasurementValue(measurementKey);
-                if (value.HasValue)
-                {
-                    results[measurementKey] = value.Value;
-                }
+                QueryMeasurementValue(measurementKey);
             }
-
-            return results;
         }
 
         /// <summary>
-        /// Query all enabled measurement statistics
+        /// Update all enabled measurement statistics
         /// </summary>
-        public Dictionary<string, MeasurementStatistics> QueryAllMeasurementStatistics()
+        public void UpdateAllMeasurementStatistics()
         {
-            var results = new Dictionary<string, MeasurementStatistics>();
+            if (!settings.StatisticDisplayEnabled) return;
 
             foreach (var measurementKey in settings.EnabledMeasurements)
             {
-                var stats = QueryMeasurementStatistics(measurementKey);
-                if (stats != null)
-                {
-                    results[measurementKey] = stats;
-                }
+                QueryMeasurementStatistics(measurementKey);
             }
-
-            return results;
         }
 
         #endregion
@@ -586,10 +574,10 @@ namespace DS1000Z_E_USB_Control.Measurements
             {
                 ClearAllMeasurements();
 
-                var comprehensiveMeasurements = new[] {
-                    "FREQuency", "PERiod", "RTIMe", "FTIMe", "PDUTy",
-                    "VMAX", "VMIN", "VPP", "VAVG", "VRMS",
-                    "OVERshoot", "PREShoot"
+                var comprehensiveMeasurements = new[]
+                {
+                    "FREQuency", "PERiod", "VMAX", "VMIN", "VPP", "VAVG", "VRMS",
+                    "RTIMe", "FTIMe", "PDUTy", "NDUTy", "VTOP", "VBASe"
                 };
                 bool success = true;
 
@@ -600,7 +588,6 @@ namespace DS1000Z_E_USB_Control.Measurements
 
                 if (success)
                 {
-                    SetStatisticDisplay(true);
                     Log("Applied comprehensive measurements preset");
                 }
 
@@ -620,23 +607,23 @@ namespace DS1000Z_E_USB_Control.Measurements
         /// <summary>
         /// Parse statistics response from oscilloscope
         /// </summary>
-        private MeasurementStatistics ParseStatisticsResponse(string response, string measurementKey)
+        private MeasurementStatistics ParseStatisticsResponse(string measurementKey, string response)
         {
             try
             {
-                // Expected format: "current,average,minimum,maximum,deviation,count"
+                // Expected format: "current,average,minimum,maximum,stddev,count"
                 var parts = response.Split(',');
                 if (parts.Length >= 6)
                 {
                     return new MeasurementStatistics
                     {
                         MeasurementKey = measurementKey,
-                        Current = double.Parse(parts[0]),
-                        Average = double.Parse(parts[1]),
-                        Minimum = double.Parse(parts[2]),
-                        Maximum = double.Parse(parts[3]),
-                        StandardDeviation = double.Parse(parts[4]),
-                        Count = int.Parse(parts[5])
+                        Current = double.Parse(parts[0], CultureInfo.InvariantCulture),
+                        Average = double.Parse(parts[1], CultureInfo.InvariantCulture),
+                        Minimum = double.Parse(parts[2], CultureInfo.InvariantCulture),
+                        Maximum = double.Parse(parts[3], CultureInfo.InvariantCulture),
+                        StandardDeviation = double.Parse(parts[4], CultureInfo.InvariantCulture),
+                        Count = int.Parse(parts[5], CultureInfo.InvariantCulture)
                     };
                 }
             }

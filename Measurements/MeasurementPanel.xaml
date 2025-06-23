@@ -37,8 +37,10 @@
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="Background" Value="White"/>
             <Setter Property="Padding" Value="3"/>
-            <Setter Property="BorderBrush" Value="#CCCCCC"/>
-            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Margin" Value="1"/>
+            <Setter Property="Foreground" Value="#212121"/>
+
+            
         </Style>
 
         <Style x:Key="ActionButtonStyle" TargetType="Button">

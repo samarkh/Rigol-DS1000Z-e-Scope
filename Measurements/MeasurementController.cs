@@ -92,12 +92,13 @@ namespace DS1000Z_E_USB_Control.Measurements
                     Log($"Auto display {(enabled ? "enabled" : "disabled")}");
                     return true;
                 }
+                return false;
             }
             catch (Exception ex)
             {
                 Log($"Error setting auto display: {ex.Message}");
+                return false;
             }
-            return false;
         }
 
         /// <summary>
@@ -114,238 +115,218 @@ namespace DS1000Z_E_USB_Control.Measurements
                     Log($"Auto measure source set to: {source}");
                     return true;
                 }
+                return false;
             }
             catch (Exception ex)
             {
                 Log($"Error setting auto measure source: {ex.Message}");
+                return false;
             }
-            return false;
         }
 
         /// <summary>
-        /// Enable a measurement item (:MEASure:ITEM)
+        /// Apply measurement settings to the oscilloscope
         /// </summary>
-        public bool EnableMeasurement(string measurementKey, string source = null)
+        public bool ApplySettings(MeasurementSettings newSettings = null)
         {
             try
             {
-                source = source ?? settings.AutoMeasureSource;
-                string command = $":MEASure:ITEM {measurementKey},{source}";
+                if (newSettings != null)
+                    Settings = newSettings;
 
-                if (oscilloscope.SendCommand(command))
+                // Apply auto display setting
+                if (!SetAutoDisplay(Settings.AutoDisplayEnabled))
+                    return false;
+
+                // Apply auto measure source
+                if (!SetAutoMeasureSource(Settings.AutoMeasureSource))
+                    return false;
+
+                // Apply threshold settings
+                if (!SetThresholdLevels(Settings.ThresholdMax, Settings.ThresholdMid, Settings.ThresholdMin))
+                    return false;
+
+                // Apply pulse and delay setup
+                if (!SetPulseSetupB(Settings.PulseSetupB))
+                    return false;
+
+                if (!SetDelaySetupA(Settings.DelaySetupA))
+                    return false;
+
+                if (!SetDelaySetupB(Settings.DelaySetupB))
+                    return false;
+
+                // Apply statistics settings
+                if (!SetStatisticsMode(Settings.StatisticMode))
+                    return false;
+
+                if (!SetStatisticsDisplay(Settings.StatisticDisplayEnabled))
+                    return false;
+
+                // Enable measurements
+                foreach (var measurement in Settings.EnabledMeasurements)
                 {
-                    if (!settings.EnabledMeasurements.Contains(measurementKey))
-                    {
-                        settings.EnabledMeasurements.Add(measurementKey);
-                    }
-                    Log($"Measurement {measurementKey} enabled for {source}");
+                    EnableMeasurement(measurement);
+                }
+
+                Log("Settings applied successfully");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log($"Error applying settings: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Reset all measurements and clear statistics
+        /// </summary>
+        public bool ResetAllMeasurements()
+        {
+            try
+            {
+                // Clear all measurements using SCPI command
+                if (oscilloscope.SendCommand(":MEASure:CLEar ALL"))
+                {
+                    currentMeasurementValues.Clear();
+                    measurementStatistics.Clear();
+                    Settings.EnabledMeasurements.Clear();
+
+                    Log("All measurements reset");
                     return true;
                 }
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Log($"Error resetting measurements: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Update all enabled measurements
+        /// </summary>
+        public bool UpdateAllMeasurements()
+        {
+            try
+            {
+                bool allSuccess = true;
+                int successCount = 0;
+
+                foreach (var measurementKey in Settings.EnabledMeasurements.ToList())
+                {
+                    if (UpdateSingleMeasurement(measurementKey))
+                    {
+                        successCount++;
+                    }
+                    else
+                    {
+                        allSuccess = false;
+                    }
+                }
+
+                if (successCount > 0)
+                {
+                    Log($"Updated {successCount} of {Settings.EnabledMeasurements.Count} measurements");
+                }
+
+                return allSuccess;
+            }
+            catch (Exception ex)
+            {
+                Log($"Error updating measurements: {ex.Message}");
+                return false;
+            }
+        }
+
+        #endregion
+
+        #region Individual Measurement Operations
+
+        /// <summary>
+        /// Enable a specific measurement
+        /// </summary>
+        public bool EnableMeasurement(string measurementKey)
+        {
+            try
+            {
+                string command = $":MEASure:ITEM {measurementKey},{Settings.AutoMeasureSource}";
+                if (oscilloscope.SendCommand(command))
+                {
+                    if (!Settings.EnabledMeasurements.Contains(measurementKey))
+                    {
+                        Settings.EnabledMeasurements.Add(measurementKey);
+                    }
+                    Log($"Measurement enabled: {measurementKey}");
+                    return true;
+                }
+                return false;
             }
             catch (Exception ex)
             {
                 Log($"Error enabling measurement {measurementKey}: {ex.Message}");
+                return false;
             }
-            return false;
         }
 
         /// <summary>
-        /// Disable a measurement item
+        /// Disable a specific measurement
         /// </summary>
         public bool DisableMeasurement(string measurementKey)
         {
             try
             {
-                settings.EnabledMeasurements.Remove(measurementKey);
-                Log($"Measurement {measurementKey} disabled");
-                return true;
+                string command = $":MEASure:ITEM {measurementKey},OFF";
+                if (oscilloscope.SendCommand(command))
+                {
+                    Settings.EnabledMeasurements.Remove(measurementKey);
+                    currentMeasurementValues.Remove(measurementKey);
+                    measurementStatistics.Remove(measurementKey);
+                    Log($"Measurement disabled: {measurementKey}");
+                    return true;
+                }
+                return false;
             }
             catch (Exception ex)
             {
                 Log($"Error disabling measurement {measurementKey}: {ex.Message}");
+                return false;
             }
-            return false;
         }
 
         /// <summary>
-        /// Clear all measurements (:MEASure:CLEar)
+        /// Update a single measurement
         /// </summary>
-        public bool ClearAllMeasurements()
+        private bool UpdateSingleMeasurement(string measurementKey)
         {
             try
             {
-                if (oscilloscope.SendCommand(":MEASure:CLEar"))
+                // Query the specific measurement from oscilloscope
+                string query = $":MEASure:ITEM? {measurementKey}";
+                string response = oscilloscope.QueryCommand(query);
+
+                if (!string.IsNullOrEmpty(response) &&
+                    double.TryParse(response.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out double value))
                 {
-                    settings.EnabledMeasurements.Clear();
-                    currentMeasurementValues.Clear();
-                    measurementStatistics.Clear();
-                    Log("All measurements cleared");
+                    currentMeasurementValues[measurementKey] = value;
+                    UpdateMeasurementStatistics(measurementKey, value);
+
+                    // Raise event
+                    MeasurementValueUpdated?.Invoke(this, new MeasurementValueEventArgs(measurementKey, value));
+
                     return true;
                 }
+
+                Log($"Invalid response for {measurementKey}: {response}");
+                return false;
             }
             catch (Exception ex)
             {
-                Log($"Error clearing measurements: {ex.Message}");
+                Log($"Error updating measurement {measurementKey}: {ex.Message}");
+                return false;
             }
-            return false;
-        }
-
-        /// <summary>
-        /// Recover measurements (:MEASure:RECover)
-        /// </summary>
-        public bool RecoverMeasurements()
-        {
-            try
-            {
-                if (oscilloscope.SendCommand(":MEASure:RECover"))
-                {
-                    Log("Measurements recovered");
-                    return true;
-                }
-            }
-            catch (Exception ex)
-            {
-                Log($"Error recovering measurements: {ex.Message}");
-            }
-            return false;
-        }
-
-        #endregion
-
-        #region Measurement Setup and Thresholds
-
-        /// <summary>
-        /// Set measurement setup maximum threshold (:MEASure:SETup:MAX)
-        /// </summary>
-        public bool SetThresholdMax(double percent)
-        {
-            try
-            {
-                string command = $":MEASure:SETup:MAX {percent:F1}";
-                if (oscilloscope.SendCommand(command))
-                {
-                    settings.ThresholdMax = percent;
-                    Log($"Threshold MAX set to: {percent:F1}%");
-                    return true;
-                }
-            }
-            catch (Exception ex)
-            {
-                Log($"Error setting threshold MAX: {ex.Message}");
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// Set measurement setup middle threshold (:MEASure:SETup:MID)
-        /// FIXED: Complete implementation
-        /// </summary>
-        public bool SetThresholdMid(double percent)
-        {
-            try
-            {
-                string command = $":MEASure:SETup:MID {percent:F1}";
-                if (oscilloscope.SendCommand(command))
-                {
-                    settings.ThresholdMid = percent;
-                    Log($"Threshold MID set to: {percent:F1}%");
-                    return true;
-                }
-            }
-            catch (Exception ex)
-            {
-                Log($"Error setting threshold MID: {ex.Message}");
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// Set measurement setup minimum threshold (:MEASure:SETup:MIN)
-        /// </summary>
-        public bool SetThresholdMin(double percent)
-        {
-            try
-            {
-                string command = $":MEASure:SETup:MIN {percent:F1}";
-                if (oscilloscope.SendCommand(command))
-                {
-                    settings.ThresholdMin = percent;
-                    Log($"Threshold MIN set to: {percent:F1}%");
-                    return true;
-                }
-            }
-            catch (Exception ex)
-            {
-                Log($"Error setting threshold MIN: {ex.Message}");
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// Set pulse setup parameter B (:MEASure:SETup:PSB)
-        /// FIXED: Complete error message
-        /// </summary>
-        public bool SetPulseSetupB(double percent)
-        {
-            try
-            {
-                string command = $":MEASure:SETup:PSB {percent:F1}";
-                if (oscilloscope.SendCommand(command))
-                {
-                    settings.PulseSetupB = percent;
-                    Log($"Pulse setup B set to: {percent:F1}%");
-                    return true;
-                }
-            }
-            catch (Exception ex)
-            {
-                Log($"Error setting pulse setup B: {ex.Message}");
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// Set delay setup parameter A (:MEASure:SETup:DSA)
-        /// </summary>
-        public bool SetDelaySetupA(double percent)
-        {
-            try
-            {
-                string command = $":MEASure:SETup:DSA {percent:F1}";
-                if (oscilloscope.SendCommand(command))
-                {
-                    settings.DelaySetupA = percent;
-                    Log($"Delay setup A set to: {percent:F1}%");
-                    return true;
-                }
-            }
-            catch (Exception ex)
-            {
-                Log($"Error setting delay setup A: {ex.Message}");
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// Set delay setup parameter B (:MEASure:SETup:DSB)
-        /// </summary>
-        public bool SetDelaySetupB(double percent)
-        {
-            try
-            {
-                string command = $":MEASure:SETup:DSB {percent:F1}";
-                if (oscilloscope.SendCommand(command))
-                {
-                    settings.DelaySetupB = percent;
-                    Log($"Delay setup B set to: {percent:F1}%");
-                    return true;
-                }
-            }
-            catch (Exception ex)
-            {
-                Log($"Error setting delay setup B: {ex.Message}");
-            }
-            return false;
         }
 
         #endregion
@@ -353,31 +334,9 @@ namespace DS1000Z_E_USB_Control.Measurements
         #region Statistics Control
 
         /// <summary>
-        /// Set statistics display (:MEASure:STATistic:DISPlay)
-        /// </summary>
-        public bool SetStatisticDisplay(bool enabled)
-        {
-            try
-            {
-                string command = $":MEASure:STATistic:DISPlay {(enabled ? "ON" : "OFF")}";
-                if (oscilloscope.SendCommand(command))
-                {
-                    settings.StatisticDisplayEnabled = enabled;
-                    Log($"Statistics display {(enabled ? "enabled" : "disabled")}");
-                    return true;
-                }
-            }
-            catch (Exception ex)
-            {
-                Log($"Error setting statistics display: {ex.Message}");
-            }
-            return false;
-        }
-
-        /// <summary>
         /// Set statistics mode (:MEASure:STATistic:MODE)
         /// </summary>
-        public bool SetStatisticMode(string mode)
+        public bool SetStatisticsMode(string mode)
         {
             try
             {
@@ -388,214 +347,307 @@ namespace DS1000Z_E_USB_Control.Measurements
                     Log($"Statistics mode set to: {mode}");
                     return true;
                 }
+                return false;
             }
             catch (Exception ex)
             {
                 Log($"Error setting statistics mode: {ex.Message}");
+                return false;
             }
-            return false;
         }
 
         /// <summary>
-        /// Reset statistics (:MEASure:STATistic:RESet)
+        /// Set statistics display (:MEASure:STATistic:DISPlay)
+        /// </summary>
+        public bool SetStatisticsDisplay(bool enabled)
+        {
+            try
+            {
+                string command = $":MEASure:STATistic:DISPlay {(enabled ? "ON" : "OFF")}";
+                if (oscilloscope.SendCommand(command))
+                {
+                    settings.StatisticDisplayEnabled = enabled;
+                    Log($"Statistics display {(enabled ? "enabled" : "disabled")}");
+                    return true;
+                }
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Log($"Error setting statistics display: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Reset statistics
         /// </summary>
         public bool ResetStatistics()
         {
             try
             {
-                if (oscilloscope.SendCommand(":MEASure:STATistic:RESet"))
+                string command = ":MEASure:STATistic:RESet";
+                if (oscilloscope.SendCommand(command))
                 {
+                    // Clear local statistics
                     measurementStatistics.Clear();
                     Log("Statistics reset");
                     return true;
                 }
+                return false;
             }
             catch (Exception ex)
             {
                 Log($"Error resetting statistics: {ex.Message}");
+                return false;
             }
-            return false;
         }
 
-        #endregion
-
-        #region Measurement Value Queries
-
         /// <summary>
-        /// Query a specific measurement value (:MEASure:ITEM?)
+        /// Update statistics for all measurements
         /// </summary>
-        public double? QueryMeasurementValue(string measurementKey, string source = null)
+        public bool UpdateStatistics()
         {
             try
             {
-                source = source ?? settings.AutoMeasureSource;
-                string command = $":MEASure:ITEM? {measurementKey},{source}";
-                string response = oscilloscope.SendQuery(command);
-
-                if (!string.IsNullOrEmpty(response) && double.TryParse(response, NumberStyles.Float, CultureInfo.InvariantCulture, out double value))
+                // Query statistics from oscilloscope for each enabled measurement
+                foreach (var measurementKey in Settings.EnabledMeasurements)
                 {
-                    currentMeasurementValues[measurementKey] = value;
-                    MeasurementValueUpdated?.Invoke(this, new MeasurementValueEventArgs(measurementKey, value));
+                    UpdateMeasurementStatisticsFromDevice(measurementKey);
+                }
+
+                Log($"Statistics updated for {Settings.EnabledMeasurements.Count} measurements");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log($"Error updating statistics: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Update statistics for a measurement from the device
+        /// </summary>
+        private void UpdateMeasurementStatisticsFromDevice(string measurementKey)
+        {
+            try
+            {
+                // Query various statistics from the device
+                var current = QueryMeasurementStatistic(measurementKey, "CURRent");
+                var average = QueryMeasurementStatistic(measurementKey, "AVERages");
+                var minimum = QueryMeasurementStatistic(measurementKey, "MINimum");
+                var maximum = QueryMeasurementStatistic(measurementKey, "MAXimum");
+                var stddev = QueryMeasurementStatistic(measurementKey, "SDEViation");
+
+                if (current.HasValue)
+                {
+                    var stats = new MeasurementStatistics
+                    {
+                        MeasurementKey = measurementKey,
+                        Current = current.Value,
+                        Average = average ?? current.Value,
+                        Minimum = minimum ?? current.Value,
+                        Maximum = maximum ?? current.Value,
+                        StandardDeviation = stddev ?? 0.0,
+                        Count = 1 // Device doesn't provide count, use 1 as placeholder
+                    };
+
+                    measurementStatistics[measurementKey] = stats;
+
+                    // Raise statistics updated event
+                    MeasurementStatisticsUpdated?.Invoke(this,
+                        new MeasurementStatisticsEventArgs(measurementKey, stats));
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"Error updating statistics for {measurementKey}: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Query a specific statistic from the device
+        /// </summary>
+        private double? QueryMeasurementStatistic(string measurementKey, string statisticType)
+        {
+            try
+            {
+                string query = $":MEASure:STATistic:ITEM? {statisticType},{measurementKey}";
+                string response = oscilloscope.QueryCommand(query);
+
+                if (!string.IsNullOrEmpty(response) &&
+                    double.TryParse(response.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out double value))
+                {
                     return value;
                 }
             }
             catch (Exception ex)
             {
-                Log($"Error querying measurement {measurementKey}: {ex.Message}");
+                Log($"Error querying {statisticType} for {measurementKey}: {ex.Message}");
             }
+
             return null;
-        }
-
-        /// <summary>
-        /// Query statistics for a specific measurement (:MEASure:STATistic:ITEM?)
-        /// </summary>
-        public MeasurementStatistics QueryMeasurementStatistics(string measurementKey, string source = null)
-        {
-            try
-            {
-                source = source ?? settings.AutoMeasureSource;
-                string command = $":MEASure:STATistic:ITEM? {measurementKey},{source}";
-                string response = oscilloscope.SendQuery(command);
-
-                if (!string.IsNullOrEmpty(response))
-                {
-                    var statistics = ParseStatisticsResponse(measurementKey, response);
-                    if (statistics != null)
-                    {
-                        measurementStatistics[measurementKey] = statistics;
-                        MeasurementStatisticsUpdated?.Invoke(this, new MeasurementStatisticsEventArgs(measurementKey, statistics));
-                        return statistics;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Log($"Error querying statistics for {measurementKey}: {ex.Message}");
-            }
-            return null;
-        }
-
-        /// <summary>
-        /// Update all enabled measurement values
-        /// </summary>
-        public void UpdateAllMeasurementValues()
-        {
-            foreach (var measurementKey in settings.EnabledMeasurements)
-            {
-                QueryMeasurementValue(measurementKey);
-            }
-        }
-
-        /// <summary>
-        /// Update all enabled measurement statistics
-        /// </summary>
-        public void UpdateAllMeasurementStatistics()
-        {
-            if (!settings.StatisticDisplayEnabled) return;
-
-            foreach (var measurementKey in settings.EnabledMeasurements)
-            {
-                QueryMeasurementStatistics(measurementKey);
-            }
         }
 
         #endregion
 
-        #region Preset Management
+        #region Threshold and Setup Controls
 
         /// <summary>
-        /// Apply standard time domain measurements preset
+        /// Set threshold levels (:MEASure:SETup:MAX/MID/MIN)
         /// </summary>
-        public bool ApplyTimeDomainPreset()
+        public bool SetThresholdLevels(double max, double mid, double min)
         {
             try
             {
-                ClearAllMeasurements();
-
-                var timeMeasurements = new[] { "FREQuency", "PERiod", "RTIMe", "FTIMe", "PDUTy" };
                 bool success = true;
-
-                foreach (var measurement in timeMeasurements)
-                {
-                    success &= EnableMeasurement(measurement);
-                }
+                success &= SetThresholdMax(max);
+                success &= SetThresholdMid(mid);
+                success &= SetThresholdMin(min);
 
                 if (success)
                 {
-                    Log("Applied time domain measurements preset");
+                    Log($"Threshold levels set - Max: {max}%, Mid: {mid}%, Min: {min}%");
                 }
 
                 return success;
             }
             catch (Exception ex)
             {
-                Log($"Error applying time domain preset: {ex.Message}");
+                Log($"Error setting threshold levels: {ex.Message}");
                 return false;
             }
         }
 
         /// <summary>
-        /// Apply standard voltage measurements preset
+        /// Set maximum threshold (:MEASure:SETup:MAX)
         /// </summary>
-        public bool ApplyVoltagePreset()
+        public bool SetThresholdMax(double value)
         {
             try
             {
-                ClearAllMeasurements();
-
-                var voltageMeasurements = new[] { "VMAX", "VMIN", "VPP", "VAVG", "VRMS" };
-                bool success = true;
-
-                foreach (var measurement in voltageMeasurements)
+                string command = $":MEASure:SETup:MAX {value}";
+                if (oscilloscope.SendCommand(command))
                 {
-                    success &= EnableMeasurement(measurement);
+                    settings.ThresholdMax = value;
+                    return true;
                 }
-
-                if (success)
-                {
-                    Log("Applied voltage measurements preset");
-                }
-
-                return success;
+                return false;
             }
             catch (Exception ex)
             {
-                Log($"Error applying voltage preset: {ex.Message}");
+                Log($"Error setting threshold max: {ex.Message}");
                 return false;
             }
         }
 
         /// <summary>
-        /// Apply comprehensive analysis preset
+        /// Set middle threshold (:MEASure:SETup:MID)
         /// </summary>
-        public bool ApplyComprehensivePreset()
+        public bool SetThresholdMid(double value)
         {
             try
             {
-                ClearAllMeasurements();
-
-                var comprehensiveMeasurements = new[]
+                string command = $":MEASure:SETup:MID {value}";
+                if (oscilloscope.SendCommand(command))
                 {
-                    "FREQuency", "PERiod", "VMAX", "VMIN", "VPP", "VAVG", "VRMS",
-                    "RTIMe", "FTIMe", "PDUTy", "NDUTy", "VTOP", "VBASe"
-                };
-                bool success = true;
-
-                foreach (var measurement in comprehensiveMeasurements)
-                {
-                    success &= EnableMeasurement(measurement);
+                    settings.ThresholdMid = value;
+                    return true;
                 }
-
-                if (success)
-                {
-                    Log("Applied comprehensive measurements preset");
-                }
-
-                return success;
+                return false;
             }
             catch (Exception ex)
             {
-                Log($"Error applying comprehensive preset: {ex.Message}");
+                Log($"Error setting threshold mid: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Set minimum threshold (:MEASure:SETup:MIN)
+        /// </summary>
+        public bool SetThresholdMin(double value)
+        {
+            try
+            {
+                string command = $":MEASure:SETup:MIN {value}";
+                if (oscilloscope.SendCommand(command))
+                {
+                    settings.ThresholdMin = value;
+                    return true;
+                }
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Log($"Error setting threshold min: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Set pulse setup parameter B (:MEASure:SETup:PSB)
+        /// </summary>
+        public bool SetPulseSetupB(double value)
+        {
+            try
+            {
+                string command = $":MEASure:SETup:PSB {value}";
+                if (oscilloscope.SendCommand(command))
+                {
+                    settings.PulseSetupB = value;
+                    return true;
+                }
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Log($"Error setting pulse setup B: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Set delay setup parameter A (:MEASure:SETup:DSA)
+        /// </summary>
+        public bool SetDelaySetupA(double value)
+        {
+            try
+            {
+                string command = $":MEASure:SETup:DSA {value}";
+                if (oscilloscope.SendCommand(command))
+                {
+                    settings.DelaySetupA = value;
+                    return true;
+                }
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Log($"Error setting delay setup A: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Set delay setup parameter B (:MEASure:SETup:DSB)
+        /// </summary>
+        public bool SetDelaySetupB(double value)
+        {
+            try
+            {
+                string command = $":MEASure:SETup:DSB {value}";
+                if (oscilloscope.SendCommand(command))
+                {
+                    settings.DelaySetupB = value;
+                    return true;
+                }
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Log($"Error setting delay setup B: {ex.Message}");
                 return false;
             }
         }
@@ -605,33 +657,61 @@ namespace DS1000Z_E_USB_Control.Measurements
         #region Helper Methods
 
         /// <summary>
-        /// Parse statistics response from oscilloscope
+        /// Update statistics for a measurement (local calculation)
         /// </summary>
-        private MeasurementStatistics ParseStatisticsResponse(string measurementKey, string response)
+        private void UpdateMeasurementStatistics(string measurementKey, double value)
         {
-            try
+            if (!measurementStatistics.ContainsKey(measurementKey))
             {
-                // Expected format: "current,average,minimum,maximum,stddev,count"
-                var parts = response.Split(',');
-                if (parts.Length >= 6)
+                measurementStatistics[measurementKey] = new MeasurementStatistics
                 {
-                    return new MeasurementStatistics
-                    {
-                        MeasurementKey = measurementKey,
-                        Current = double.Parse(parts[0], CultureInfo.InvariantCulture),
-                        Average = double.Parse(parts[1], CultureInfo.InvariantCulture),
-                        Minimum = double.Parse(parts[2], CultureInfo.InvariantCulture),
-                        Maximum = double.Parse(parts[3], CultureInfo.InvariantCulture),
-                        StandardDeviation = double.Parse(parts[4], CultureInfo.InvariantCulture),
-                        Count = int.Parse(parts[5], CultureInfo.InvariantCulture)
-                    };
-                }
+                    MeasurementKey = measurementKey,
+                    Current = value,
+                    Minimum = value,
+                    Maximum = value,
+                    Average = value,
+                    Count = 1,
+                    StandardDeviation = 0
+                };
             }
-            catch (Exception ex)
+            else
             {
-                Log($"Error parsing statistics response: {ex.Message}");
+                var stats = measurementStatistics[measurementKey];
+                stats.Count++;
+                stats.Current = value;
+
+                // Update min/max
+                stats.Minimum = Math.Min(stats.Minimum, value);
+                stats.Maximum = Math.Max(stats.Maximum, value);
+
+                // Update running average
+                stats.Average = ((stats.Average * (stats.Count - 1)) + value) / stats.Count;
+
+                // Simple standard deviation calculation
+                // Note: For proper statistics, you'd want to store all values or use a more sophisticated algorithm
+                double variance = Math.Pow(value - stats.Average, 2);
+                stats.StandardDeviation = Math.Sqrt(variance);
             }
-            return null;
+
+            // Raise statistics updated event
+            MeasurementStatisticsUpdated?.Invoke(this,
+                new MeasurementStatisticsEventArgs(measurementKey, measurementStatistics[measurementKey]));
+        }
+
+        /// <summary>
+        /// Get measurement value by key
+        /// </summary>
+        public object GetMeasurementValue(string measurementKey)
+        {
+            return currentMeasurementValues.TryGetValue(measurementKey, out object value) ? value : null;
+        }
+
+        /// <summary>
+        /// Get measurement statistics by key
+        /// </summary>
+        public MeasurementStatistics GetMeasurementStatistics(string measurementKey)
+        {
+            return measurementStatistics.TryGetValue(measurementKey, out MeasurementStatistics stats) ? stats : null;
         }
 
         /// <summary>
@@ -693,6 +773,10 @@ namespace DS1000Z_E_USB_Control.Measurements
         public double Maximum { get; set; }
         public double StandardDeviation { get; set; }
         public int Count { get; set; }
+
+        // Add properties for backward compatibility with existing code
+        public double Min => Minimum;
+        public double Max => Maximum;
 
         public override string ToString()
         {

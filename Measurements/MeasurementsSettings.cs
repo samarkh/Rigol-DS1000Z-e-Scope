@@ -10,7 +10,7 @@ namespace DS1000Z_E_USB_Control.Measurements
     /// </summary>
     public class MeasurementSettings
     {
-        #region Properties
+        #region Core Properties
 
         /// <summary>
         /// Whether automatic measurement display is enabled (:MEASure:ADISplay)
@@ -28,6 +28,20 @@ namespace DS1000Z_E_USB_Control.Measurements
         public List<string> EnabledMeasurements { get; set; } = new List<string>();
 
         /// <summary>
+        /// Whether auto update is enabled for measurements
+        /// </summary>
+        public bool AutoUpdateEnabled { get; set; } = false;
+
+        /// <summary>
+        /// Auto update interval in milliseconds
+        /// </summary>
+        public int AutoUpdateIntervalMs { get; set; } = 2000;
+
+        #endregion
+
+        #region Statistics Properties
+
+        /// <summary>
         /// Statistical analysis mode (:MEASure:STATistic:MODE)
         /// </summary>
         public string StatisticMode { get; set; } = "DIFF";
@@ -36,6 +50,15 @@ namespace DS1000Z_E_USB_Control.Measurements
         /// Whether statistics display is enabled (:MEASure:STATistic:DISPlay)
         /// </summary>
         public bool StatisticDisplayEnabled { get; set; } = false;
+
+        /// <summary>
+        /// Whether statistics are enabled for collection
+        /// </summary>
+        public bool StatisticsEnabled { get; set; } = false;
+
+        #endregion
+
+        #region Threshold Setup Properties
 
         /// <summary>
         /// Measurement threshold setup - Maximum level (:MEASure:SETup:MAX)
@@ -52,79 +75,164 @@ namespace DS1000Z_E_USB_Control.Measurements
         /// </summary>
         public double ThresholdMin { get; set; } = 10.0; // Percentage
 
+        #endregion
+
+        #region Delay and Pulse Setup Properties
+
+        /// <summary>
+        /// Delay setup parameter A (:MEASure:SETup:DSA)
+        /// </summary>
+        public double DelaySetupA { get; set; } = 10.0; // Percentage
+
+        /// <summary>
+        /// Delay setup parameter B (:MEASure:SETup:DSB)
+        /// </summary>
+        public double DelaySetupB { get; set; } = 90.0; // Percentage
+
         /// <summary>
         /// Pulse setup parameter B (:MEASure:SETup:PSB)
         /// </summary>
         public double PulseSetupB { get; set; } = 50.0; // Percentage
 
-        /// <summary>
-        /// Delay setup parameter A (:MEASure:SETup:DSA)
-        /// </summary>
-        public double DelaySetupA { get; set; } = 50.0; // Percentage
+        #endregion
+
+        #region Counter Properties
 
         /// <summary>
-        /// Delay setup parameter B (:MEASure:SETup:DSB)
-        /// </summary>
-        public double DelaySetupB { get; set; } = 50.0; // Percentage
-
-        /// <summary>
-        /// Counter frequency measurement enabled
+        /// Whether counter functionality is enabled
         /// </summary>
         public bool CounterEnabled { get; set; } = false;
 
-        /// <summary>
-        /// Enable/disable automatic updates
-        /// </summary>
-        public bool AutoUpdateEnabled { get; set; } = true;
+        #endregion
+
+        #region Measurement Management Methods
 
         /// <summary>
-        /// Auto update interval in milliseconds
+        /// Check if a specific measurement is enabled
         /// </summary>
-        public int AutoUpdateIntervalMs { get; set; } = 1000;
+        /// <param name="measurementKey">The measurement key</param>
+        /// <returns>True if enabled</returns>
+        public bool IsMeasurementEnabled(string measurementKey)
+        {
+            return EnabledMeasurements.Contains(measurementKey);
+        }
 
         /// <summary>
-        /// Enable/disable statistics collection
+        /// Enable a measurement
         /// </summary>
-        public bool StatisticsEnabled { get; set; } = true;
+        /// <param name="measurementKey">The measurement key to enable</param>
+        public void EnableMeasurement(string measurementKey)
+        {
+            if (!EnabledMeasurements.Contains(measurementKey))
+            {
+                EnabledMeasurements.Add(measurementKey);
+            }
+        }
+
+        /// <summary>
+        /// Disable a measurement
+        /// </summary>
+        /// <param name="measurementKey">The measurement key to disable</param>
+        public void DisableMeasurement(string measurementKey)
+        {
+            EnabledMeasurements.Remove(measurementKey);
+        }
+
+        /// <summary>
+        /// Clear all enabled measurements
+        /// </summary>
+        public void ClearAllMeasurements()
+        {
+            EnabledMeasurements.Clear();
+        }
+
+        /// <summary>
+        /// Get a string representation of enabled measurements
+        /// </summary>
+        /// <returns>Comma-separated list of enabled measurement names</returns>
+        public string GetEnabledMeasurementsString()
+        {
+            if (!EnabledMeasurements.Any())
+                return "None";
+
+            var allParams = GetAvailableParameters();
+            var enabledNames = EnabledMeasurements
+                .Where(m => allParams.ContainsKey(m))
+                .Select(m => allParams[m].DisplayName);
+
+            return string.Join(", ", enabledNames);
+        }
 
         #endregion
 
-        #region Measurement Parameter Definitions
+        #region Clone and Copy Methods
+
+        /// <summary>
+        /// Create a deep copy of the current settings
+        /// </summary>
+        /// <returns>A new MeasurementSettings instance with copied values</returns>
+        public MeasurementSettings Clone()
+        {
+            return new MeasurementSettings
+            {
+                AutoDisplayEnabled = this.AutoDisplayEnabled,
+                AutoMeasureSource = this.AutoMeasureSource,
+                EnabledMeasurements = new List<string>(this.EnabledMeasurements),
+                AutoUpdateEnabled = this.AutoUpdateEnabled,
+                AutoUpdateIntervalMs = this.AutoUpdateIntervalMs,
+                StatisticMode = this.StatisticMode,
+                StatisticDisplayEnabled = this.StatisticDisplayEnabled,
+                StatisticsEnabled = this.StatisticsEnabled,
+                ThresholdMax = this.ThresholdMax,
+                ThresholdMid = this.ThresholdMid,
+                ThresholdMin = this.ThresholdMin,
+                PulseSetupB = this.PulseSetupB,
+                DelaySetupA = this.DelaySetupA,
+                DelaySetupB = this.DelaySetupB,
+                CounterEnabled = this.CounterEnabled
+            };
+        }
+
+        #endregion
+
+        #region Static Available Parameters
 
         /// <summary>
         /// Get all available measurement parameters with their descriptions
-        /// Based on Rigol DS1000Z-E 37 automatic measurement parameters
         /// </summary>
+        /// <returns>Dictionary of measurement parameters</returns>
         public static Dictionary<string, MeasurementParameter> GetAvailableParameters()
         {
             return new Dictionary<string, MeasurementParameter>
             {
                 // Time Domain Measurements
-                { "PERiod", new MeasurementParameter("PERiod", "Period", "Time", "Period of the waveform") },
-                { "FREQuency", new MeasurementParameter("FREQuency", "Frequency", "Frequency", "Frequency of the waveform") },
-                { "RTIMe", new MeasurementParameter("RTIMe", "Rise Time", "Time", "Rise time (10%-90%)") },
-                { "FTIMe", new MeasurementParameter("FTIMe", "Fall Time", "Time", "Fall time (90%-10%)") },
-                { "PWIDth", new MeasurementParameter("PWIDth", "+Width", "Time", "Positive pulse width") },
-                { "NWIDth", new MeasurementParameter("NWIDth", "-Width", "Time", "Negative pulse width") },
-                { "PDUTy", new MeasurementParameter("PDUTy", "+Duty", "Percentage", "Positive duty cycle") },
-                { "NDUTy", new MeasurementParameter("NDUTy", "-Duty", "Percentage", "Negative duty cycle") },
-                { "PPULses", new MeasurementParameter("PPULses", "+Pulses", "Count", "Positive pulse count") },
-                { "NPULses", new MeasurementParameter("NPULses", "-Pulses", "Count", "Negative pulse count") },
-                { "PEDGes", new MeasurementParameter("PEDGes", "+Edges", "Count", "Positive edge count") },
-                { "NEDGes", new MeasurementParameter("NEDGes", "-Edges", "Count", "Negative edge count") },
-                { "TVMax", new MeasurementParameter("TVMax", "tVmax", "Time", "Time at voltage maximum") },
-                { "TVMin", new MeasurementParameter("TVMin", "tVmin", "Time", "Time at voltage minimum") },
-                { "PRAte", new MeasurementParameter("PRAte", "+Rate", "V/s", "Positive slew rate") },
-                { "NRAte", new MeasurementParameter("NRAte", "-Rate", "V/s", "Negative slew rate") },
-                { "DEL12", new MeasurementParameter("DEL12", "Delay1→2", "Time", "Delay between channels 1 and 2") },
-                { "PHA12", new MeasurementParameter("PHA12", "Phase1→2", "Degrees", "Phase between channels 1 and 2") },
-
-                // Voltage Measurements
+                { "PERiod", new MeasurementParameter("PERiod", "Period", "Time", "Waveform period") },
+                { "FREQuency", new MeasurementParameter("FREQuency", "Frequency", "Frequency", "Waveform frequency") },
+                { "RTIMe", new MeasurementParameter("RTIMe", "Rise Time", "Time", "10%-90% rise time") },
+                { "FTIMe", new MeasurementParameter("FTIMe", "Fall Time", "Time", "90%-10% fall time") },
+                { "PWIDth", new MeasurementParameter("PWIDth", "Positive Width", "Time", "Positive pulse width") },
+                { "NWIDth", new MeasurementParameter("NWIDth", "Negative Width", "Time", "Negative pulse width") },
+                { "PDUTy", new MeasurementParameter("PDUTy", "Positive Duty", "Percentage", "Positive duty cycle") },
+                { "NDUTy", new MeasurementParameter("NDUTy", "Negative Duty", "Percentage", "Negative duty cycle") },
+                { "TVMax", new MeasurementParameter("TVMax", "Time at Vmax", "Time", "Time when maximum voltage occurs") },
+                { "TVMin", new MeasurementParameter("TVMin", "Time at Vmin", "Time", "Time when minimum voltage occurs") },
+                { "PRAte", new MeasurementParameter("PRAte", "Positive Rate", "V/s", "Positive slew rate") },
+                { "NRAte", new MeasurementParameter("NRAte", "Negative Rate", "V/s", "Negative slew rate") },
+                { "DEL12", new MeasurementParameter("DEL12", "Delay 1→2", "Time", "Delay between channels 1 and 2") },
+                { "PHA12", new MeasurementParameter("PHA12", "Phase 1→2", "Degrees", "Phase between channels 1 and 2") },
+                
+                // Pulse and Edge Count Measurements
+                { "PPULses", new MeasurementParameter("PPULses", "Positive Pulses", "Count", "Positive pulse count") },
+                { "NPULses", new MeasurementParameter("NPULses", "Negative Pulses", "Count", "Negative pulse count") },
+                { "PEDGes", new MeasurementParameter("PEDGes", "Positive Edges", "Count", "Positive edge count") },
+                { "NEDGes", new MeasurementParameter("NEDGes", "Negative Edges", "Count", "Negative edge count") },
+                
+                // Voltage Level Measurements
                 { "VMAX", new MeasurementParameter("VMAX", "Vmax", "Voltage", "Maximum voltage") },
                 { "VMIN", new MeasurementParameter("VMIN", "Vmin", "Voltage", "Minimum voltage") },
                 { "VPP", new MeasurementParameter("VPP", "Vpp", "Voltage", "Peak-to-peak voltage") },
-                { "VTOP", new MeasurementParameter("VTOP", "Vtop", "Voltage", "Top voltage (flat top)") },
-                { "VBASe", new MeasurementParameter("VBASe", "Vbase", "Voltage", "Base voltage (flat base)") },
+                { "VTOP", new MeasurementParameter("VTOP", "Vtop", "Voltage", "Flat top voltage") },
+                { "VBASe", new MeasurementParameter("VBASe", "Vbase", "Voltage", "Flat base voltage") },
                 { "VAMP", new MeasurementParameter("VAMP", "Vamp", "Voltage", "Amplitude (Vtop - Vbase)") },
                 { "VUPPer", new MeasurementParameter("VUPPer", "Vupper", "Voltage", "Upper reference level") },
                 { "VMID", new MeasurementParameter("VMID", "Vmid", "Voltage", "Middle reference level") },
@@ -145,6 +253,7 @@ namespace DS1000Z_E_USB_Control.Measurements
         /// <summary>
         /// Get measurement parameters organized by category
         /// </summary>
+        /// <returns>Dictionary of categories with their measurement parameters</returns>
         public static Dictionary<string, List<MeasurementParameter>> GetParametersByCategory()
         {
             var allParams = GetAvailableParameters();
@@ -183,11 +292,12 @@ namespace DS1000Z_E_USB_Control.Measurements
 
         #endregion
 
-        #region Source Channel Options
+        #region Static Options Methods
 
         /// <summary>
         /// Get available source channel options
         /// </summary>
+        /// <returns>List of source channel options</returns>
         public static List<(string value, string display)> GetSourceChannelOptions()
         {
             return new List<(string, string)>
@@ -198,13 +308,10 @@ namespace DS1000Z_E_USB_Control.Measurements
             };
         }
 
-        #endregion
-
-        #region Statistic Mode Options
-
         /// <summary>
         /// Get available statistic mode options
         /// </summary>
+        /// <returns>List of statistic mode options</returns>
         public static List<(string value, string display)> GetStatisticModeOptions()
         {
             return new List<(string, string)>
@@ -216,84 +323,12 @@ namespace DS1000Z_E_USB_Control.Measurements
 
         #endregion
 
-        #region Helper Methods
-
-        /// <summary>
-        /// Create a deep copy of settings
-        /// </summary>
-        public MeasurementSettings Clone()
-        {
-            return new MeasurementSettings
-            {
-                AutoDisplayEnabled = this.AutoDisplayEnabled,
-                AutoMeasureSource = this.AutoMeasureSource,
-                EnabledMeasurements = new List<string>(this.EnabledMeasurements),
-                StatisticMode = this.StatisticMode,
-                StatisticDisplayEnabled = this.StatisticDisplayEnabled,
-                ThresholdMax = this.ThresholdMax,
-                ThresholdMid = this.ThresholdMid,
-                ThresholdMin = this.ThresholdMin,
-                PulseSetupB = this.PulseSetupB,
-                DelaySetupA = this.DelaySetupA,
-                DelaySetupB = this.DelaySetupB,
-                CounterEnabled = this.CounterEnabled
-            };
-        }
-
-        /// <summary>
-        /// Get a string representation of enabled measurements
-        /// </summary>
-        public string GetEnabledMeasurementsString()
-        {
-            if (!EnabledMeasurements.Any())
-                return "None";
-
-            var allParams = GetAvailableParameters();
-            var enabledNames = EnabledMeasurements
-                .Where(m => allParams.ContainsKey(m))
-                .Select(m => allParams[m].DisplayName);
-
-            return string.Join(", ", enabledNames);
-        }
-
-        /// <summary>
-        /// Check if a specific measurement is enabled
-        /// </summary>
-        public bool IsMeasurementEnabled(string measurementKey)
-        {
-            return EnabledMeasurements.Contains(measurementKey);
-        }
-
-        /// <summary>
-        /// Enable a measurement
-        /// </summary>
-        public void EnableMeasurement(string measurementKey)
-        {
-            if (!EnabledMeasurements.Contains(measurementKey))
-            {
-                EnabledMeasurements.Add(measurementKey);
-            }
-        }
-
-        /// <summary>
-        /// Disable a measurement
-        /// </summary>
-        public void DisableMeasurement(string measurementKey)
-        {
-            EnabledMeasurements.Remove(measurementKey);
-        }
-
-        /// <summary>
-        /// Clear all enabled measurements
-        /// </summary>
-        public void ClearAllMeasurements()
-        {
-            EnabledMeasurements.Clear();
-        }
+        #region String Representation
 
         /// <summary>
         /// Get display string for settings summary
         /// </summary>
+        /// <returns>Human-readable settings summary</returns>
         public override string ToString()
         {
             return $"Measurements: {EnabledMeasurements.Count} enabled, Source: {AutoMeasureSource}, " +
@@ -304,15 +339,43 @@ namespace DS1000Z_E_USB_Control.Measurements
     }
 
     /// <summary>
-    /// Represents a single measurement parameter
+    /// Represents a single measurement parameter with metadata
     /// </summary>
     public class MeasurementParameter
     {
+        #region Properties
+
+        /// <summary>
+        /// SCPI command key for the measurement
+        /// </summary>
         public string Key { get; set; }
+
+        /// <summary>
+        /// Human-readable display name
+        /// </summary>
         public string DisplayName { get; set; }
+
+        /// <summary>
+        /// Unit of measurement
+        /// </summary>
         public string Unit { get; set; }
+
+        /// <summary>
+        /// Description of what this measurement represents
+        /// </summary>
         public string Description { get; set; }
 
+        #endregion
+
+        #region Constructor
+
+        /// <summary>
+        /// Initialize a new measurement parameter
+        /// </summary>
+        /// <param name="key">SCPI command key</param>
+        /// <param name="displayName">Human-readable name</param>
+        /// <param name="unit">Unit of measurement</param>
+        /// <param name="description">Description</param>
         public MeasurementParameter(string key, string displayName, string unit, string description)
         {
             Key = key;
@@ -321,9 +384,19 @@ namespace DS1000Z_E_USB_Control.Measurements
             Description = description;
         }
 
+        #endregion
+
+        #region String Representation
+
+        /// <summary>
+        /// Get string representation of the parameter
+        /// </summary>
+        /// <returns>Display name with unit</returns>
         public override string ToString()
         {
             return $"{DisplayName} ({Unit})";
         }
+
+        #endregion
     }
 }

@@ -660,7 +660,7 @@ namespace Rigol_DS1000Z_E_Control
                     };
 
                     // Update connection status
-                    _measurementWindow.UpdateConnectionStatus(isConnected);
+                  //
 
                     // Handle window closed event
                     _measurementWindow.Closed += (s, e) => _measurementWindow = null;

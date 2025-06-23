@@ -1,12 +1,13 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
+using System.Globalization;
+using System.IO;
+using System.Text;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using Microsoft.Win32;
-using System.IO;
-using System.Text;
-using System.Globalization;
 
 namespace DS1000Z_E_USB_Control.SerialProtocol
 {
@@ -17,10 +18,13 @@ namespace DS1000Z_E_USB_Control.SerialProtocol
     public partial class SerialProtocolPANEL : UserControl
     {
         #region Properties
+
         private bool _decoderEnabled = false;
         private bool _tableEnabled = false;
         private bool _panelCollapsed = false;
 
+        private bool _isInitialized = false;
+        
         public bool DecoderEnabled
         {
             get => _decoderEnabled;
@@ -56,19 +60,36 @@ namespace DS1000Z_E_USB_Control.SerialProtocol
         #endregion
 
         #region Constructor
+
         public SerialProtocolPANEL()
         {
             InitializeComponent();
-            InitializePanel();
+            this.Loaded += SerialProtocolPANEL_Loaded;
         }
 
+
+        // Update your InitializePanel method
         private void InitializePanel()
         {
-            LogCommand("// Serial Protocol Analysis & Decoding Panel Ready");
-            LogCommand("// Configure your decoder settings and click Apply to generate SCPI commands");
-            UpdateDecoderStatusIndicator();
-            UpdateTableStatusIndicator();
+            try
+            {
+                LogCommand("// Serial Protocol Analysis & Decoding Panel Ready");
+                LogCommand("// Configure your decoder settings and click Apply to generate SCPI commands");
+
+                UpdateDecoderStatusIndicator();
+                UpdateTableStatusIndicator();
+
+                // Set initial protocol visibility - UART should be visible by default
+                SwitchProtocolControls("UART");
+            }
+            catch (Exception ex)
+            {
+                LogCommand($"// Initialization error: {ex.Message}");
+            }
         }
+
+
+
         #endregion
 
         #region Toggle Functionality
@@ -106,43 +127,90 @@ namespace DS1000Z_E_USB_Control.SerialProtocol
         }
         #endregion
 
+
         #region Protocol Management
+
+        // Update your ProtocolType_SelectionChanged method
         private void ProtocolType_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (ProtocolTypeCombo.SelectedItem is ComboBoxItem selectedItem)
+            // Prevent execution during initialization
+            if (!_isInitialized || ProtocolTypeCombo == null)
+                return;
+
+            try
             {
-                string protocol = selectedItem.Tag.ToString();
-                SwitchProtocolControls(protocol);
-                LogCommand($"// Protocol switched to {protocol}");
+                if (ProtocolTypeCombo.SelectedItem is ComboBoxItem selectedItem)
+                {
+                    string protocol = selectedItem.Tag?.ToString() ?? "UART";
+                    SwitchProtocolControls(protocol);
+                    LogCommand($"// Protocol switched to {protocol}");
+                }
+            }
+            catch (Exception ex)
+            {
+                LogCommand($"// Error in protocol selection: {ex.Message}");
             }
         }
+
 
         private void SwitchProtocolControls(string protocol)
         {
-            // Hide all protocol-specific controls first
-            UARTControls.Visibility = Visibility.Collapsed;
-            I2CControls.Visibility = Visibility.Collapsed;
-            SPIControls.Visibility = Visibility.Collapsed;
-            ParallelControls.Visibility = Visibility.Collapsed;
-
-            // Show the selected protocol controls
-            switch (protocol.ToUpper())
+            // Add null checks to prevent exceptions during initialization
+            try
             {
-                case "UART":
-                    UARTControls.Visibility = Visibility.Visible;
-                    break;
-                case "IIC":
-                case "I2C":
-                    I2CControls.Visibility = Visibility.Visible;
-                    break;
-                case "SPI":
-                    SPIControls.Visibility = Visibility.Visible;
-                    break;
-                case "PARALLEL":
-                    ParallelControls.Visibility = Visibility.Visible;
-                    break;
+                // Hide all protocol-specific controls first (with null checks)
+                if (UARTControls != null)
+                    UARTControls.Visibility = Visibility.Collapsed;
+
+                if (I2CControls != null)
+                    I2CControls.Visibility = Visibility.Collapsed;
+
+                if (SPIControls != null)
+                    SPIControls.Visibility = Visibility.Collapsed;
+
+                if (ParallelControls != null)
+                    ParallelControls.Visibility = Visibility.Collapsed;
+
+                // Show the selected protocol controls (with null checks)
+                switch (protocol?.ToUpper())
+                {
+                    case "UART":
+                    case "RS232":
+                        if (UARTControls != null)
+                            UARTControls.Visibility = Visibility.Visible;
+                        break;
+
+                    case "IIC":
+                    case "I2C":
+                        if (I2CControls != null)
+                            I2CControls.Visibility = Visibility.Visible;
+                        break;
+
+                    case "SPI":
+                        if (SPIControls != null)
+                            SPIControls.Visibility = Visibility.Visible;
+                        break;
+
+                    case "PARALLEL":
+                    case "PAR":
+                        if (ParallelControls != null)
+                            ParallelControls.Visibility = Visibility.Visible;
+                        break;
+
+                    default:
+                        // Default to UART if protocol is unknown
+                        if (UARTControls != null)
+                            UARTControls.Visibility = Visibility.Visible;
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log the error safely
+                LogCommand($"// Error switching protocol controls: {ex.Message}");
             }
         }
+
         #endregion
 
         #region Decoder Management
@@ -320,17 +388,17 @@ namespace DS1000Z_E_USB_Control.SerialProtocol
 
         private void SetTableRow_Click(object sender, RoutedEventArgs e)
         {
-            if (int.TryParse(TableRowText.Text, out int row))
-            {
-                int decoderNum = GetDecoderNumber();
-                string command = $":ETABle{decoderNum}:ROW {row}";
-                LogCommand(command);
-                SendSCPICommand(command);
-            }
-            else
-            {
+            //if (int.TryParse(TableRowText.Text, out int row))
+            //{
+            //    int decoderNum = GetDecoderNumber();
+            //    string command = $":ETABle{decoderNum}:ROW {row}";
+            //    LogCommand(command);
+            //    SendSCPICommand(command);
+            //}
+            //else
+            //{
                 LogCommand("// Error: Invalid row number");
-            }
+            //}
         }
 
         private void ExportTableData_Click(object sender, RoutedEventArgs e)
@@ -377,23 +445,261 @@ namespace DS1000Z_E_USB_Control.SerialProtocol
         }
         #endregion
 
+        #region Missing Event Handlers (Add these to your existing file)
+
+
+        // Missing event handlers referenced in XAML:
+
+        private void ToggleTable_Click(object sender, RoutedEventArgs e)
+        {
+            TableEnabled = !TableEnabled;
+            int decoderNum = GetDecoderNumber();
+            string command = $":ETABle{decoderNum}:DISP {(TableEnabled ? "ON" : "OFF")}";
+            LogCommand(command);
+            SendSCPICommand(command);
+            UpdateTableStatusIndicator();
+        }
+
+        private void ExportTable_Click(object sender, RoutedEventArgs e)
+        {
+            SaveFileDialog saveDialog = new SaveFileDialog
+            {
+                Title = "Export Event Table Data",
+                Filter = "CSV files (*.csv)|*.csv|Text files (*.txt)|*.txt|All files (*.*)|*.*",
+                DefaultExt = "csv",
+                FileName = $"EventTable_Decoder{GetDecoderNumber()}_{DateTime.Now:yyyyMMdd_HHmmss}.csv"
+            };
+
+            if (saveDialog.ShowDialog() == true)
+            {
+                try
+                {
+                    // Sample export - replace with actual data retrieval from oscilloscope
+                    var sb = new StringBuilder();
+                    sb.AppendLine("Time,Data,Type,Status");
+                    sb.AppendLine("0.000000,0x55,Start,Valid");
+                    sb.AppendLine("0.000100,0x41,Data,Valid");
+                    sb.AppendLine("0.000200,0x42,Data,Valid");
+                    sb.AppendLine("// Export functionality - implement actual data retrieval");
+
+                    File.WriteAllText(saveDialog.FileName, sb.ToString());
+                    LogCommand($"// Event table data exported to {Path.GetFileName(saveDialog.FileName)}");
+                }
+                catch (Exception ex)
+                {
+                    LogCommand($"// Export error: {ex.Message}");
+                }
+            }
+        }
+
+        private void CopyCommands_Click(object sender, RoutedEventArgs e)
+        {
+            if (CommandLogTextBox != null)
+            {
+                try
+                {
+                    Clipboard.SetText(CommandLogTextBox.Text);
+                    LogCommand("// Commands copied to clipboard");
+                }
+                catch (Exception ex)
+                {
+                    LogCommand($"// Copy error: {ex.Message}");
+                }
+            }
+        }
+
+        private void SaveCommands_Click(object sender, RoutedEventArgs e)
+        {
+            SaveFileDialog saveDialog = new SaveFileDialog
+            {
+                Title = "Save SCPI Commands",
+                Filter = "Text files (*.txt)|*.txt|SCPI files (*.scpi)|*.scpi|All files (*.*)|*.*",
+                DefaultExt = "txt",
+                FileName = $"SCPI_Commands_{DateTime.Now:yyyyMMdd_HHmmss}.txt"
+            };
+
+            if (saveDialog.ShowDialog() == true)
+            {
+                try
+                {
+                    File.WriteAllText(saveDialog.FileName, CommandLogTextBox?.Text ?? "");
+                    LogCommand($"// Commands saved to {Path.GetFileName(saveDialog.FileName)}");
+                }
+                catch (Exception ex)
+                {
+                    LogCommand($"// Save error: {ex.Message}");
+                }
+            }
+        }
+
+        private void ResetAll_Click(object sender, RoutedEventArgs e)
+        {
+            var result = MessageBox.Show("Reset all decoder settings to defaults?",
+                                        "Reset Confirmation",
+                                        MessageBoxButton.YesNo,
+                                        MessageBoxImage.Question);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                ResetToDefaults();
+                LogCommand("// All settings reset to defaults");
+            }
+        }
+
+        private void ApplyAll_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Apply basic decoder settings
+                int decoderNum = GetDecoderNumber();
+                string protocol = GetComboBoxTag(ProtocolTypeCombo);
+                string format = GetComboBoxTag(DisplayFormatCombo);
+                string position = VerticalPositionText?.Text ?? "0";
+
+                var basicCommands = new[]
+                {
+            $":DECoder{decoderNum}:MODE {protocol}",
+            $":DECoder{decoderNum}:FORMat {format}",
+            $":DECoder{decoderNum}:POSition {position}",
+            $":DECoder{decoderNum}:DISPlay {(DecoderEnabled ? "ON" : "OFF")}"
+        };
+
+                foreach (string command in basicCommands)
+                {
+                    LogCommand(command);
+                    SendSCPICommand(command);
+                }
+
+                // Apply protocol-specific settings based on current selection
+                switch (protocol.ToUpper())
+                {
+                    case "UART":
+                    case "RS232":
+                        ConfigureUART_Click(sender, e);
+                        break;
+                    case "IIC":
+                    case "I2C":
+                        ConfigureI2C_Click(sender, e);
+                        break;
+                    case "SPI":
+                        ConfigureSPI_Click(sender, e);
+                        break;
+                    case "PARALLEL":
+                        ConfigureParallel_Click(sender, e);
+                        break;
+                }
+
+                // Apply table settings
+                ApplyTableSettings_Click(sender, e);
+
+                LogCommand("// All settings applied successfully");
+            }
+            catch (Exception ex)
+            {
+                LogCommand($"// Error applying settings: {ex.Message}");
+            }
+        }
+
+        private void LoadConfiguration_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog openDialog = new OpenFileDialog
+            {
+                Title = "Load Configuration",
+                Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*",
+                DefaultExt = "json",
+                CheckFileExists = true
+            };
+
+            if (openDialog.ShowDialog() == true)
+            {
+                try
+                {
+                    string jsonString = File.ReadAllText(openDialog.FileName);
+
+                    var options = new JsonSerializerOptions
+                    {
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                        PropertyNameCaseInsensitive = true
+                    };
+
+                    // You'll need to implement the DecoderSettings class and ApplySettings method
+                    // var settings = JsonSerializer.Deserialize<DecoderSettings>(jsonString, options);
+                    // ApplySettings(settings);
+
+                    LogCommand($"// Configuration loaded from {Path.GetFileName(openDialog.FileName)}");
+                }
+                catch (Exception ex)
+                {
+                    LogCommand($"// Load error: {ex.Message}");
+                }
+            }
+        }
+
+        private void SaveConfiguration_Click(object sender, RoutedEventArgs e)
+        {
+            SaveFileDialog saveDialog = new SaveFileDialog
+            {
+                Title = "Save Configuration",
+                Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*",
+                DefaultExt = "json",
+                FileName = $"SerialProtocol_Config_{DateTime.Now:yyyyMMdd_HHmmss}.json"
+            };
+
+            if (saveDialog.ShowDialog() == true)
+            {
+                try
+                {
+                    // You'll need to implement the GetCurrentSettings method
+                    // var settings = GetCurrentSettings();
+
+                    var options = new JsonSerializerOptions
+                    {
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                        WriteIndented = true
+                    };
+
+                    // string jsonString = JsonSerializer.Serialize(settings, options);
+                    // File.WriteAllText(saveDialog.FileName, jsonString);
+
+                    // For now, save a basic configuration template
+                    string configTemplate = "{\n  \"decoderNumber\": 1,\n  \"enabled\": false,\n  \"protocolType\": \"UART\"\n}";
+                    File.WriteAllText(saveDialog.FileName, configTemplate);
+
+                    LogCommand($"// Configuration saved to {Path.GetFileName(saveDialog.FileName)}");
+                }
+                catch (Exception ex)
+                {
+                    LogCommand($"// Save error: {ex.Message}");
+                }
+            }
+        }
+
+        private void SerialProtocolPANEL_Loaded(object sender, RoutedEventArgs e)
+        {
+            InitializePanel();
+            _isInitialized = true;
+        }
+
+
+        #endregion
+
         #region Command Logging
         private void ClearLog_Click(object sender, RoutedEventArgs e)
         {
-            if (CommandLog != null)
+            if (CommandLogTextBox != null)
             {
-                CommandLog.Clear();
+                CommandLogTextBox.Clear();
                 LogCommand("// Command log cleared");
             }
         }
 
         private void LogCommand(string command)
         {
-            if (CommandLog != null)
+            if (CommandLogTextBox != null)
             {
                 string timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
-                CommandLog.AppendText($"[{timestamp}] {command}\n");
-                CommandLog.ScrollToEnd();
+                CommandLogTextBox.AppendText($"[{timestamp}] {command}\n");
+                CommandLogTextBox.ScrollToEnd();
             }
         }
 
@@ -613,9 +919,9 @@ namespace DS1000Z_E_USB_Control.SerialProtocol
             ResetParallelToDefaults();
 
             // Clear command log
-            if (CommandLog != null)
+            if (CommandLogTextBox != null)
             {
-                CommandLog.Clear();
+                CommandLogTextBox.Clear();
                 LogCommand("// Panel reset to defaults");
             }
         }

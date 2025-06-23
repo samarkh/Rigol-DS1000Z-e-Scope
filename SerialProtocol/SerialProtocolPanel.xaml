@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d" 
-             d:DesignHeight="1200" d:DesignWidth="1200">
+             d:DesignHeight="1500" d:DesignWidth="1200">
 
     <UserControl.Resources>
         <Style x:Key="HeaderButtonStyle" TargetType="Button">
@@ -65,14 +65,14 @@
         </Style>
     </UserControl.Resources>
 
-<!-- Main Container -->
-<Border CornerRadius="10">  <!-- ✅ Background attribute removed -->
-    <Border.Background>
-        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#1976D2" Offset="0"/>
-            <GradientStop Color="#2196F3" Offset="1"/>
-        </LinearGradientBrush>
-    </Border.Background>
+    <!-- Main Container -->
+    <Border CornerRadius="10">
+        <Border.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#1976D2" Offset="0"/>
+                <GradientStop Color="#2196F3" Offset="1"/>
+            </LinearGradientBrush>
+        </Border.Background>
 
         <Grid>
             <Grid.RowDefinitions>
@@ -214,317 +214,329 @@
                                 </GroupBox>
 
                                 <!-- UART Controls -->
-                                <GroupBox x:Name="UARTControls" Header="🔗 UART Configuration" Style="{StaticResource SectionStyle}" Visibility="Visible">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
+                                <StackPanel x:Name="UARTControls" Visibility="Visible">
+                                    <GroupBox Header="🔗 UART Configuration" Style="{StaticResource SectionStyle}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
 
-                                        <Label Grid.Row="0" Grid.Column="0" Content="TX Channel:" Style="{StaticResource LabelStyle}"/>
-                                        <ComboBox x:Name="UARTTxCombo" Grid.Row="0" Grid.Column="1" Style="{StaticResource InputStyle}">
-                                            <ComboBoxItem Content="Channel 1" Tag="CHANnel1" IsSelected="True"/>
-                                            <ComboBoxItem Content="Channel 2" Tag="CHANnel2"/>
-                                            <ComboBoxItem Content="OFF" Tag="OFF"/>
-                                        </ComboBox>
+                                            <Label Grid.Row="0" Grid.Column="0" Content="TX Channel:" Style="{StaticResource LabelStyle}"/>
+                                            <ComboBox x:Name="UARTTxCombo" Grid.Row="0" Grid.Column="1" Style="{StaticResource InputStyle}">
+                                                <ComboBoxItem Content="Channel 1" Tag="CHANnel1" IsSelected="True"/>
+                                                <ComboBoxItem Content="Channel 2" Tag="CHANnel2"/>
+                                                <ComboBoxItem Content="OFF" Tag="OFF"/>
+                                            </ComboBox>
 
-                                        <Label Grid.Row="1" Grid.Column="0" Content="RX Channel:" Style="{StaticResource LabelStyle}"/>
-                                        <ComboBox x:Name="UARTRxCombo" Grid.Row="1" Grid.Column="1" Style="{StaticResource InputStyle}">
-                                            <ComboBoxItem Content="Channel 1" Tag="CHANnel1"/>
-                                            <ComboBoxItem Content="Channel 2" Tag="CHANnel2" IsSelected="True"/>
-                                            <ComboBoxItem Content="OFF" Tag="OFF"/>
-                                        </ComboBox>
+                                            <Label Grid.Row="1" Grid.Column="0" Content="RX Channel:" Style="{StaticResource LabelStyle}"/>
+                                            <ComboBox x:Name="UARTRxCombo" Grid.Row="1" Grid.Column="1" Style="{StaticResource InputStyle}">
+                                                <ComboBoxItem Content="Channel 1" Tag="CHANnel1"/>
+                                                <ComboBoxItem Content="Channel 2" Tag="CHANnel2" IsSelected="True"/>
+                                                <ComboBoxItem Content="OFF" Tag="OFF"/>
+                                            </ComboBox>
 
-                                        <Label Grid.Row="2" Grid.Column="0" Content="Baud Rate:" Style="{StaticResource LabelStyle}"/>
-                                        <ComboBox x:Name="UARTBaudCombo" Grid.Row="2" Grid.Column="1" Style="{StaticResource InputStyle}">
-                                            <ComboBoxItem Content="1200" Tag="1200"/>
-                                            <ComboBoxItem Content="2400" Tag="2400"/>
-                                            <ComboBoxItem Content="4800" Tag="4800"/>
-                                            <ComboBoxItem Content="9600" Tag="9600" IsSelected="True"/>
-                                            <ComboBoxItem Content="19200" Tag="19200"/>
-                                            <ComboBoxItem Content="38400" Tag="38400"/>
-                                            <ComboBoxItem Content="57600" Tag="57600"/>
-                                            <ComboBoxItem Content="115200" Tag="115200"/>
-                                        </ComboBox>
+                                            <Label Grid.Row="2" Grid.Column="0" Content="Baud Rate:" Style="{StaticResource LabelStyle}"/>
+                                            <ComboBox x:Name="UARTBaudCombo" Grid.Row="2" Grid.Column="1" Style="{StaticResource InputStyle}">
+                                                <ComboBoxItem Content="1200" Tag="1200"/>
+                                                <ComboBoxItem Content="2400" Tag="2400"/>
+                                                <ComboBoxItem Content="4800" Tag="4800"/>
+                                                <ComboBoxItem Content="9600" Tag="9600" IsSelected="True"/>
+                                                <ComboBoxItem Content="19200" Tag="19200"/>
+                                                <ComboBoxItem Content="38400" Tag="38400"/>
+                                                <ComboBoxItem Content="57600" Tag="57600"/>
+                                                <ComboBoxItem Content="115200" Tag="115200"/>
+                                            </ComboBox>
 
-                                        <Label Grid.Row="3" Grid.Column="0" Content="Data Width:" Style="{StaticResource LabelStyle}"/>
-                                        <ComboBox x:Name="UARTWidthCombo" Grid.Row="3" Grid.Column="1" Style="{StaticResource InputStyle}">
-                                            <ComboBoxItem Content="5 bits" Tag="5"/>
-                                            <ComboBoxItem Content="6 bits" Tag="6"/>
-                                            <ComboBoxItem Content="7 bits" Tag="7"/>
-                                            <ComboBoxItem Content="8 bits" Tag="8" IsSelected="True"/>
-                                            <ComboBoxItem Content="9 bits" Tag="9"/>
-                                        </ComboBox>
+                                            <Label Grid.Row="3" Grid.Column="0" Content="Data Width:" Style="{StaticResource LabelStyle}"/>
+                                            <ComboBox x:Name="UARTWidthCombo" Grid.Row="3" Grid.Column="1" Style="{StaticResource InputStyle}">
+                                                <ComboBoxItem Content="5" Tag="5"/>
+                                                <ComboBoxItem Content="6" Tag="6"/>
+                                                <ComboBoxItem Content="7" Tag="7"/>
+                                                <ComboBoxItem Content="8" Tag="8" IsSelected="True"/>
+                                                <ComboBoxItem Content="9" Tag="9"/>
+                                            </ComboBox>
 
-                                        <Label Grid.Row="4" Grid.Column="0" Content="Stop Bits:" Style="{StaticResource LabelStyle}"/>
-                                        <ComboBox x:Name="UARTStopCombo" Grid.Row="4" Grid.Column="1" Style="{StaticResource InputStyle}">
-                                            <ComboBoxItem Content="1 bit" Tag="1" IsSelected="True"/>
-                                            <ComboBoxItem Content="2 bits" Tag="2"/>
-                                        </ComboBox>
+                                            <Label Grid.Row="4" Grid.Column="0" Content="Stop Bits:" Style="{StaticResource LabelStyle}"/>
+                                            <ComboBox x:Name="UARTStopCombo" Grid.Row="4" Grid.Column="1" Style="{StaticResource InputStyle}">
+                                                <ComboBoxItem Content="1" Tag="1" IsSelected="True"/>
+                                                <ComboBoxItem Content="1.5" Tag="1.5"/>
+                                                <ComboBoxItem Content="2" Tag="2"/>
+                                            </ComboBox>
 
-                                        <Label Grid.Row="5" Grid.Column="0" Content="Parity:" Style="{StaticResource LabelStyle}"/>
-                                        <ComboBox x:Name="UARTParityCombo" Grid.Row="5" Grid.Column="1" Style="{StaticResource InputStyle}">
-                                            <ComboBoxItem Content="None" Tag="NONE" IsSelected="True"/>
-                                            <ComboBoxItem Content="Even" Tag="EVEN"/>
-                                            <ComboBoxItem Content="Odd" Tag="ODD"/>
-                                        </ComboBox>
+                                            <Label Grid.Row="5" Grid.Column="0" Content="Parity:" Style="{StaticResource LabelStyle}"/>
+                                            <ComboBox x:Name="UARTParityCombo" Grid.Row="5" Grid.Column="1" Style="{StaticResource InputStyle}">
+                                                <ComboBoxItem Content="None" Tag="NONE" IsSelected="True"/>
+                                                <ComboBoxItem Content="Even" Tag="EVEN"/>
+                                                <ComboBoxItem Content="Odd" Tag="ODD"/>
+                                            </ComboBox>
 
-                                        <Label Grid.Row="6" Grid.Column="0" Content="Polarity:" Style="{StaticResource LabelStyle}"/>
-                                        <ComboBox x:Name="UARTPolarityCombo" Grid.Row="6" Grid.Column="1" Style="{StaticResource InputStyle}">
-                                            <ComboBoxItem Content="Normal" Tag="POS" IsSelected="True"/>
-                                            <ComboBoxItem Content="Inverted" Tag="NEG"/>
-                                        </ComboBox>
+                                            <Label Grid.Row="6" Grid.Column="0" Content="Polarity:" Style="{StaticResource LabelStyle}"/>
+                                            <ComboBox x:Name="UARTPolarityCombo" Grid.Row="6" Grid.Column="1" Style="{StaticResource InputStyle}">
+                                                <ComboBoxItem Content="Positive" Tag="POS" IsSelected="True"/>
+                                                <ComboBoxItem Content="Negative" Tag="NEG"/>
+                                            </ComboBox>
 
-                                        <Label Grid.Row="7" Grid.Column="0" Content="Endian:" Style="{StaticResource LabelStyle}"/>
-                                        <ComboBox x:Name="UARTEndianCombo" Grid.Row="7" Grid.Column="1" Style="{StaticResource InputStyle}">
-                                            <ComboBoxItem Content="LSB First" Tag="LSB" IsSelected="True"/>
-                                            <ComboBoxItem Content="MSB First" Tag="MSB"/>
-                                        </ComboBox>
+                                            <Label Grid.Row="7" Grid.Column="0" Content="Endian:" Style="{StaticResource LabelStyle}"/>
+                                            <ComboBox x:Name="UARTEndianCombo" Grid.Row="7" Grid.Column="1" Style="{StaticResource InputStyle}">
+                                                <ComboBoxItem Content="LSB First" Tag="LSB" IsSelected="True"/>
+                                                <ComboBoxItem Content="MSB First" Tag="MSB"/>
+                                            </ComboBox>
 
-                                        <Button Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="2"
-                                                Content="✅ Configure UART Decoder"
-                                                Style="{StaticResource ConfigButtonStyle}"
-                                                Click="ConfigureUART_Click" Margin="0,10,0,0"/>
-                                    </Grid>
-                                </GroupBox>
+                                            <Button Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="2"
+                                                    Content="✅ Configure UART Decoder"
+                                                    Style="{StaticResource ConfigButtonStyle}"
+                                                    Click="ConfigureUART_Click" Margin="0,10,0,0"/>
+                                        </Grid>
+                                    </GroupBox>
+                                </StackPanel>
 
                                 <!-- I2C Controls -->
-                                <GroupBox x:Name="I2CControls" Header="📡 I²C Configuration" Style="{StaticResource SectionStyle}" Visibility="Collapsed">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
+                                <StackPanel x:Name="I2CControls" Visibility="Collapsed">
+                                    <GroupBox Header="🔗 I²C Configuration" Style="{StaticResource SectionStyle}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
 
-                                        <Label Grid.Row="0" Grid.Column="0" Content="Clock Channel:" Style="{StaticResource LabelStyle}"/>
-                                        <ComboBox x:Name="I2CClkCombo" Grid.Row="0" Grid.Column="1" Style="{StaticResource InputStyle}">
-                                            <ComboBoxItem Content="Channel 1" Tag="CHANnel1" IsSelected="True"/>
-                                            <ComboBoxItem Content="Channel 2" Tag="CHANnel2"/>
-                                        </ComboBox>
+                                            <Label Grid.Row="0" Grid.Column="0" Content="Clock Channel:" Style="{StaticResource LabelStyle}"/>
+                                            <ComboBox x:Name="I2CClkCombo" Grid.Row="0" Grid.Column="1" Style="{StaticResource InputStyle}">
+                                                <ComboBoxItem Content="Channel 1" Tag="CHANnel1" IsSelected="True"/>
+                                                <ComboBoxItem Content="Channel 2" Tag="CHANnel2"/>
+                                            </ComboBox>
 
-                                        <Label Grid.Row="1" Grid.Column="0" Content="Data Channel:" Style="{StaticResource LabelStyle}"/>
-                                        <ComboBox x:Name="I2CDataCombo" Grid.Row="1" Grid.Column="1" Style="{StaticResource InputStyle}">
-                                            <ComboBoxItem Content="Channel 1" Tag="CHANnel1"/>
-                                            <ComboBoxItem Content="Channel 2" Tag="CHANnel2" IsSelected="True"/>
-                                        </ComboBox>
+                                            <Label Grid.Row="1" Grid.Column="0" Content="Data Channel:" Style="{StaticResource LabelStyle}"/>
+                                            <ComboBox x:Name="I2CDataCombo" Grid.Row="1" Grid.Column="1" Style="{StaticResource InputStyle}">
+                                                <ComboBoxItem Content="Channel 1" Tag="CHANnel1"/>
+                                                <ComboBoxItem Content="Channel 2" Tag="CHANnel2" IsSelected="True"/>
+                                            </ComboBox>
 
-                                        <Label Grid.Row="2" Grid.Column="0" Content="Address Type:" Style="{StaticResource LabelStyle}"/>
-                                        <ComboBox x:Name="I2CAddressCombo" Grid.Row="2" Grid.Column="1" Style="{StaticResource InputStyle}">
-                                            <ComboBoxItem Content="7-bit" Tag="ADDR7" IsSelected="True"/>
-                                            <ComboBoxItem Content="8-bit" Tag="ADDR8"/>
-                                            <ComboBoxItem Content="10-bit" Tag="ADDR10"/>
-                                        </ComboBox>
+                                            <Label Grid.Row="2" Grid.Column="0" Content="Address Mode:" Style="{StaticResource LabelStyle}"/>
+                                            <ComboBox x:Name="I2CAddressCombo" Grid.Row="2" Grid.Column="1" Style="{StaticResource InputStyle}">
+                                                <ComboBoxItem Content="7-bit" Tag="ADDR7" IsSelected="True"/>
+                                                <ComboBoxItem Content="10-bit" Tag="ADDR10"/>
+                                            </ComboBox>
 
-                                        <Button Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2"
-                                                Content="✅ Configure I²C Decoder"
-                                                Style="{StaticResource ConfigButtonStyle}"
-                                                Click="ConfigureI2C_Click" Margin="0,10,0,0"/>
-                                    </Grid>
-                                </GroupBox>
+                                            <Button Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2"
+                                                    Content="✅ Configure I²C Decoder"
+                                                    Style="{StaticResource ConfigButtonStyle}"
+                                                    Click="ConfigureI2C_Click" Margin="0,10,0,0"/>
+                                        </Grid>
+                                    </GroupBox>
+                                </StackPanel>
 
                                 <!-- SPI Controls -->
-                                <GroupBox x:Name="SPIControls" Header="🔄 SPI Configuration" Style="{StaticResource SectionStyle}" Visibility="Collapsed">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
+                                <StackPanel x:Name="SPIControls" Visibility="Collapsed">
+                                    <GroupBox Header="🔄 SPI Configuration" Style="{StaticResource SectionStyle}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
 
-                                        <Label Grid.Row="0" Grid.Column="0" Content="Clock Channel:" Style="{StaticResource LabelStyle}"/>
-                                        <ComboBox x:Name="SPIClkCombo" Grid.Row="0" Grid.Column="1" Style="{StaticResource InputStyle}">
-                                            <ComboBoxItem Content="Channel 1" Tag="CHANnel1" IsSelected="True"/>
-                                            <ComboBoxItem Content="Channel 2" Tag="CHANnel2"/>
-                                        </ComboBox>
+                                            <Label Grid.Row="0" Grid.Column="0" Content="Clock Channel:" Style="{StaticResource LabelStyle}"/>
+                                            <ComboBox x:Name="SPIClkCombo" Grid.Row="0" Grid.Column="1" Style="{StaticResource InputStyle}">
+                                                <ComboBoxItem Content="Channel 1" Tag="CHANnel1" IsSelected="True"/>
+                                                <ComboBoxItem Content="Channel 2" Tag="CHANnel2"/>
+                                            </ComboBox>
 
-                                        <Label Grid.Row="1" Grid.Column="0" Content="MISO Channel:" Style="{StaticResource LabelStyle}"/>
-                                        <ComboBox x:Name="SPIMisoCombo" Grid.Row="1" Grid.Column="1" Style="{StaticResource InputStyle}">
-                                            <ComboBoxItem Content="Channel 1" Tag="CHANnel1"/>
-                                            <ComboBoxItem Content="Channel 2" Tag="CHANnel2" IsSelected="True"/>
-                                            <ComboBoxItem Content="OFF" Tag="OFF"/>
-                                        </ComboBox>
+                                            <Label Grid.Row="1" Grid.Column="0" Content="MISO Channel:" Style="{StaticResource LabelStyle}"/>
+                                            <ComboBox x:Name="SPIMisoCombo" Grid.Row="1" Grid.Column="1" Style="{StaticResource InputStyle}">
+                                                <ComboBoxItem Content="Channel 1" Tag="CHANnel1"/>
+                                                <ComboBoxItem Content="Channel 2" Tag="CHANnel2" IsSelected="True"/>
+                                                <ComboBoxItem Content="OFF" Tag="OFF"/>
+                                            </ComboBox>
 
-                                        <Label Grid.Row="2" Grid.Column="0" Content="MOSI Channel:" Style="{StaticResource LabelStyle}"/>
-                                        <ComboBox x:Name="SPIMosiCombo" Grid.Row="2" Grid.Column="1" Style="{StaticResource InputStyle}">
-                                            <ComboBoxItem Content="Channel 1" Tag="CHANnel1" IsSelected="True"/>
-                                            <ComboBoxItem Content="Channel 2" Tag="CHANnel2"/>
-                                            <ComboBoxItem Content="OFF" Tag="OFF"/>
-                                        </ComboBox>
+                                            <Label Grid.Row="2" Grid.Column="0" Content="MOSI Channel:" Style="{StaticResource LabelStyle}"/>
+                                            <ComboBox x:Name="SPIMosiCombo" Grid.Row="2" Grid.Column="1" Style="{StaticResource InputStyle}">
+                                                <ComboBoxItem Content="Channel 1" Tag="CHANnel1" IsSelected="True"/>
+                                                <ComboBoxItem Content="Channel 2" Tag="CHANnel2"/>
+                                                <ComboBoxItem Content="OFF" Tag="OFF"/>
+                                            </ComboBox>
 
-                                        <Label Grid.Row="3" Grid.Column="0" Content="CS Channel:" Style="{StaticResource LabelStyle}"/>
-                                        <ComboBox x:Name="SPICsCombo" Grid.Row="3" Grid.Column="1" Style="{StaticResource InputStyle}">
-                                            <ComboBoxItem Content="Channel 1" Tag="CHANnel1" IsSelected="True"/>
-                                            <ComboBoxItem Content="Channel 2" Tag="CHANnel2"/>
-                                        </ComboBox>
+                                            <Label Grid.Row="3" Grid.Column="0" Content="CS Channel:" Style="{StaticResource LabelStyle}"/>
+                                            <ComboBox x:Name="SPICsCombo" Grid.Row="3" Grid.Column="1" Style="{StaticResource InputStyle}">
+                                                <ComboBoxItem Content="Channel 1" Tag="CHANnel1"/>
+                                                <ComboBoxItem Content="Channel 2" Tag="CHANnel2"/>
+                                                <ComboBoxItem Content="OFF" Tag="OFF" IsSelected="True"/>
+                                            </ComboBox>
 
-                                        <Label Grid.Row="4" Grid.Column="0" Content="Data Width:" Style="{StaticResource LabelStyle}"/>
-                                        <TextBox x:Name="SPIWidthText" Grid.Row="4" Grid.Column="1" Text="8" Style="{StaticResource InputStyle}"/>
+                                            <Label Grid.Row="4" Grid.Column="0" Content="Data Width:" Style="{StaticResource LabelStyle}"/>
+                                            <TextBox x:Name="SPIWidthText" Grid.Row="4" Grid.Column="1" Text="8" Style="{StaticResource InputStyle}"/>
 
-                                        <Label Grid.Row="5" Grid.Column="0" Content="Clock Polarity:" Style="{StaticResource LabelStyle}"/>
-                                        <ComboBox x:Name="SPIPolarityCombo" Grid.Row="5" Grid.Column="1" Style="{StaticResource InputStyle}">
-                                            <ComboBoxItem Content="Positive" Tag="POSitive" IsSelected="True"/>
-                                            <ComboBoxItem Content="Negative" Tag="NEGative"/>
-                                        </ComboBox>
+                                            <Label Grid.Row="5" Grid.Column="0" Content="Clock Polarity:" Style="{StaticResource LabelStyle}"/>
+                                            <ComboBox x:Name="SPIPolarityCombo" Grid.Row="5" Grid.Column="1" Style="{StaticResource InputStyle}">
+                                                <ComboBoxItem Content="Positive" Tag="POSitive" IsSelected="True"/>
+                                                <ComboBoxItem Content="Negative" Tag="NEGative"/>
+                                            </ComboBox>
 
-                                        <Label Grid.Row="6" Grid.Column="0" Content="Clock Edge:" Style="{StaticResource LabelStyle}"/>
-                                        <ComboBox x:Name="SPIEdgeCombo" Grid.Row="6" Grid.Column="1" Style="{StaticResource InputStyle}">
-                                            <ComboBoxItem Content="Rising" Tag="POSitive" IsSelected="True"/>
-                                            <ComboBoxItem Content="Falling" Tag="NEGative"/>
-                                        </ComboBox>
+                                            <Label Grid.Row="6" Grid.Column="0" Content="Clock Edge:" Style="{StaticResource LabelStyle}"/>
+                                            <ComboBox x:Name="SPIEdgeCombo" Grid.Row="6" Grid.Column="1" Style="{StaticResource InputStyle}">
+                                                <ComboBoxItem Content="Rising" Tag="POSitive" IsSelected="True"/>
+                                                <ComboBoxItem Content="Falling" Tag="NEGative"/>
+                                            </ComboBox>
 
-                                        <Label Grid.Row="7" Grid.Column="0" Content="Endian:" Style="{StaticResource LabelStyle}"/>
-                                        <ComboBox x:Name="SPIEndianCombo" Grid.Row="7" Grid.Column="1" Style="{StaticResource InputStyle}">
-                                            <ComboBoxItem Content="LSB First" Tag="LSB" IsSelected="True"/>
-                                            <ComboBoxItem Content="MSB First" Tag="MSB"/>
-                                        </ComboBox>
+                                            <Label Grid.Row="7" Grid.Column="0" Content="Endian:" Style="{StaticResource LabelStyle}"/>
+                                            <ComboBox x:Name="SPIEndianCombo" Grid.Row="7" Grid.Column="1" Style="{StaticResource InputStyle}">
+                                                <ComboBoxItem Content="LSB First" Tag="LSB" IsSelected="True"/>
+                                                <ComboBoxItem Content="MSB First" Tag="MSB"/>
+                                            </ComboBox>
 
-                                        <Button Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="2"
-                                                Content="✅ Configure SPI Decoder"
-                                                Style="{StaticResource ConfigButtonStyle}"
-                                                Click="ConfigureSPI_Click" Margin="0,10,0,0"/>
-                                    </Grid>
-                                </GroupBox>
+                                            <Button Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="2"
+                                                    Content="✅ Configure SPI Decoder"
+                                                    Style="{StaticResource ConfigButtonStyle}"
+                                                    Click="ConfigureSPI_Click" Margin="0,10,0,0"/>
+                                        </Grid>
+                                    </GroupBox>
+                                </StackPanel>
 
                                 <!-- Parallel Controls -->
-                                <GroupBox x:Name="ParallelControls" Header="📊 Parallel Configuration" Style="{StaticResource SectionStyle}" Visibility="Collapsed">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
+                                <StackPanel x:Name="ParallelControls" Visibility="Collapsed">
+                                    <GroupBox Header="📊 Parallel Configuration" Style="{StaticResource SectionStyle}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
 
-                                        <Label Grid.Row="0" Grid.Column="0" Content="Clock Channel:" Style="{StaticResource LabelStyle}"/>
-                                        <ComboBox x:Name="ParallelClkCombo" Grid.Row="0" Grid.Column="1" Style="{StaticResource InputStyle}">
-                                            <ComboBoxItem Content="Channel 1" Tag="CHANnel1" IsSelected="True"/>
-                                            <ComboBoxItem Content="Channel 2" Tag="CHANnel2"/>
-                                        </ComboBox>
+                                            <Label Grid.Row="0" Grid.Column="0" Content="Clock Channel:" Style="{StaticResource LabelStyle}"/>
+                                            <ComboBox x:Name="ParallelClkCombo" Grid.Row="0" Grid.Column="1" Style="{StaticResource InputStyle}">
+                                                <ComboBoxItem Content="Channel 1" Tag="CHANnel1" IsSelected="True"/>
+                                                <ComboBoxItem Content="Channel 2" Tag="CHANnel2"/>
+                                                <ComboBoxItem Content="OFF" Tag="OFF"/>
+                                            </ComboBox>
 
-                                        <Label Grid.Row="1" Grid.Column="0" Content="Clock Edge:" Style="{StaticResource LabelStyle}"/>
-                                        <ComboBox x:Name="ParallelEdgeCombo" Grid.Row="1" Grid.Column="1" Style="{StaticResource InputStyle}">
-                                            <ComboBoxItem Content="Rising" Tag="POSitive" IsSelected="True"/>
-                                            <ComboBoxItem Content="Falling" Tag="NEGative"/>
-                                        </ComboBox>
+                                            <Label Grid.Row="1" Grid.Column="0" Content="Clock Edge:" Style="{StaticResource LabelStyle}"/>
+                                            <ComboBox x:Name="ParallelEdgeCombo" Grid.Row="1" Grid.Column="1" Style="{StaticResource InputStyle}">
+                                                <ComboBoxItem Content="Rising" Tag="POSitive" IsSelected="True"/>
+                                                <ComboBoxItem Content="Falling" Tag="NEGative"/>
+                                                <ComboBoxItem Content="Both" Tag="BOTH"/>
+                                            </ComboBox>
 
-                                        <Label Grid.Row="2" Grid.Column="0" Content="Data Width:" Style="{StaticResource LabelStyle}"/>
-                                        <TextBox x:Name="ParallelWidthText" Grid.Row="2" Grid.Column="1" Text="8" Style="{StaticResource InputStyle}"/>
+                                            <Label Grid.Row="2" Grid.Column="0" Content="Data Width:" Style="{StaticResource LabelStyle}"/>
+                                            <TextBox x:Name="ParallelWidthText" Grid.Row="2" Grid.Column="1" Text="8" Style="{StaticResource InputStyle}"/>
 
-                                        <Button Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2"
-                                                Content="✅ Configure Parallel Decoder"
-                                                Style="{StaticResource ConfigButtonStyle}"
-                                                Click="ConfigureParallel_Click" Margin="0,10,0,0"/>
-                                    </Grid>
-                                </GroupBox>
+                                            <Button Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2"
+                                                    Content="✅ Configure Parallel Decoder"
+                                                    Style="{StaticResource ConfigButtonStyle}"
+                                                    Click="ConfigureParallel_Click" Margin="0,10,0,0"/>
+                                        </Grid>
+                                    </GroupBox>
+                                </StackPanel>
                             </StackPanel>
                         </StackPanel>
                     </GroupBox>
 
-                    <!-- Event Table Section -->
+                    <!-- Event Table Configuration -->
                     <GroupBox Grid.Column="1" Grid.Row="0" 
-                              Header="📋 Event Table Configuration"
+                              Header="📊 Event Table Configuration"
                               Style="{StaticResource SectionStyle}">
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-
-                            <StackPanel Grid.Row="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,10">
-                                <Ellipse x:Name="TableStatusLight" Width="12" Height="12" Fill="Red" Margin="5,0"/>
-                                <Button Content="Toggle Event Table" Style="{StaticResource ConfigButtonStyle}" Click="ToggleEventTable_Click"/>
-                            </StackPanel>
-
-                            <Grid Grid.Row="1">
+                        <StackPanel>
+                            <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
+                                
                                 <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
 
-                                <Label Grid.Row="0" Grid.Column="0" Content="Format:" Style="{StaticResource LabelStyle}"/>
-                                <ComboBox x:Name="TableFormatCombo" Grid.Row="0" Grid.Column="1" Style="{StaticResource InputStyle}">
+                                <Label Grid.Row="0" Grid.Column="0" Content="Table Status:" Style="{StaticResource LabelStyle}"/>
+                                <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Ellipse x:Name="TableStatusLight" Width="12" Height="12" Fill="Red" Margin="5,0"/>
+                                    <Button Content="Toggle Table" Style="{StaticResource ConfigButtonStyle}" Click="ToggleTable_Click"/>
+                                </StackPanel>
+
+                                <Label Grid.Row="1" Grid.Column="0" Content="Format:" Style="{StaticResource LabelStyle}"/>
+                                <ComboBox x:Name="TableFormatCombo" Grid.Row="1" Grid.Column="1" Style="{StaticResource InputStyle}">
                                     <ComboBoxItem Content="Hexadecimal" Tag="HEX" IsSelected="True"/>
                                     <ComboBoxItem Content="Decimal" Tag="DEC"/>
                                     <ComboBoxItem Content="Binary" Tag="BIN"/>
                                     <ComboBoxItem Content="ASCII" Tag="ASC"/>
                                 </ComboBox>
 
-                                <Label Grid.Row="1" Grid.Column="0" Content="View:" Style="{StaticResource LabelStyle}"/>
-                                <ComboBox x:Name="TableViewCombo" Grid.Row="1" Grid.Column="1" Style="{StaticResource InputStyle}">
+                                <Label Grid.Row="2" Grid.Column="0" Content="View:" Style="{StaticResource LabelStyle}"/>
+                                <ComboBox x:Name="TableViewCombo" Grid.Row="2" Grid.Column="1" Style="{StaticResource InputStyle}">
                                     <ComboBoxItem Content="Packet" Tag="PACKet" IsSelected="True"/>
                                     <ComboBoxItem Content="Payload" Tag="PAYLoad"/>
                                 </ComboBox>
 
-                                <Label Grid.Row="0" Grid.Column="2" Content="Column:" Style="{StaticResource LabelStyle}"/>
-                                <ComboBox x:Name="TableColumnCombo" Grid.Row="0" Grid.Column="3" Style="{StaticResource InputStyle}">
+                                <Label Grid.Row="1" Grid.Column="2" Content="Column:" Style="{StaticResource LabelStyle}"/>
+                                <ComboBox x:Name="TableColumnCombo" Grid.Row="1" Grid.Column="3" Style="{StaticResource InputStyle}">
                                     <ComboBoxItem Content="Time" Tag="TIME" IsSelected="True"/>
                                     <ComboBoxItem Content="Data" Tag="DATA"/>
                                     <ComboBoxItem Content="MISO" Tag="MISO"/>
                                     <ComboBoxItem Content="MOSI" Tag="MOSI"/>
                                 </ComboBox>
 
-                                <Label Grid.Row="1" Grid.Column="2" Content="Sort Order:" Style="{StaticResource LabelStyle}"/>
-                                <ComboBox x:Name="TableSortCombo" Grid.Row="1" Grid.Column="3" Style="{StaticResource InputStyle}">
+                                <Label Grid.Row="2" Grid.Column="2" Content="Sort Order:" Style="{StaticResource LabelStyle}"/>
+                                <ComboBox x:Name="TableSortCombo" Grid.Row="2" Grid.Column="3" Style="{StaticResource InputStyle}">
                                     <ComboBoxItem Content="Ascending" Tag="ASCend" IsSelected="True"/>
                                     <ComboBoxItem Content="Descending" Tag="DESCend"/>
                                 </ComboBox>
 
-                                <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,10,0,0">
-                                    <Label Content="Row:" Style="{StaticResource LabelStyle}" Margin="0"/>
-                                    <TextBox x:Name="TableRowText" Text="1" Style="{StaticResource InputStyle}" Width="60"/>
-                                    <Button Content="Go" Style="{StaticResource ConfigButtonStyle}" Click="SetTableRow_Click"/>
+                                <StackPanel Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,10,0,0">
+                                    <Label Content="Export Table:" Style="{StaticResource LabelStyle}"/>
+                                    <Button Content="💾 Export to CSV" Style="{StaticResource ConfigButtonStyle}" Click="ExportTable_Click"/>
                                 </StackPanel>
 
-                                <StackPanel Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,10,0,0">
-                                    <Button Content="📤 Export" Style="{StaticResource ConfigButtonStyle}" Click="ExportTableData_Click" Margin="0,0,5,0"/>
-                                    <Button Content="✅ Apply All" Style="{StaticResource ConfigButtonStyle}" Click="ApplyTableSettings_Click"/>
-                                </StackPanel>
+                                <Button Grid.Row="4" Grid.Column="2" Grid.ColumnSpan="2"
+                                        Content="✅ Apply Table Settings"
+                                        Style="{StaticResource ConfigButtonStyle}"
+                                        Click="ApplyTableSettings_Click" Margin="0,10,0,0"/>
                             </Grid>
-                        </Grid>
+                        </StackPanel>
                     </GroupBox>
 
-                    <!-- Command Log Section -->
-                    <GroupBox Grid.Column="0" Grid.Row="2" Grid.ColumnSpan="2"
-                              Header="💻 SCPI Command Log"
+                    <!-- SCPI Commands Output -->
+                    <GroupBox Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="2"
+                              Header="📋 Generated SCPI Commands"
                               Style="{StaticResource SectionStyle}">
                         <Grid>
                             <Grid.RowDefinitions>
@@ -532,26 +544,36 @@
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
-                            <TextBox x:Name="CommandLog"
-                                     Grid.Row="0"
-                                     Text="Ready for decoder commands..."
-                                     Background="#1E1E1E"
-                                     Foreground="LimeGreen"
-                                     FontFamily="Consolas"
-                                     FontSize="11"
-                                     Height="200"
-                                     IsReadOnly="True"
-                                     VerticalScrollBarVisibility="Auto"
-                                     HorizontalScrollBarVisibility="Auto"
-                                     TextWrapping="NoWrap"/>
+                            <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" Height="200">
+                                <TextBox x:Name="CommandLogTextBox" 
+                                        IsReadOnly="True"
+                                        Background="#F5F5F5"
+                                        FontFamily="Consolas"
+                                        FontSize="12"
+                                        AcceptsReturn="True"
+                                        TextWrapping="Wrap"
+                                        VerticalScrollBarVisibility="Auto"
+                                        Text="// SCPI commands will appear here..."/>
+                            </ScrollViewer>
 
-                            <Button Grid.Row="1"
-                                    Content="Clear Log"
-                                    Style="{StaticResource ConfigButtonStyle}"
-                                    HorizontalAlignment="Left"
-                                    Margin="0,10,0,0"
-                                    Click="ClearLog_Click"/>
+                            <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+                                <Button Content="🗑️ Clear Log" Style="{StaticResource ConfigButtonStyle}" Click="ClearLog_Click" Margin="0,0,10,0"/>
+                                <Button Content="📋 Copy Commands" Style="{StaticResource ConfigButtonStyle}" Click="CopyCommands_Click" Margin="0,0,10,0"/>
+                                <Button Content="💾 Save Commands" Style="{StaticResource ConfigButtonStyle}" Click="SaveCommands_Click"/>
+                            </StackPanel>
                         </Grid>
+                    </GroupBox>
+
+                    <!-- Quick Actions -->
+                    <GroupBox Grid.Column="0" Grid.Row="2" Grid.ColumnSpan="2"
+                              Header="⚡ Quick Actions"
+                              Style="{StaticResource SectionStyle}">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <Button Content="🔄 Reset All Settings" Style="{StaticResource ConfigButtonStyle}" Click="ResetAll_Click" Margin="10"/>
+                            <Button Content="✅ Apply All Settings" Style="{StaticResource ConfigButtonStyle}" Click="ApplyAll_Click" Margin="10"/>
+                            <Button Content="📥 Load Configuration" Style="{StaticResource ConfigButtonStyle}" Click="LoadConfiguration_Click" Margin="10"/>
+                            <Button Content="📤 Save Configuration" Style="{StaticResource ConfigButtonStyle}" Click="SaveConfiguration_Click" Margin="10"/>
+                        </StackPanel>
                     </GroupBox>
                 </Grid>
             </ScrollViewer>

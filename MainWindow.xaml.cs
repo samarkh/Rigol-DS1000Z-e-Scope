@@ -10,15 +10,16 @@ using DS1000Z_E_USB_Control.Trigger;
 using Microsoft.Win32;
 using Rigol_DS1000Z_E_Control;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 //using System.Windows.Forms; // For FolderBrowserDialog
 using System.Text.Json;      // For JSON serialization
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using DS1000Z_E_USB_Control.Mathematics;
 
 namespace Rigol_DS1000Z_E_Control
 {
@@ -1828,6 +1829,88 @@ namespace Rigol_DS1000Z_E_Control
                 return System.IO.Path.GetDirectoryName(dialog.FileName);
             }
             return null;
+        }
+
+        #endregion
+
+
+        #region Helper Methods for Status Polling
+
+        /// <summary>
+        /// Enable/disable operation buttons during panel switching
+        /// </summary>
+        private void SetButtonsEnabled(bool enabled)
+        {
+            try
+            {
+                // Find and disable/enable Apply buttons by traversing UI tree
+                foreach (var child in GetAllChildren(this))
+                {
+                    if (child is Button button &&
+                        (button.Content?.ToString()?.Contains("Apply") == true ||
+                         button.Content?.ToString()?.Contains("📈") == true ||
+                         button.Content?.ToString()?.Contains("🔧") == true))
+                    {
+                        button.IsEnabled = enabled;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error setting button states: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Get all child controls recursively
+        /// </summary>
+        private IEnumerable<DependencyObject> GetAllChildren(DependencyObject parent)
+        {
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                yield return child;
+
+                foreach (var grandChild in GetAllChildren(child))
+                {
+                    yield return grandChild;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Initialize mathematics panel with VISA manager
+        /// </summary>
+        public async Task<bool> InitializeAsync(VisaManager visaManager)
+        {
+            try
+            {
+                this.visaManager = visaManager;
+
+                if (!SCPIStatusPolling.SupportsStatusPolling(visaManager))
+                {
+                    OnErrorOccurred("⚠️ Status polling not supported - panel switching may be unreliable");
+                    return false;
+                }
+
+                bool success = await SCPIStatusPolling.ExitMathematicsPanelAsync(visaManager);
+
+                if (success)
+                {
+                    OnStatusUpdated("✅ Mathematics panel ready with status polling");
+                    return true;
+                }
+                else
+                {
+                    OnErrorOccurred("❌ Failed to initialize mathematics panel");
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Initialization error: {ex.Message}");
+                return false;
+            }
         }
 
         #endregion

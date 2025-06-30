@@ -1,0 +1,124 @@
+﻿<Window x:Class="DS1000Z_E_USB_Control.SerialProtocol.SerialProtocolWINDOW"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:local="clr-namespace:DS1000Z_E_USB_Control.SerialProtocol"
+        mc:Ignorable="d"
+        Title="Serial Protocol Analysis - Rigol DS1000Z-E" 
+        Height="900" Width="1300"
+        WindowStartupLocation="CenterOwner"
+        Background="#F5F5F5">
+        
+
+    <Window.Resources>
+        <Style x:Key="MenuButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#2196F3"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#1976D2"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="15,8"/>
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#1976D2"/>
+                    <Setter Property="BorderBrush" Value="#1565C0"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="StatusBarStyle" TargetType="StatusBar">
+            <Setter Property="Background" Value="#263238"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Height" Value="30"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <!-- Menu Bar -->
+            <RowDefinition Height="*"/>
+            <!-- Main Content -->
+            <RowDefinition Height="Auto"/>
+            <!-- Status Bar -->
+        </Grid.RowDefinitions>
+
+        <!-- Menu Bar -->
+        <Border Grid.Row="0" Background="#37474F" BorderBrush="#263238" BorderThickness="0,0,0,2">
+            <StackPanel Orientation="Horizontal" Margin="10,5">
+                <TextBlock Text="🔧 Serial Protocol Analysis" 
+                          FontSize="16" FontWeight="Bold" 
+                          Foreground="White" VerticalAlignment="Center" 
+                          Margin="10,0,20,0"/>
+
+                <Button Content="🔄 Reset" 
+                        Style="{StaticResource MenuButtonStyle}"
+                        Click="Reset_Click"
+                        ToolTip="Reset all decoder settings to defaults"/>
+
+                <Button Content="💾 Save Config" 
+                        Style="{StaticResource MenuButtonStyle}"
+                        Click="SaveConfig_Click"
+                        ToolTip="Save current decoder configuration to file"/>
+
+                <Button Content="📁 Load Config" 
+                        Style="{StaticResource MenuButtonStyle}"
+                        Click="LoadConfig_Click"
+                        ToolTip="Load decoder configuration from file"/>
+
+                <Separator Margin="10,0" Background="#546E7A"/>
+
+                <Button Content="❓ Help" 
+                        Style="{StaticResource MenuButtonStyle}"
+                        Click="Help_Click"
+                        ToolTip="Show protocol analysis help"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Main Content Area -->
+        <ScrollViewer Grid.Row="1" 
+                      VerticalScrollBarVisibility="Auto" 
+                      HorizontalScrollBarVisibility="Auto"
+                      Background="White">
+            <!-- THIS IS THE KEY: Contains the SerialProtocolPANEL -->
+            <local:SerialProtocolPANEL x:Name="ProtocolPanel" 
+                                      Margin="10"/>
+        </ScrollViewer>
+
+        <!-- Status Bar -->
+        <StatusBar Grid.Row="2" Style="{StaticResource StatusBarStyle}">
+            <StatusBar.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="200"/>
+                        </Grid.ColumnDefinitions>
+                    </Grid>
+                </ItemsPanelTemplate>
+            </StatusBar.ItemsPanel>
+
+            <StatusBarItem Grid.Column="0">
+                <TextBlock x:Name="StatusText" 
+                          Text="Ready" 
+                          Foreground="White" 
+                          FontWeight="Bold"/>
+            </StatusBarItem>
+
+            <Separator Grid.Column="1" Background="#546E7A"/>
+
+            <StatusBarItem Grid.Column="2">
+                <TextBlock x:Name="TimestampText" 
+                          Text="Last Updated: --:--:--" 
+                          Foreground="#B0BEC5" 
+                          FontSize="11" 
+                          HorizontalAlignment="Right"/>
+            </StatusBarItem>
+        </StatusBar>
+    </Grid>
+</Window>

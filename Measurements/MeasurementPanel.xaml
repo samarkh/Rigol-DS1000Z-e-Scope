@@ -1,0 +1,463 @@
+﻿<!-- MeasurementPanel.xaml - Complete measurement panel with organized regions -->
+<UserControl x:Class="DS1000Z_E_USB_Control.Measurements.MeasurementPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Unloaded="MeasurementPanel_Unloaded">
+
+    <UserControl.Resources>
+        <!-- =========================== STYLES =========================== -->
+
+        <Style x:Key="HeaderStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="SectionStyle" TargetType="GroupBox">
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="Padding" Value="10"/>
+            <Setter Property="BorderBrush" Value="#607D8B"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+
+        <Style x:Key="LabelStyle" TargetType="Label">
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="MinWidth" Value="80"/>
+        </Style>
+
+        <Style x:Key="ActionButtonStyle" TargetType="Button">
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Margin" Value="5,2"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Opacity" Value="0.8"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="PresetButtonStyle" TargetType="Button">
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="Margin" Value="3"/>
+            <Setter Property="Background" Value="#607D8B"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#546E7A"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="HeaderButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Padding" Value="5"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#546E7A"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="CheckBoxStyle" TargetType="CheckBox">
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="ComboBoxStyle" TargetType="ComboBox">
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Height" Value="25"/>
+        </Style>
+
+        <Style x:Key="TextBoxStyle" TargetType="TextBox">
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Height" Value="25"/>
+            <Setter Property="Padding" Value="3"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- =========================== COLLAPSIBLE HEADER =========================== -->
+        <Border Grid.Row="0" Background="#607D8B" BorderBrush="#455A64" BorderThickness="0,0,0,2">
+            <Grid Height="50">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Header Title and Info -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="20,0">
+                    <TextBlock Text="📊" FontSize="24" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                    <TextBlock Style="{StaticResource HeaderStyle}" 
+                               Text="Automatic Measurements &amp; Statistics"
+                               Margin="0,0,20,0"/>
+                    <TextBlock x:Name="StatusIndicator" 
+                               Text="Ready" 
+                               FontSize="12" 
+                               Foreground="#B0BEC5" 
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Toggle Button -->
+                <Button x:Name="ToggleButton"
+                        Grid.Column="1"
+                        Style="{StaticResource HeaderButtonStyle}"
+                        Click="ToggleButton_Click"
+                        VerticalAlignment="Center"
+                        Margin="0,0,20,0">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock x:Name="ToggleIcon" Text="🔽" FontSize="16" Margin="0,0,5,0"/>
+                        <TextBlock x:Name="ToggleText" Text="Collapse" FontSize="14"/>
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- =========================== MAIN CONTENT =========================== -->
+        <ScrollViewer Grid.Row="1" 
+                      x:Name="MainContent"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled"
+                      Background="White">
+            <Grid Margin="20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- =========================== MEASUREMENT CONTROL SECTION =========================== -->
+                <GroupBox Grid.Column="0" Grid.Row="0" 
+                          Header="⚙️ Measurement Control"
+                          Style="{StaticResource SectionStyle}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Source Channel -->
+                        <Label Grid.Row="0" Grid.Column="0" Content="Source:" Style="{StaticResource LabelStyle}"/>
+                        <ComboBox Grid.Row="0" Grid.Column="1" 
+                                  x:Name="SourceChannelCombo"
+                                  Style="{StaticResource ComboBoxStyle}"
+                                  SelectionChanged="SourceChannel_SelectionChanged">
+                            <ComboBoxItem Content="Channel 1" Tag="CHANnel1" IsSelected="True"/>
+                            <ComboBoxItem Content="Channel 2" Tag="CHANnel2"/>
+                        </ComboBox>
+
+                        <!-- Auto Display -->
+                        <Label Grid.Row="1" Grid.Column="0" Content="Auto Display:" Style="{StaticResource LabelStyle}"/>
+                        <CheckBox Grid.Row="1" Grid.Column="1" 
+                                  x:Name="AutoDisplayCheckBox"
+                                  Style="{StaticResource CheckBoxStyle}"
+                                  Content="Show measurements on oscilloscope screen"
+                                  IsChecked="True"
+                                  Checked="AutoDisplay_Checked"
+                                  Unchecked="AutoDisplay_Unchecked"/>
+
+                        <!-- Auto Update -->
+                        <Label Grid.Row="2" Grid.Column="0" Content="Auto Update:" Style="{StaticResource LabelStyle}"/>
+                        <CheckBox Grid.Row="2" Grid.Column="1" 
+                                  x:Name="AutoUpdateCheckBox"
+                                  Style="{StaticResource CheckBoxStyle}"
+                                  Content="Automatically update measurements every 2 seconds"
+                                  IsChecked="False"
+                                  Checked="AutoUpdate_Checked"
+                                  Unchecked="AutoUpdate_Unchecked"/>
+
+                        <!-- Update Controls -->
+                        <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" 
+                                    Orientation="Horizontal" Margin="0,10,0,0">
+                            <Button Content="🔄 Update Values" 
+                                    Style="{StaticResource ActionButtonStyle}"
+                                    Background="#4CAF50"
+                                    Foreground="White"
+                                    Click="UpdateValues_Click"/>
+
+                            <Button Content="📊 Update Statistics" 
+                                    Style="{StaticResource ActionButtonStyle}"
+                                    Background="#2196F3"
+                                    Foreground="White"
+                                    Click="UpdateStatistics_Click"/>
+                        </StackPanel>
+                    </Grid>
+                </GroupBox>
+
+                <!-- =========================== STATISTICS CONTROL SECTION =========================== -->
+                <GroupBox Grid.Column="1" Grid.Row="0" 
+                          Header="📈 Statistics Control"
+                          Style="{StaticResource SectionStyle}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Statistics Display -->
+                        <Label Grid.Row="0" Grid.Column="0" Content="Display:" Style="{StaticResource LabelStyle}"/>
+                        <CheckBox Grid.Row="0" Grid.Column="1" 
+                                  x:Name="StatisticsDisplayCheckBox"
+                                  Style="{StaticResource CheckBoxStyle}"
+                                  Content="Show statistics on oscilloscope"
+                                  IsChecked="False"
+                                  Checked="StatisticsDisplay_Checked"
+                                  Unchecked="StatisticsDisplay_Unchecked"/>
+
+                        <!-- Statistics Mode -->
+                        <Label Grid.Row="1" Grid.Column="0" Content="Mode:" Style="{StaticResource LabelStyle}"/>
+                        <ComboBox Grid.Row="1" Grid.Column="1" 
+                                  x:Name="StatisticsModeCombo"
+                                  Style="{StaticResource ComboBoxStyle}"
+                                  SelectionChanged="StatisticsMode_SelectionChanged">
+                            <ComboBoxItem Content="Difference" Tag="DIFF" IsSelected="True"/>
+                            <ComboBoxItem Content="Extremum" Tag="EXTRemum"/>
+                        </ComboBox>
+
+                        <!-- Statistics Actions -->
+                        <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" 
+                                    Orientation="Horizontal" Margin="0,10,0,0">
+                            <Button Content="🔄 Reset Statistics" 
+                                    Style="{StaticResource ActionButtonStyle}"
+                                    Background="#FF5722"
+                                    Foreground="White"
+                                    Click="ResetStatistics_Click"/>
+
+                            <Button Content="💾 Export Statistics" 
+                                    Style="{StaticResource ActionButtonStyle}"
+                                    Background="#9C27B0"
+                                    Foreground="White"
+                                    Click="ExportStatistics_Click"/>
+                        </StackPanel>
+                    </Grid>
+                </GroupBox>
+
+                <!-- =========================== THRESHOLD SETUP SECTION =========================== -->
+                <GroupBox Grid.Column="0" Grid.Row="1" 
+                          Header="⚡ Threshold Setup"
+                          Style="{StaticResource SectionStyle}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Threshold Max -->
+                        <Label Grid.Row="0" Grid.Column="0" Content="Max (V):" Style="{StaticResource LabelStyle}"/>
+                        <TextBox Grid.Row="0" Grid.Column="1" 
+                                 x:Name="ThresholdMaxTextBox"
+                                 Style="{StaticResource TextBoxStyle}"
+                                 Text="3.0"
+                                 LostFocus="ThresholdMax_LostFocus"/>
+
+                        <!-- Threshold Mid -->
+                        <Label Grid.Row="1" Grid.Column="0" Content="Mid (V):" Style="{StaticResource LabelStyle}"/>
+                        <TextBox Grid.Row="1" Grid.Column="1" 
+                                 x:Name="ThresholdMidTextBox"
+                                 Style="{StaticResource TextBoxStyle}"
+                                 Text="1.5"
+                                 LostFocus="ThresholdMid_LostFocus"/>
+
+                        <!-- Threshold Min -->
+                        <Label Grid.Row="2" Grid.Column="0" Content="Min (V):" Style="{StaticResource LabelStyle}"/>
+                        <TextBox Grid.Row="2" Grid.Column="1" 
+                                 x:Name="ThresholdMinTextBox"
+                                 Style="{StaticResource TextBoxStyle}"
+                                 Text="0.0"
+                                 LostFocus="ThresholdMin_LostFocus"/>
+                    </Grid>
+                </GroupBox>
+
+                <!-- =========================== DELAY & PULSE SETUP SECTION =========================== -->
+                <GroupBox Grid.Column="1" Grid.Row="1" 
+                          Header="⏱️ Delay &amp; Pulse Setup"
+                          Style="{StaticResource SectionStyle}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Delay Setup A -->
+                        <Label Grid.Row="0" Grid.Column="0" Content="Delay A (%):" Style="{StaticResource LabelStyle}"/>
+                        <TextBox Grid.Row="0" Grid.Column="1" 
+                                 x:Name="DelaySetupATextBox"
+                                 Style="{StaticResource TextBoxStyle}"
+                                 Text="10.0"
+                                 LostFocus="DelaySetupA_LostFocus"/>
+
+                        <!-- Delay Setup B -->
+                        <Label Grid.Row="1" Grid.Column="0" Content="Delay B (%):" Style="{StaticResource LabelStyle}"/>
+                        <TextBox Grid.Row="1" Grid.Column="1" 
+                                 x:Name="DelaySetupBTextBox"
+                                 Style="{StaticResource TextBoxStyle}"
+                                 Text="90.0"
+                                 LostFocus="DelaySetupB_LostFocus"/>
+
+                        <!-- Pulse Setup B -->
+                        <Label Grid.Row="2" Grid.Column="0" Content="Pulse B (%):" Style="{StaticResource LabelStyle}"/>
+                        <TextBox Grid.Row="2" Grid.Column="1" 
+                                 x:Name="PulseSetupBTextBox"
+                                 Style="{StaticResource TextBoxStyle}"
+                                 Text="50.0"
+                                 LostFocus="PulseSetupB_LostFocus"/>
+                    </Grid>
+                </GroupBox>
+
+                <!-- =========================== QUICK PRESET SECTION =========================== -->
+                <GroupBox Grid.Column="0" Grid.Row="2" Grid.ColumnSpan="2"
+                          Header="🚀 Quick Setup Presets"
+                          Style="{StaticResource SectionStyle}">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Button Content="⏱️ Time Domain"
+                                Style="{StaticResource PresetButtonStyle}"
+                                Width="150"
+                                Click="TimeDomainPreset_Click"
+                                ToolTip="Period, Frequency, Rise/Fall Time, Duty Cycle"/>
+
+                        <Button Content="⚡ Voltage Analysis"
+                                Style="{StaticResource PresetButtonStyle}"
+                                Width="150"
+                                Click="VoltagePreset_Click"
+                                ToolTip="Max, Min, Peak-to-Peak, Average, RMS"/>
+
+                        <Button Content="📈 Comprehensive"
+                                Style="{StaticResource PresetButtonStyle}"
+                                Width="150"
+                                Click="ComprehensivePreset_Click"
+                                ToolTip="All common measurements + Statistics"/>
+
+                        <Button Content="🗑️ Clear All"
+                                Style="{StaticResource PresetButtonStyle}"
+                                Width="120"
+                                Background="#F44336"
+                                Click="ClearAll_Click"
+                                ToolTip="Clear all measurements"/>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- =========================== MEASUREMENT DISPLAY SECTION =========================== -->
+                <GroupBox Grid.Column="0" Grid.Row="3" Grid.ColumnSpan="2"
+                          Header="📋 Current Measurements &amp; Values"
+                          Style="{StaticResource SectionStyle}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="300"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Measurement Selection Panel -->
+                        <Border Grid.Column="0" BorderBrush="#E0E0E0" BorderThickness="0,0,1,0" Padding="10">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                <StackPanel x:Name="MeasurementSelectionPanel">
+                                    <TextBlock Text="📊 Available Measurements" FontWeight="Bold" Margin="0,0,0,10"/>
+
+                                    <!-- Time Domain Measurements -->
+                                    <Expander Header="⏱️ Time Domain" IsExpanded="True">
+                                        <StackPanel x:Name="TimeDomainPanel" Margin="10,5">
+                                            <CheckBox Content="Period" Tag="PERiod" Style="{StaticResource CheckBoxStyle}"/>
+                                            <CheckBox Content="Frequency" Tag="FREQuency" Style="{StaticResource CheckBoxStyle}"/>
+                                            <CheckBox Content="Rise Time" Tag="RTIMe" Style="{StaticResource CheckBoxStyle}"/>
+                                            <CheckBox Content="Fall Time" Tag="FTIMe" Style="{StaticResource CheckBoxStyle}"/>
+                                            <CheckBox Content="Positive Width" Tag="PWIDth" Style="{StaticResource CheckBoxStyle}"/>
+                                            <CheckBox Content="Negative Width" Tag="NWIDth" Style="{StaticResource CheckBoxStyle}"/>
+                                            <CheckBox Content="Positive Duty" Tag="PDUTy" Style="{StaticResource CheckBoxStyle}"/>
+                                            <CheckBox Content="Negative Duty" Tag="NDUTy" Style="{StaticResource CheckBoxStyle}"/>
+                                        </StackPanel>
+                                    </Expander>
+
+                                    <!-- Voltage Measurements -->
+                                    <Expander Header="⚡ Voltage" IsExpanded="True">
+                                        <StackPanel x:Name="VoltagePanel" Margin="10,5">
+                                            <CheckBox Content="Maximum" Tag="VMAX" Style="{StaticResource CheckBoxStyle}"/>
+                                            <CheckBox Content="Minimum" Tag="VMIN" Style="{StaticResource CheckBoxStyle}"/>
+                                            <CheckBox Content="Peak-to-Peak" Tag="VPP" Style="{StaticResource CheckBoxStyle}"/>
+                                            <CheckBox Content="Average" Tag="VAVG" Style="{StaticResource CheckBoxStyle}"/>
+                                            <CheckBox Content="RMS" Tag="VRMS" Style="{StaticResource CheckBoxStyle}"/>
+                                            <CheckBox Content="Top" Tag="VTOP" Style="{StaticResource CheckBoxStyle}"/>
+                                            <CheckBox Content="Base" Tag="VBASe" Style="{StaticResource CheckBoxStyle}"/>
+                                            <CheckBox Content="Amplitude" Tag="VAMP" Style="{StaticResource CheckBoxStyle}"/>
+                                        </StackPanel>
+                                    </Expander>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Border>
+
+                        <!-- Measurement Values Display Panel -->
+                        <Border Grid.Column="1" Padding="10">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+
+                                <!-- Display Header -->
+                                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+                                    <TextBlock Text="📈 Live Values &amp; Statistics" FontWeight="Bold" Margin="0,0,20,0"/>
+                                    <TextBlock x:Name="LastUpdateTime" Text="Last Update: Never" 
+                                               FontSize="12" Foreground="Gray" VerticalAlignment="Center"/>
+                                </StackPanel>
+
+                                <!-- Values Display -->
+                                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                    <StackPanel x:Name="MeasurementValuesPanel">
+                                        <TextBlock Text="Select measurements from the left panel to view their values here."
+                                                   FontStyle="Italic" Foreground="Gray" 
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                   Margin="20"/>
+                                    </StackPanel>
+                                </ScrollViewer>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </GroupBox>
+            </Grid>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

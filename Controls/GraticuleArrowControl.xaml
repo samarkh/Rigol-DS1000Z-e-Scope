@@ -1,0 +1,45 @@
+﻿<UserControl x:Class="DS1000Z_E_USB_Control.Controls.GraticuleArrowControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Double Up Arrow (1 graticule) -->
+        <Button Grid.Row="0" x:Name="DoubleUpButton" 
+                Width="40" Height="25" Margin="2"
+                Content="⇈" FontSize="16" FontWeight="Bold"
+                ToolTip="Move up 1 graticule" />
+
+        <!-- Single Up Arrow (0.1 graticule) -->
+        <Button Grid.Row="1" x:Name="SingleUpButton" 
+                Width="40" Height="20" Margin="2"
+                Content="↑" FontSize="12"
+                ToolTip="Move up 0.1 graticule" />
+
+        <!-- Value Display -->
+        <TextBlock Grid.Row="2" x:Name="ValueDisplay" 
+                   Width="40" Height="20" Margin="2"
+                   Text="0.000V" FontSize="10" 
+                   TextAlignment="Center" 
+                   VerticalAlignment="Center"
+                   Background="LightGray" />
+
+        <!-- Single Down Arrow (0.1 graticule) -->
+        <Button Grid.Row="3" x:Name="SingleDownButton" 
+                Width="40" Height="20" Margin="2"
+                Content="↓" FontSize="12"
+                ToolTip="Move down 0.1 graticule" />
+
+        <!-- Double Down Arrow (1 graticule) -->
+        <Button Grid.Row="4" x:Name="DoubleDownButton" 
+                Width="40" Height="25" Margin="2"
+                Content="⇊" FontSize="16" FontWeight="Bold"
+                ToolTip="Move down 1 graticule" />
+    </Grid>
+</UserControl>

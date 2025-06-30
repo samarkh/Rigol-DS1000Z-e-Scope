@@ -1,0 +1,585 @@
+﻿<!-- Complete TriggerControlPanel.xaml with all trigger modes and conditional panels -->
+<UserControl x:Class="DS1000Z_E_USB_Control.Trigger.TriggerControlPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:DS1000Z_E_USB_Control.Controls"
+             mc:Ignorable="d" 
+             d:DesignHeight="550" Width="375">
+
+    <!-- Trigger Controls (Light Green Background) -->
+    <GroupBox Header="Trigger Controls" 
+              Background="#F0FFF0"
+              BorderBrush="#32CD32"
+              BorderThickness="2" Margin="0,0,2,0">
+
+        <Grid Margin="0,0,25,0" Height="520">
+            <!-- Column Definitions: Labels | Controls | Multimedia (spans all rows) -->
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="11"/>
+                <ColumnDefinition Width="43"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="16"/>
+                <!-- Row labels -->
+                <ColumnDefinition Width="160"/>
+                <!-- Combo boxes -->
+                <ColumnDefinition Width="200"/>
+                <!-- Multimedia controls column -->
+            </Grid.ColumnDefinitions>
+
+            <!-- Row Definitions -->
+            <Grid.RowDefinitions>
+                <!-- Row 0: Mode -->
+                <RowDefinition Height="Auto" MinHeight="42"/>
+                <!-- Row 1: Sweep -->
+                <RowDefinition Height="Auto" MinHeight="42"/>
+                <!-- Row 2: Source -->
+                <RowDefinition Height="Auto" MinHeight="42"/>
+                <!-- Row 3: Slope -->
+                <RowDefinition Height="Auto" MinHeight="42"/>
+                <!-- Row 4: Coupling -->
+                <RowDefinition Height="Auto" MinHeight="42"/>
+                <!-- Row 5: Holdoff -->
+                <RowDefinition Height="Auto" MinHeight="42"/>
+                <!-- Row 6: Current Settings -->
+                <RowDefinition Height="Auto" MinHeight="35"/>
+                <!-- Row 7: Conditional Parameter Panels -->
+                <RowDefinition Height="Auto" MinHeight="120"/>
+                <!-- Row 8: Force Trigger Button -->
+                <RowDefinition Height="Auto" MinHeight="35"/>
+            </Grid.RowDefinitions>
+
+            <!-- Row 0: Mode (Enhanced with all trigger types) -->
+            <Label Grid.Column="1" 
+                   Content="Mode:" 
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Center" 
+                   Margin="20,0,0,0" Grid.ColumnSpan="3"/>
+            <ComboBox x:Name="TriggerModeComboBox" Grid.Column="4" 
+                      Margin="5,0,5,0" VerticalAlignment="Center">
+                <!-- Basic Triggers -->
+                <ComboBoxItem Content="Edge" Tag="EDGe" IsSelected="True"/>
+                <ComboBoxItem Content="Pulse" Tag="PULSe"/>
+                <ComboBoxItem Content="Slope" Tag="SLOPe"/>
+
+                <Separator/>
+
+                <!-- Pattern & Video -->
+                <ComboBoxItem Content="Pattern" Tag="PATTern"/>
+                <ComboBoxItem Content="Video" Tag="VIDeo"/>
+
+                <Separator/>
+
+                <!-- Advanced Triggers -->
+                <ComboBoxItem Content="Duration" Tag="DURATion"/>
+                <ComboBoxItem Content="Timeout" Tag="TIMeout"/>
+                <ComboBoxItem Content="Runt" Tag="RUNT"/>
+                <ComboBoxItem Content="Window" Tag="WINDows"/>
+                <ComboBoxItem Content="Delay" Tag="DELay"/>
+                <ComboBoxItem Content="Setup/Hold" Tag="SHOLd"/>
+                <ComboBoxItem Content="Nth Edge" Tag="NEDGe"/>
+
+                <Separator/>
+
+                <!-- Serial Protocol Triggers -->
+                <ComboBoxItem Content="RS232" Tag="RS232"/>
+                <ComboBoxItem Content="I²C" Tag="IIC"/>
+                <ComboBoxItem Content="SPI" Tag="SPI"/>
+            </ComboBox>
+
+            <!-- Row 1: Sweep -->
+            <Label Grid.Row="1" Grid.Column="1" 
+                   Content="Sweep:" 
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Center" 
+                   Margin="17,0,0,0" Grid.ColumnSpan="3"/>
+            <ComboBox x:Name="TriggerSweepComboBox" 
+                      Grid.Row="1" Grid.Column="4" 
+                      Margin="5,0,5,0" VerticalAlignment="Center">
+                <ComboBoxItem Content="Auto" Tag="AUTO" IsSelected="True"/>
+                <ComboBoxItem Content="Normal" Tag="NORM"/>
+                <ComboBoxItem Content="Single" Tag="SING"/>
+            </ComboBox>
+
+            <!-- Row 2: Source -->
+            <Label Grid.Row="2" Grid.Column="1" 
+                   Content="Source:" 
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Center" 
+                   Margin="15,0,0,0" Grid.ColumnSpan="3"/>
+            <ComboBox x:Name="EdgeSourceComboBox" 
+                      Grid.Row="2" Grid.Column="4" 
+                      Margin="5,0,5,0" VerticalAlignment="Center">
+                <ComboBoxItem Content="Channel 1" Tag="CHAN1" IsSelected="True"/>
+                <ComboBoxItem Content="Channel 2" Tag="CHAN2"/>
+                <ComboBoxItem Content="External" Tag="EXT"/>
+                <ComboBoxItem Content="AC Line" Tag="ACLine"/>
+            </ComboBox>
+
+            <!-- Row 3: Slope -->
+            <Label Grid.Row="3" Grid.Column="1" 
+                   Content="Slope:" 
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Center" 
+                   Margin="22,0,0,0" Grid.ColumnSpan="3"/>
+            <ComboBox x:Name="EdgeSlopeComboBox" 
+                      Grid.Row="3" Grid.Column="4" 
+                      Margin="5,0,5,0" VerticalAlignment="Center">
+                <ComboBoxItem Content="Rising Edge" Tag="POSitive" IsSelected="True"/>
+                <ComboBoxItem Content="Falling Edge" Tag="NEGative"/>
+            </ComboBox>
+
+            <!-- Row 4: Coupling -->
+            <Label Grid.Row="4" Grid.Column="1" 
+                   Content="Coupling:" 
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Center" 
+                   Margin="3,0,0,0" Grid.ColumnSpan="3"/>
+            <ComboBox x:Name="TriggerCouplingComboBox" 
+                      Grid.Row="4" Grid.Column="4" 
+                      Margin="5,0,5,0" VerticalAlignment="Center">
+                <ComboBoxItem Content="DC" Tag="DC" IsSelected="True"/>
+                <ComboBoxItem Content="AC" Tag="AC"/>
+                <ComboBoxItem Content="LF Reject" Tag="LFR"/>
+                <ComboBoxItem Content="HF Reject" Tag="HFR"/>
+            </ComboBox>
+
+            <!-- Row 5: Holdoff -->
+            <Label Grid.Row="5" Grid.Column="1" 
+                   Content="Holdoff:" 
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Center" 
+                   Margin="11,0,0,0" Grid.ColumnSpan="3"/>
+            <StackPanel Grid.Row="5" Grid.Column="4" 
+                        Orientation="Horizontal" 
+                        VerticalAlignment="Center" 
+                        Margin="5,0,5,0">
+                <TextBox x:Name="HoldoffTextBox" 
+                         Width="80" 
+                         VerticalAlignment="Center"
+                         TextAlignment="Right"
+                         Text="100.00"/>
+                <ComboBox x:Name="HoldOffUnitsComboBox" 
+                          Width="62" 
+                          VerticalAlignment="Center"
+                          Margin="5,0,0,0"
+                          SelectionChanged="HoldOff_Units_SelectionChanged">
+                    <ComboBoxItem Content="S" Tag="s"/>
+                    <ComboBoxItem Content="mS" Tag="ms"/>
+                    <ComboBoxItem Content="μS" Tag="us"/>
+                    <ComboBoxItem Content="nS" Tag="ns" IsSelected="True"/>
+                </ComboBox>
+            </StackPanel>
+
+            <!-- Row 6: Current Settings -->
+            <TextBlock x:Name="CurrentTriggerSettingsText" 
+                       Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="6"
+                       Text="Trigger: Edge, Channel1, Rising, Level: 0.000V, Auto" 
+                       FontSize="10" 
+                       Foreground="DarkBlue" 
+                       Margin="-1,1,105,0" 
+                       VerticalAlignment="Top"
+                       TextWrapping="Wrap"/>
+
+            <!-- Row 7: Conditional Parameter Panels -->
+
+            <!-- Edge Trigger Parameters (Default - Visible) -->
+            <Grid x:Name="EdgeParametersPanel" Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="5" 
+                  Visibility="Visible" Margin="5">
+                <GroupBox Header="Edge Trigger Parameters" Background="#F8F8FF" BorderBrush="#9370DB" BorderThickness="1">
+                    <TextBlock Text="Use Source, Slope, and Level controls above" 
+                               Margin="10" FontStyle="Italic" Foreground="Gray"/>
+                </GroupBox>
+            </Grid>
+
+            <!-- Pulse Trigger Parameters -->
+            <Grid x:Name="PulseParametersPanel" Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="5" 
+                  Visibility="Collapsed" Margin="5">
+                <GroupBox Header="Pulse Trigger Parameters" Background="#FFF8F0" BorderBrush="#FF8C00" BorderThickness="1">
+                    <Grid Margin="10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="100"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Label Content="Width Condition:" Grid.Row="0" Grid.Column="0"/>
+                        <ComboBox x:Name="PulseWidthConditionCombo" Grid.Row="0" Grid.Column="1" Margin="5">
+                            <ComboBoxItem Content="Greater Than" Tag="GREater"/>
+                            <ComboBoxItem Content="Less Than" Tag="LESs"/>
+                            <ComboBoxItem Content="Range" Tag="RANG"/>
+                        </ComboBox>
+
+                        <Label Content="Width (Low):" Grid.Row="1" Grid.Column="0"/>
+                        <TextBox x:Name="PulseWidthLowTextBox" Grid.Row="1" Grid.Column="1" Margin="5"/>
+
+                        <Label Content="Width (High):" Grid.Row="2" Grid.Column="0"/>
+                        <TextBox x:Name="PulseWidthHighTextBox" Grid.Row="2" Grid.Column="1" Margin="5"/>
+                    </Grid>
+                </GroupBox>
+            </Grid>
+
+            <!-- Slope Trigger Parameters -->
+            <Grid x:Name="SlopeParametersPanel" Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="5" 
+                  Visibility="Collapsed" Margin="5">
+                <GroupBox Header="Slope Trigger Parameters" Background="#F0FFF8" BorderBrush="#20B2AA" BorderThickness="1">
+                    <Grid Margin="10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="100"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Label Content="Slope Time:" Grid.Row="0" Grid.Column="0"/>
+                        <TextBox x:Name="SlopeTimeTextBox" Grid.Row="0" Grid.Column="1" Margin="5"/>
+
+                        <Label Content="Slope Condition:" Grid.Row="1" Grid.Column="0"/>
+                        <ComboBox x:Name="SlopeConditionCombo" Grid.Row="1" Grid.Column="1" Margin="5">
+                            <ComboBoxItem Content="Positive" Tag="POSitive"/>
+                            <ComboBoxItem Content="Negative" Tag="NEGative"/>
+                        </ComboBox>
+
+                        <Label Content="Slope When:" Grid.Row="2" Grid.Column="0"/>
+                        <ComboBox x:Name="SlopeWhenCombo" Grid.Row="2" Grid.Column="1" Margin="5">
+                            <ComboBoxItem Content="Greater Than" Tag="GREater"/>
+                            <ComboBoxItem Content="Less Than" Tag="LESs"/>
+                        </ComboBox>
+                    </Grid>
+                </GroupBox>
+            </Grid>
+
+            <!-- Video Trigger Parameters -->
+            <Grid x:Name="VideoParametersPanel" Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="5" 
+                  Visibility="Collapsed" Margin="5">
+                <GroupBox Header="Video Trigger Parameters" Background="#FFF0F8" BorderBrush="#DC143C" BorderThickness="1">
+                    <Grid Margin="10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="100"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Label Content="Video Standard:" Grid.Row="0" Grid.Column="0"/>
+                        <ComboBox x:Name="VideoStandardCombo" Grid.Row="0" Grid.Column="1" Margin="5">
+                            <ComboBoxItem Content="NTSC" Tag="NTSC"/>
+                            <ComboBoxItem Content="PAL" Tag="PAL"/>
+                            <ComboBoxItem Content="SECAM" Tag="SECam"/>
+                        </ComboBox>
+
+                        <Label Content="Sync Type:" Grid.Row="1" Grid.Column="0"/>
+                        <ComboBox x:Name="VideoSyncCombo" Grid.Row="1" Grid.Column="1" Margin="5">
+                            <ComboBoxItem Content="All Lines" Tag="ALINes"/>
+                            <ComboBoxItem Content="Line Number" Tag="LNUMber"/>
+                            <ComboBoxItem Content="Odd Fields" Tag="OFIeld"/>
+                            <ComboBoxItem Content="Even Fields" Tag="EFIeld"/>
+                        </ComboBox>
+
+                        <Label Content="Line Number:" Grid.Row="2" Grid.Column="0"/>
+                        <TextBox x:Name="VideoLineNumberTextBox" Grid.Row="2" Grid.Column="1" Margin="5"/>
+                    </Grid>
+                </GroupBox>
+            </Grid>
+
+            <!-- Pattern Trigger Parameters -->
+            <Grid x:Name="PatternParametersPanel" Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="5" 
+                  Visibility="Collapsed" Margin="5">
+                <GroupBox Header="Pattern Trigger Parameters" Background="#F8F0FF" BorderBrush="#8A2BE2" BorderThickness="1">
+                    <Grid Margin="10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="100"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Label Content="Channel 1:" Grid.Row="0" Grid.Column="0"/>
+                        <ComboBox x:Name="PatternCH1Combo" Grid.Row="0" Grid.Column="1" Margin="5">
+                            <ComboBoxItem Content="Don't Care" Tag="X"/>
+                            <ComboBoxItem Content="High" Tag="H"/>
+                            <ComboBoxItem Content="Low" Tag="L"/>
+                            <ComboBoxItem Content="Rising" Tag="R"/>
+                            <ComboBoxItem Content="Falling" Tag="F"/>
+                        </ComboBox>
+
+                        <Label Content="Channel 2:" Grid.Row="1" Grid.Column="0"/>
+                        <ComboBox x:Name="PatternCH2Combo" Grid.Row="1" Grid.Column="1" Margin="5">
+                            <ComboBoxItem Content="Don't Care" Tag="X"/>
+                            <ComboBoxItem Content="High" Tag="H"/>
+                            <ComboBoxItem Content="Low" Tag="L"/>
+                            <ComboBoxItem Content="Rising" Tag="R"/>
+                            <ComboBoxItem Content="Falling" Tag="F"/>
+                        </ComboBox>
+                    </Grid>
+                </GroupBox>
+            </Grid>
+
+            <!-- Serial Protocol Parameters -->
+            <Grid x:Name="SerialParametersPanel" Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="5" 
+                  Visibility="Collapsed" Margin="5">
+                <GroupBox Header="Serial Protocol Parameters" Background="#F0F8FF" BorderBrush="#4169E1" BorderThickness="1">
+                    <Grid Margin="10">
+
+                        <!-- RS232 Parameters -->
+                        <StackPanel x:Name="RS232Panel" Visibility="Collapsed">
+                            <Label Content="RS232 Configuration:" FontWeight="Bold" Margin="0,0,0,5"/>
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="100"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <Label Content="Baud Rate:" Grid.Row="0" Grid.Column="0"/>
+                                <ComboBox x:Name="RS232BaudRateCombo" Grid.Row="0" Grid.Column="1" Margin="5">
+                                    <ComboBoxItem Content="2400" Tag="2400"/>
+                                    <ComboBoxItem Content="4800" Tag="4800"/>
+                                    <ComboBoxItem Content="9600" Tag="9600"/>
+                                    <ComboBoxItem Content="19200" Tag="19200"/>
+                                    <ComboBoxItem Content="38400" Tag="38400"/>
+                                    <ComboBoxItem Content="115200" Tag="115200"/>
+                                </ComboBox>
+
+                                <Label Content="Data Bits:" Grid.Row="1" Grid.Column="0"/>
+                                <ComboBox x:Name="RS232DataBitsCombo" Grid.Row="1" Grid.Column="1" Margin="5">
+                                    <ComboBoxItem Content="5" Tag="5"/>
+                                    <ComboBoxItem Content="6" Tag="6"/>
+                                    <ComboBoxItem Content="7" Tag="7"/>
+                                    <ComboBoxItem Content="8" Tag="8"/>
+                                </ComboBox>
+
+                                <Label Content="Parity:" Grid.Row="2" Grid.Column="0"/>
+                                <ComboBox x:Name="RS232ParityCombo" Grid.Row="2" Grid.Column="1" Margin="5">
+                                    <ComboBoxItem Content="None" Tag="NONE"/>
+                                    <ComboBoxItem Content="Even" Tag="EVEN"/>
+                                    <ComboBoxItem Content="Odd" Tag="ODD"/>
+                                </ComboBox>
+
+                                <Label Content="Stop Bits:" Grid.Row="3" Grid.Column="0"/>
+                                <ComboBox x:Name="RS232StopBitsCombo" Grid.Row="3" Grid.Column="1" Margin="5">
+                                    <ComboBoxItem Content="1" Tag="1"/>
+                                    <ComboBoxItem Content="1.5" Tag="1.5"/>
+                                    <ComboBoxItem Content="2" Tag="2"/>
+                                </ComboBox>
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- I2C Parameters -->
+                        <StackPanel x:Name="I2CPanel" Visibility="Collapsed">
+                            <Label Content="I²C Configuration:" FontWeight="Bold" Margin="0,0,0,5"/>
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="100"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <Label Content="Address Width:" Grid.Row="0" Grid.Column="0"/>
+                                <ComboBox x:Name="I2CAddressWidthCombo" Grid.Row="0" Grid.Column="1" Margin="5">
+                                    <ComboBoxItem Content="7 bits" Tag="7"/>
+                                    <ComboBoxItem Content="8 bits" Tag="8"/>
+                                    <ComboBoxItem Content="10 bits" Tag="10"/>
+                                </ComboBox>
+
+                                <Label Content="Address Mode:" Grid.Row="1" Grid.Column="0"/>
+                                <ComboBox x:Name="I2CAddressModeCombo" Grid.Row="1" Grid.Column="1" Margin="5">
+                                    <ComboBoxItem Content="Normal" Tag="NORMal"/>
+                                    <ComboBoxItem Content="R/W" Tag="RW"/>
+                                </ComboBox>
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- SPI Parameters -->
+                        <StackPanel x:Name="SPIPanel" Visibility="Collapsed">
+                            <Label Content="SPI Configuration:" FontWeight="Bold" Margin="0,0,0,5"/>
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="100"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <Label Content="Mode:" Grid.Row="0" Grid.Column="0"/>
+                                <ComboBox x:Name="SPIModeCombo" Grid.Row="0" Grid.Column="1" Margin="5">
+                                    <ComboBoxItem Content="Timeout" Tag="TIMeout"/>
+                                    <ComboBoxItem Content="CS" Tag="CS"/>
+                                </ComboBox>
+
+                                <Label Content="Clock Edge:" Grid.Row="1" Grid.Column="0"/>
+                                <ComboBox x:Name="SPIClockEdgeCombo" Grid.Row="1" Grid.Column="1" Margin="5">
+                                    <ComboBoxItem Content="Rising" Tag="RISE"/>
+                                    <ComboBoxItem Content="Falling" Tag="FALL"/>
+                                </ComboBox>
+
+                                <Label Content="Data Width:" Grid.Row="2" Grid.Column="0"/>
+                                <TextBox x:Name="SPIDataWidthTextBox" Grid.Row="2" Grid.Column="1" Margin="5" Text="8"/>
+
+                                <Label Content="Endian:" Grid.Row="3" Grid.Column="0"/>
+                                <ComboBox x:Name="SPIEndianCombo" Grid.Row="3" Grid.Column="1" Margin="5">
+                                    <ComboBoxItem Content="MSB" Tag="MSB"/>
+                                    <ComboBoxItem Content="LSB" Tag="LSB"/>
+                                </ComboBox>
+                            </Grid>
+                        </StackPanel>
+                    </Grid>
+                </GroupBox>
+            </Grid>
+
+            <!-- Advanced Trigger Parameters (Duration, Timeout, Runt, etc.) -->
+            <Grid x:Name="AdvancedParametersPanel" Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="5" 
+                  Visibility="Collapsed" Margin="5">
+                <GroupBox Header="Advanced Trigger Parameters" Background="#FFF8DC" BorderBrush="#DAA520" BorderThickness="1">
+                    <Grid Margin="10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="100"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Label Content="Condition:" Grid.Row="0" Grid.Column="0"/>
+                        <ComboBox x:Name="AdvancedConditionCombo" Grid.Row="0" Grid.Column="1" Margin="5">
+                            <ComboBoxItem Content="Greater Than" Tag="GREater"/>
+                            <ComboBoxItem Content="Less Than" Tag="LESs"/>
+                            <ComboBoxItem Content="Range" Tag="RANG"/>
+                        </ComboBox>
+
+                        <Label Content="Time (Low):" Grid.Row="1" Grid.Column="0"/>
+                        <TextBox x:Name="AdvancedTimeLowTextBox" Grid.Row="1" Grid.Column="1" Margin="5"/>
+
+                        <Label Content="Time (High):" Grid.Row="2" Grid.Column="0"/>
+                        <TextBox x:Name="AdvancedTimeHighTextBox" Grid.Row="2" Grid.Column="1" Margin="5"/>
+                    </Grid>
+                </GroupBox>
+            </Grid>
+
+            <!-- Row 8: Force Trigger Button -->
+            <Button x:Name="ForceTriggerButton" 
+                    Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="5"
+                    Content="🎯 Force Trigger" 
+                    Height="30" 
+                    Margin="5"
+                    Background="#FFE4E1"
+                    BorderBrush="#DC143C"
+                    BorderThickness="2"
+                    FontWeight="Bold"/>
+
+            <!-- RIGHT COLUMN: Multimedia Controls (spans all rows for full height) -->
+            <GroupBox Grid.Row="0" Grid.Column="5" Grid.RowSpan="9"
+                      Header="Trigger Level" 
+                      Background="#F8F8FF"
+                      BorderBrush="#32CD32"
+                      BorderThickness="1"
+                      Margin="5,5,107,5">
+
+                <Grid Margin="10,0,13,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <!-- Max display -->
+                        <RowDefinition Height="*"/>
+                        <!-- Arrow control -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Current value -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Min display -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Range display -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Controls -->
+                    </Grid.RowDefinitions>
+
+                    <!-- Max Level Display -->
+                    <TextBlock Grid.Row="0" 
+                               Text="📈 Max: +5.000V" 
+                               FontSize="9" 
+                               Foreground="Green" 
+                               HorizontalAlignment="Center" 
+                               Margin="0,0,0,5"/>
+
+                    <!-- Multimedia Emoji Arrow Control (Vertical orientation) -->
+                    <local:EmojiArrows x:Name="TriggerLevelArrows"
+                                       Grid.Row="1"
+                                       CurrentValue="0"
+                                       GraticuleSize="0.1"
+                                       MinValue="-10"
+                                       MaxValue="10"
+                                       RotationAngle="270"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Margin="10"/>
+
+                    <!-- Current Level Value -->
+                    <TextBlock x:Name="LevelValueText" 
+                               Grid.Row="2" 
+                               Text="🎯 0.000V" 
+                               FontSize="12" 
+                               FontWeight="Bold" 
+                               Foreground="#9370DB" 
+                               HorizontalAlignment="Center" 
+                               Margin="0,5"/>
+
+                    <!-- Min Level Display -->
+                    <TextBlock Grid.Row="3" 
+                               Text="📉 Min: -5.000V" 
+                               FontSize="9" 
+                               Foreground="Red" 
+                               HorizontalAlignment="Center" 
+                               Margin="0,5,0,10"/>
+
+                    <!-- Range Display -->
+                    <TextBlock Grid.Row="4" 
+                               Text="📏 Range: 10.000V" 
+                               FontSize="8" 
+                               Foreground="Gray" 
+                               HorizontalAlignment="Center" 
+                               Margin="0,0,0,10"/>
+
+                    <!-- Additional Controls -->
+                    <StackPanel Grid.Row="5" Orientation="Vertical">
+                        <Button Content="🔄" 
+                                ToolTip="Auto Level" 
+                                Height="25" 
+                                Margin="0,2" 
+                                FontSize="10"/>
+                        <Button Content="0️⃣" 
+                                ToolTip="Set to 0V" 
+                                Height="25" 
+                                Margin="0,2" 
+                                FontSize="10"/>
+                    </StackPanel>
+                </Grid>
+            </GroupBox>
+
+        </Grid>
+    </GroupBox>
+</UserControl>

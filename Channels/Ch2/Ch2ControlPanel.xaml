@@ -1,0 +1,138 @@
+﻿<UserControl x:Class="DS1000Z_E_USB_Control.Channels.Ch2.Ch2ControlPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:DS1000Z_E_USB_Control.Controls"
+             mc:Ignorable="d" 
+             d:DesignHeight="400" d:DesignWidth="320">
+
+    <!-- Channel 2 Controls (Light Blue Background) -->
+    <GroupBox Header="Channel 2 Controls" 
+              Background="#F0F8FF"
+              BorderBrush="#4169E1"
+              BorderThickness="2">
+
+        <Grid>
+            <!-- Columns: Label | Control | Unit | Multimedia -->
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="70"/>
+                <ColumnDefinition Width="128"/>
+                <ColumnDefinition Width="152"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Rows -->
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" MinHeight="45"/>
+                <!-- Row 0: Enable -->
+                <RowDefinition Height="Auto" MinHeight="45"/>
+                <!-- Row 1: Scale -->
+                <RowDefinition Height="Auto"/>
+                <!-- Row 2: Coupling -->
+                <RowDefinition Height="Auto" MinHeight="45"/>
+                <!-- Row 3: Probe -->
+                <RowDefinition Height="Auto" MinHeight="25"/>
+                <!-- Row 4: Settings -->
+            </Grid.RowDefinitions>
+
+            <!-- Row 0 Channel Enable -->
+            <Button x:Name="EnableChannelButton" Grid.Column="1"
+                    VerticalAlignment="Center"
+                    Margin="0,0,39,0"
+                    FontWeight="Bold"
+                    Foreground="#4169E1"
+                    Height="26"
+                    Content="Enable CH2"
+                    Click="EnableChannelButton_Click">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8"
+                                Padding="5">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Button.Template>
+                <Button.Background>
+                    <SolidColorBrush Color="#E8F4FD"/>
+                </Button.Background>
+                <Button.BorderBrush>
+                    <SolidColorBrush Color="#4169E1"/>
+                </Button.BorderBrush>
+            </Button>
+
+            <!-- Row 1 Scale V/ Division -->
+            <Label Content="Scale:"
+                   Grid.Row="1" Grid.Column="0"
+                   VerticalAlignment="Center"
+                   HorizontalAlignment="Left"
+                   Height="26" Margin="30,0,0,0" Width="40"/>
+
+            <ComboBox x:Name="VerticalScaleComboBox"
+                      Grid.Row="1" Grid.Column="1"
+                      VerticalAlignment="Center"
+                      Margin="0,0,50,0" Height="22"/>
+
+            <!-- Row 2 AC - DC - Ground coupling-->
+            <Label Content="Coupling:"
+                   Grid.Row="2" Grid.Column="0"
+                   VerticalAlignment="Center"
+                   HorizontalAlignment="Left"
+                   Height="26" Margin="15,0,0,0" Width="55"/>
+
+            <ComboBox x:Name="CouplingComboBox"
+                      Grid.Row="2" Grid.Column="1"
+                      VerticalAlignment="Center"
+                      Margin="0,0,50,0" Height="22"/>
+
+            <!-- Row 3 Probe Ratio -->
+            <Label Content="Probe:"
+                   Grid.Row="3" Grid.Column="0"
+                   VerticalAlignment="Center"
+                   HorizontalAlignment="Left"
+                   Height="26" Margin="25,0,0,0" Width="45"/>
+
+            <ComboBox x:Name="ProbeRatioComboBox"
+                      Grid.Row="3" Grid.Column="1"
+                      VerticalAlignment="Center"
+                      Margin="0,0,50,0" Height="22"/>
+
+            <!-- Row 4 Current Settings Display -->
+            <TextBlock x:Name="CurrentSettingsText"
+                       Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2"
+                       Text="CH2: OFF, 10X, 1V/div, Offset=+0.000V, DC"
+                       FontSize="8" Foreground="#4169E1"
+                       Margin="5,10,5,5"
+                       TextWrapping="Wrap"/>
+
+            <!-- Multimedia Controls on Right (Spanning All Rows) -->
+            <GroupBox Grid.Row="0" Grid.Column="2" Grid.RowSpan="5"
+          Header="Vertical Offset"
+          Background="#F0F8FF"
+          BorderBrush="#4169E1"
+          BorderThickness="1"
+          Margin="6,3,53,3">
+
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- EmojiArrows Control -->
+                    <local:EmojiArrows Grid.Row="0" x:Name="VerticalOffsetArrows"
+                           RotationAngle="270"
+                           CurrentValue="0"
+                           GraticuleSize="1.0"
+                           MinValue="-5"
+                           MaxValue="5"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"/>
+                </Grid>
+            </GroupBox>
+
+        </Grid>
+    </GroupBox>
+</UserControl>

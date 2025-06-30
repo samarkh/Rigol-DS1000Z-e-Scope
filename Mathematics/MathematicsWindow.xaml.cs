@@ -4,7 +4,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
+using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Threading;
 
@@ -12,7 +15,7 @@ namespace DS1000Z_E_USB_Control.Mathematics
 {
     /// <summary>
     /// Mathematics Window - Container for the Mathematics Panel
-    /// Handles window-level functionality, menus, status, and file operations
+    /// Handles window-level functionality, menus, status, file operations, and SCPI command management
     /// </summary>
     public partial class MathematicsWindow : Window
     {
@@ -22,8 +25,15 @@ namespace DS1000Z_E_USB_Control.Mathematics
         private string currentConfigurationFile = string.Empty;
         private MathematicsSettings lastSavedSettings;
         private DispatcherTimer statusTimer;
+        private DispatcherTimer timestampTimer;
         private bool isConnectedToOscilloscope = false;
-       // private MathematicsWindow _mathematicsWindow;
+        private readonly List<string> recentCommands = new List<string>();
+        private bool hasUnsavedChanges = false;
+
+        // Constants
+        private const int MAX_RECENT_COMMANDS = 100;
+        private const string WINDOW_TITLE_PREFIX = "Mathematics Functions - ";
+        private const string DEFAULT_CONFIG_NAME = "New Configuration";
 
         #endregion
 
@@ -32,17 +42,17 @@ namespace DS1000Z_E_USB_Control.Mathematics
         /// <summary>
         /// Event raised when SCPI command is generated
         /// </summary>
-        public event EventHandler<string> SCPICommandGenerated;
+        public event EventHandler<SCPICommandEventArgs> SCPICommandGenerated;
 
         /// <summary>
         /// Event raised when an error occurs
         /// </summary>
-        public event EventHandler<string> ErrorOccurred;
+        public event EventHandler<ErrorEventArgs> ErrorOccurred;
 
         /// <summary>
         /// Event raised for status updates
         /// </summary>
-        public event EventHandler<string> StatusUpdated;
+        public event EventHandler<StatusEventArgs> StatusUpdated;
 
         /// <summary>
         /// Event raised when window requests connection status update
@@ -69,29 +79,26 @@ namespace DS1000Z_E_USB_Control.Mathematics
         {
             try
             {
-                // Subscribe to panel events
-                if (MathPanel != null)
-                {
-                    MathPanel.SCPICommandGenerated += OnMathPanelSCPICommand;
-                    MathPanel.ErrorOccurred += OnMathPanelError;
-                    MathPanel.StatusUpdated += OnMathPanelStatus;
-                }
-
-                // Initialize status timer
-                InitializeStatusTimer();
-
-                // Set initial window state
+                // Set window properties first
                 SetInitialWindowState();
 
-                // Update initial status
-                UpdateStatus("Mathematics Functions window initialized");
+                // Subscribe to panel events if panel exists
+                SubscribeToMathPanelEvents();
+
+                // Initialize timers
+                InitializeTimers();
+
+                // Set initial connection status
                 UpdateConnectionStatus(false);
 
+                // Update initial status and window title
+                UpdateStatus("Mathematics Functions window initialized");
+                UpdateWindowTitle(DEFAULT_CONFIG_NAME);
+
                 // Store initial settings for change tracking
-                lastSavedSettings = MathPanel?.GetCurrentSettings()?.Clone();
+                StoreInitialSettings();
 
                 isInitialized = true;
-
                 OnStatusUpdated("Mathematics window opened and ready");
             }
             catch (Exception ex)
@@ -103,16 +110,52 @@ namespace DS1000Z_E_USB_Control.Mathematics
         }
 
         /// <summary>
-        /// Initialize status update timer
+        /// Subscribe to Math Panel events with null checks
         /// </summary>
-        private void InitializeStatusTimer()
+        private void SubscribeToMathPanelEvents()
         {
-            statusTimer = new DispatcherTimer
+            try
             {
-                Interval = TimeSpan.FromSeconds(1)
-            };
-            statusTimer.Tick += StatusTimer_Tick;
-            statusTimer.Start();
+                if (MathPanel != null)
+                {
+                    MathPanel.SCPICommandGenerated += OnMathPanelSCPICommand;
+                    MathPanel.ErrorOccurred += OnMathPanelError;
+                    MathPanel.StatusUpdated += OnMathPanelStatus;
+                }
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Failed to subscribe to math panel events: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Initialize all timers used by the window
+        /// </summary>
+        private void InitializeTimers()
+        {
+            try
+            {
+                // Status update timer
+                statusTimer = new DispatcherTimer
+                {
+                    Interval = TimeSpan.FromSeconds(1)
+                };
+                statusTimer.Tick += StatusTimer_Tick;
+                statusTimer.Start();
+
+                // Timestamp update timer  
+                timestampTimer = new DispatcherTimer
+                {
+                    Interval = TimeSpan.FromSeconds(1)
+                };
+                timestampTimer.Tick += TimestampTimer_Tick;
+                timestampTimer.Start();
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Failed to initialize timers: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -120,19 +163,284 @@ namespace DS1000Z_E_USB_Control.Mathematics
         /// </summary>
         private void SetInitialWindowState()
         {
-            // Set window properties
-            this.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+            try
+            {
+                // Set window properties
+                this.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+                this.MinWidth = 800;
+                this.MinHeight = 600;
 
-            // Update timestamp
-            UpdateTimestamp();
+                // Update timestamp
+                UpdateTimestamp();
 
-            // Set initial status icon
-            StatusIcon.Text = "🧮";
+                // Set initial status icon if it exists
+                if (StatusIcon != null)
+                {
+                    StatusIcon.Text = "🧮";
+                }
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Failed to set initial window state: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Store initial settings for change tracking
+        /// </summary>
+        private void StoreInitialSettings()
+        {
+            try
+            {
+                lastSavedSettings = GetPanelSettings() ?? new MathematicsSettings();
+                hasUnsavedChanges = false;
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Failed to store initial settings: {ex.Message}");
+                lastSavedSettings = new MathematicsSettings();
+            }
+        }
+
+        /// <summary>
+        /// Safely get settings from panel
+        /// </summary>
+        private MathematicsSettings GetPanelSettings()
+        {
+            try
+            {
+                return MathPanel?.GetCurrentSettings() ?? new MathematicsSettings();
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error getting panel settings: {ex.Message}");
+                return new MathematicsSettings();
+            }
+        }
+
+        #endregion
+
+        #region Event Handlers - Math Panel
+
+        /// <summary>
+        /// Handle SCPI commands from math panel
+        /// </summary>
+        private void OnMathPanelSCPICommand(object sender, SCPICommandEventArgs e)
+        {
+            try
+            {
+                // Add to recent commands list
+                AddToRecentCommands(e.Command);
+
+                // Mark as having unsaved changes
+                hasUnsavedChanges = true;
+
+                // Forward the command to parent
+                SCPICommandGenerated?.Invoke(this, e);
+
+                // Update status
+                UpdateStatus($"SCPI: {e.Command}");
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error handling SCPI command: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Handle errors from math panel
+        /// </summary>
+        private void OnMathPanelError(object sender, ErrorEventArgs e)
+        {
+            try
+            {
+                // Forward error to parent
+                ErrorOccurred?.Invoke(this, e);
+
+                // Update status with error indication
+                UpdateStatus($"Error: {e.Error}", true);
+
+                // Show error to user if it's critical
+                if (e.Error.Contains("SCPI") || e.Error.Contains("communication"))
+                {
+                    MessageBox.Show(e.Error, "Mathematics Panel Error",
+                                  MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error in error handler: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Handle status updates from math panel
+        /// </summary>
+        private void OnMathPanelStatus(object sender, StatusEventArgs e)
+        {
+            try
+            {
+                // Forward status to parent
+                StatusUpdated?.Invoke(this, e);
+
+                // Update local status
+                UpdateStatus(e.Message);
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error handling status update: {ex.Message}");
+            }
         }
 
         #endregion
 
         #region Event Handlers - Menu Actions
+
+        /// <summary>
+        /// Create new configuration
+        /// </summary>
+        private void NewConfiguration_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (hasUnsavedChanges && !ConfirmDiscardChanges())
+                    return;
+
+                // Reset to default settings
+                var defaultSettings = new MathematicsSettings();
+                LoadSettingsIntoPanel(defaultSettings);
+
+                // Clear current configuration
+                currentConfigurationFile = string.Empty;
+                lastSavedSettings = CloneSettings(defaultSettings);
+                hasUnsavedChanges = false;
+
+                // Update UI
+                UpdateWindowTitle(DEFAULT_CONFIG_NAME);
+                UpdateStatus("New mathematics configuration created");
+
+                OnStatusUpdated("New configuration created");
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error creating new configuration: {ex.Message}");
+                MessageBox.Show($"Error creating new configuration: {ex.Message}",
+                              "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Open existing configuration
+        /// </summary>
+        private void OpenConfiguration_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (hasUnsavedChanges && !ConfirmDiscardChanges())
+                    return;
+
+                var dialog = new OpenFileDialog
+                {
+                    Title = "Open Mathematics Configuration",
+                    Filter = "Mathematics Config Files (*.mathconfig)|*.mathconfig|JSON Files (*.json)|*.json|All Files (*.*)|*.*",
+                    DefaultExt = ".mathconfig",
+                    CheckFileExists = true
+                };
+
+                if (dialog.ShowDialog() == true)
+                {
+                    LoadConfigurationFromFile(dialog.FileName);
+                }
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error opening configuration: {ex.Message}");
+                MessageBox.Show($"Error opening configuration: {ex.Message}",
+                              "Open Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Save current configuration
+        /// </summary>
+        private void SaveConfiguration_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(currentConfigurationFile))
+                {
+                    SaveConfigurationAs_Click(sender, e);
+                }
+                else
+                {
+                    SaveConfigurationToFile(currentConfigurationFile);
+                }
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error saving configuration: {ex.Message}");
+                MessageBox.Show($"Error saving configuration: {ex.Message}",
+                              "Save Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Save current configuration with new name
+        /// </summary>
+        private void SaveConfigurationAs_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var dialog = new SaveFileDialog
+                {
+                    Title = "Save Mathematics Configuration",
+                    Filter = "Mathematics Config Files (*.mathconfig)|*.mathconfig|JSON Files (*.json)|*.json",
+                    DefaultExt = ".mathconfig",
+                    FileName = GenerateDefaultFileName()
+                };
+
+                if (dialog.ShowDialog() == true)
+                {
+                    SaveConfigurationToFile(dialog.FileName);
+                    currentConfigurationFile = dialog.FileName;
+                    UpdateWindowTitle(Path.GetFileNameWithoutExtension(dialog.FileName));
+                }
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error saving configuration as: {ex.Message}");
+                MessageBox.Show($"Error saving configuration: {ex.Message}",
+                              "Save Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Export current SCPI commands
+        /// </summary>
+        private void ExportCommands_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var dialog = new SaveFileDialog
+                {
+                    Title = "Export SCPI Commands",
+                    Filter = "Text Files (*.txt)|*.txt|SCPI Files (*.scpi)|*.scpi|All Files (*.*)|*.*",
+                    DefaultExt = ".txt",
+                    FileName = $"MathCommands_{DateTime.Now:yyyyMMdd_HHmmss}.txt"
+                };
+
+                if (dialog.ShowDialog() == true)
+                {
+                    ExportSCPICommands(dialog.FileName);
+                }
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error exporting commands: {ex.Message}");
+                MessageBox.Show($"Error exporting commands: {ex.Message}",
+                              "Export Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
 
         /// <summary>
         /// Reset all mathematics settings to defaults
@@ -157,183 +465,68 @@ namespace DS1000Z_E_USB_Control.Mathematics
                 {
                     // Reset panel settings
                     var defaultSettings = new MathematicsSettings();
-                    MathPanel?.LoadSettings(defaultSettings);
+                    LoadSettingsIntoPanel(defaultSettings);
 
                     // Clear current configuration file
                     currentConfigurationFile = string.Empty;
-                    lastSavedSettings = defaultSettings.Clone();
+                    lastSavedSettings = CloneSettings(defaultSettings);
+                    hasUnsavedChanges = false;
 
                     // Update window title
-                    UpdateWindowTitle("New Configuration");
+                    UpdateWindowTitle(DEFAULT_CONFIG_NAME);
 
                     UpdateStatus("All mathematics settings reset to factory defaults");
 
                     MessageBox.Show("All mathematics settings have been reset to defaults.",
                                   "Reset Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                    OnStatusUpdated("Settings reset to defaults");
                 }
             }
             catch (Exception ex)
             {
                 OnErrorOccurred($"Error resetting settings: {ex.Message}");
-                ShowErrorDialog("Reset Error", ex.Message);
-            }
-        }
-
-        /// <summary>
-        /// Save current configuration to file
-        /// </summary>
-        private void SaveConfig_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                SaveFileDialog dialog = new SaveFileDialog
-                {
-                    Filter = "Math Config Files (*.json)|*.json|All Files (*.*)|*.*",
-                    DefaultExt = "json",
-                    FileName = GenerateDefaultFileName(),
-                    Title = "Save Mathematics Configuration",
-                    InitialDirectory = GetConfigurationDirectory()
-                };
-
-                if (dialog.ShowDialog() == true)
-                {
-                    SaveConfigurationToFile(dialog.FileName);
-                }
-            }
-            catch (Exception ex)
-            {
-                OnErrorOccurred($"Error saving configuration: {ex.Message}");
-                ShowErrorDialog("Save Error", ex.Message);
-            }
-        }
-
-        /// <summary>
-        /// Load configuration from file
-        /// </summary>
-        private void LoadConfig_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                OpenFileDialog dialog = new OpenFileDialog
-                {
-                    Filter = "Math Config Files (*.json)|*.json|All Files (*.*)|*.*",
-                    DefaultExt = "json",
-                    Title = "Load Mathematics Configuration",
-                    InitialDirectory = GetConfigurationDirectory()
-                };
-
-                if (dialog.ShowDialog() == true)
-                {
-                    LoadConfigurationFromFile(dialog.FileName);
-                }
-            }
-            catch (Exception ex)
-            {
-                OnErrorOccurred($"Error loading configuration: {ex.Message}");
-                ShowErrorDialog("Load Error", ex.Message);
-            }
-        }
-
-        /// <summary>
-        /// Show presets selection dialog
-        /// </summary>
-        private void ShowPresets_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                var presets = MathematicsSettings.GetFactoryPresets();
-                var presetDialog = CreatePresetSelectionDialog(presets);
-
-                if (presetDialog.ShowDialog() == true)
-                {
-                    // Preset applied through dialog
-                    UpdateStatus("Factory preset applied successfully");
-                }
-            }
-            catch (Exception ex)
-            {
-                OnErrorOccurred($"Error showing presets: {ex.Message}");
-                ShowErrorDialog("Presets Error", ex.Message);
-            }
-        }
-
-        /// <summary>
-        /// Show templates selection dialog
-        /// </summary>
-        private void ShowTemplates_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                var templatesInfo = GetTemplateInformation();
-                MessageBox.Show(templatesInfo, "Mathematics Function Templates",
-                              MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                OnErrorOccurred($"Error showing templates: {ex.Message}");
-                ShowErrorDialog("Templates Error", ex.Message);
+                MessageBox.Show($"Error resetting settings: {ex.Message}",
+                              "Reset Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
         /// <summary>
         /// Validate current configuration
         /// </summary>
-        private void ValidateConfig_Click(object sender, RoutedEventArgs e)
+        private void ValidateConfiguration_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                List<string> errors = new List<string>(); // Initialize the errors list
+                var settings = GetPanelSettings();
+                if (settings == null)
+                {
+                    MessageBox.Show("No configuration to validate.", "Validation",
+                                  MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
 
-                if (MathPanel?.ValidateConfiguration(out errors) == true)
-                {
-                    MessageBox.Show("✅ Configuration validation passed!\n\nAll settings are valid and ready for use.",
-                                  "Validation Success", MessageBoxButton.OK, MessageBoxImage.Information);
-                    UpdateStatus("Configuration validation: PASSED");
-                }
-                else
-                {
-                    var errorMessage = "❌ Configuration validation failed:\n\n• " + string.Join("\n• ", errors);
-                    MessageBox.Show(errorMessage, "Validation Errors",
-                                  MessageBoxButton.OK, MessageBoxImage.Warning);
-                    UpdateStatus($"Configuration validation: FAILED ({errors.Count} errors)");
-                }
+                var validationResults = ValidateSettings(settings);
+                var message = validationResults.Count == 0
+                    ? "✅ Configuration is valid!\n\nAll settings are properly configured and ready for use."
+                    : $"⚠️ Configuration has issues:\n\n{string.Join("\n", validationResults)}";
+
+                var icon = validationResults.Count == 0 ? MessageBoxImage.Information : MessageBoxImage.Warning;
+
+                MessageBox.Show(message, "Configuration Validation", MessageBoxButton.OK, icon);
+
+                UpdateStatus($"Configuration validation completed - {validationResults.Count} issues found");
             }
             catch (Exception ex)
             {
                 OnErrorOccurred($"Error validating configuration: {ex.Message}");
-                ShowErrorDialog("Validation Error", ex.Message);
+                MessageBox.Show($"Error during validation: {ex.Message}",
+                              "Validation Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
         /// <summary>
-        /// Export SCPI commands to text file
-        /// </summary>
-        private void ExportCommands_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                SaveFileDialog dialog = new SaveFileDialog
-                {
-                    Filter = "Text Files (*.txt)|*.txt|SCPI Files (*.scpi)|*.scpi|All Files (*.*)|*.*",
-                    DefaultExt = "txt",
-                    FileName = $"MathCommands_{DateTime.Now:yyyyMMdd_HHmmss}.txt",
-                    Title = "Export SCPI Commands"
-                };
-
-                if (dialog.ShowDialog() == true)
-                {
-                    ExportSCPICommands(dialog.FileName);
-                }
-            }
-            catch (Exception ex)
-            {
-                OnErrorOccurred($"Error exporting commands: {ex.Message}");
-                ShowErrorDialog("Export Error", ex.Message);
-            }
-        }
-
-        /// <summary>
-        /// Show help documentation
+        /// Show help dialog
         /// </summary>
         private void Help_Click(object sender, RoutedEventArgs e)
         {
@@ -344,7 +537,6 @@ namespace DS1000Z_E_USB_Control.Mathematics
             catch (Exception ex)
             {
                 OnErrorOccurred($"Error showing help: {ex.Message}");
-                ShowErrorDialog("Help Error", ex.Message);
             }
         }
 
@@ -360,189 +552,12 @@ namespace DS1000Z_E_USB_Control.Mathematics
             catch (Exception ex)
             {
                 OnErrorOccurred($"Error showing about dialog: {ex.Message}");
-                ShowErrorDialog("About Error", ex.Message);
             }
         }
 
         #endregion
 
-        #region Event Handlers - Preset Applications
-
-        /// <summary>
-        /// Apply Basic Addition preset
-        /// </summary>
-        private void ApplyPreset_BasicAddition(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                MathPanel?.ApplyPreset("BASIC_ADD");
-                UpdateStatus("Applied Basic Addition preset");
-            }
-            catch (Exception ex)
-            {
-                OnErrorOccurred($"Error applying Basic Addition preset: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// Apply FFT Analysis preset
-        /// </summary>
-        private void ApplyPreset_FFTAnalysis(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                MathPanel?.ApplyPreset("DEFAULT_FFT");
-                UpdateStatus("Applied FFT Analysis preset");
-            }
-            catch (Exception ex)
-            {
-                OnErrorOccurred($"Error applying FFT Analysis preset: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// Apply Low Pass Filter preset
-        /// </summary>
-        private void ApplyPreset_LowPassFilter(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                MathPanel?.ApplyPreset("LOW_PASS_FILTER");
-                UpdateStatus("Applied Low Pass Filter preset");
-            }
-            catch (Exception ex)
-            {
-                OnErrorOccurred($"Error applying Low Pass Filter preset: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// Apply Integration preset
-        /// </summary>
-        private void ApplyPreset_Integration(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                MathPanel?.ApplyPreset("INTEGRATION");
-                UpdateStatus("Applied Integration preset");
-            }
-            catch (Exception ex)
-            {
-                OnErrorOccurred($"Error applying Integration preset: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// Copy SCPI commands to clipboard
-        /// </summary>
-        private void CopyCommands_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                // This would be implemented to get commands from the panel
-                var commands = GetCurrentSCPICommands();
-                if (!string.IsNullOrEmpty(commands))
-                {
-                    Clipboard.SetText(commands);
-                    UpdateStatus("SCPI commands copied to clipboard");
-
-                    // Visual feedback
-                    ShowTemporaryStatusMessage("Commands copied!", TimeSpan.FromSeconds(2));
-                }
-                else
-                {
-                    MessageBox.Show("No SCPI commands available to copy.", "Copy Commands",
-                                  MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-            }
-            catch (Exception ex)
-            {
-                OnErrorOccurred($"Error copying commands: {ex.Message}");
-            }
-        }
-
-        #endregion
-
-        #region Event Handlers - Panel Integration
-
-        /// <summary>
-        /// Handle SCPI command generated by mathematics panel
-        /// </summary>
-        private void OnMathPanelSCPICommand(object sender, string command)
-        {
-            try
-            {
-                // Forward to main application
-                SCPICommandGenerated?.Invoke(this, command);
-
-                // Update status
-                var commandName = command.Split(' ')[0];
-                UpdateStatus($"Command sent: {commandName}");
-            }
-            catch (Exception ex)
-            {
-                OnErrorOccurred($"Error forwarding SCPI command: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// Handle error from mathematics panel
-        /// </summary>
-        private void OnMathPanelError(object sender, string error)
-        {
-            OnErrorOccurred($"Math Panel: {error}");
-        }
-
-        /// <summary>
-        /// Handle status update from mathematics panel
-        /// </summary>
-        private void OnMathPanelStatus(object sender, string status)
-        {
-            UpdateStatus($"Panel: {status}");
-        }
-
-        #endregion
-
-        #region Event Handlers - Window Events
-
-        /// <summary>
-        /// Handle window closing
-        /// </summary>
-        protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
-        {
-            try
-            {
-                // Check for unsaved changes
-                if (HasUnsavedChanges())
-                {
-                    var result = MessageBox.Show(
-                        "You have unsaved changes to your mathematics configuration.\n\n" +
-                        "Do you want to save before closing?",
-                        "Unsaved Changes",
-                        MessageBoxButton.YesNoCancel,
-                        MessageBoxImage.Question);
-
-                    switch (result)
-                    {
-                        case MessageBoxResult.Yes:
-                            SaveConfig_Click(this, new RoutedEventArgs());
-                            break;
-                        case MessageBoxResult.Cancel:
-                            e.Cancel = true;
-                            return;
-                    }
-                }
-
-                // Cleanup
-                CleanupResources();
-            }
-            catch (Exception ex)
-            {
-                OnErrorOccurred($"Error during window closing: {ex.Message}");
-            }
-
-            base.OnClosing(e);
-        }
+        #region Event Handlers - Timers
 
         /// <summary>
         /// Handle status timer tick
@@ -551,15 +566,84 @@ namespace DS1000Z_E_USB_Control.Mathematics
         {
             try
             {
-                UpdateTimestamp();
+                // Update connection status periodically
+                UpdateConnectionStatusFromParent();
 
-                // Request connection status update periodically
-                ConnectionStatusRequested?.Invoke(this, isConnectedToOscilloscope);
+                // Clear temporary status messages after a delay
+                ClearTemporaryStatus();
             }
             catch (Exception ex)
             {
-                // Don't let timer errors break the application
                 System.Diagnostics.Debug.WriteLine($"Status timer error: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Handle timestamp timer tick
+        /// </summary>
+        private void TimestampTimer_Tick(object sender, EventArgs e)
+        {
+            try
+            {
+                UpdateTimestamp();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Timestamp timer error: {ex.Message}");
+            }
+        }
+
+        #endregion
+
+        #region Event Handlers - Window Lifecycle
+
+        /// <summary>
+        /// Handle window closing
+        /// </summary>
+        private async void MathematicsWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            try
+            {
+                // Check for unsaved changes
+                if (hasUnsavedChanges && !ConfirmDiscardChanges())
+                {
+                    e.Cancel = true;
+                    return;
+                }
+
+                // Disable math functions on the oscilloscope
+                if (MathPanel != null)
+                {
+                    await MathPanel.OnPanelClosingAsync();
+                }
+
+                // Cleanup resources
+                CleanupResources();
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error during window closing: {ex.Message}");
+                // Don't cancel closing due to cleanup errors
+            }
+        }
+
+        /// <summary>
+        /// Handle math panel loaded event
+        /// </summary>
+        private void MathPanel_Loaded(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Re-subscribe to events if needed
+                if (isInitialized)
+                {
+                    SubscribeToMathPanelEvents();
+                    UpdateStatus("Mathematics panel loaded and ready");
+                }
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error handling panel loaded: {ex.Message}");
             }
         }
 
@@ -574,19 +658,18 @@ namespace DS1000Z_E_USB_Control.Mathematics
         {
             try
             {
-                var settings = MathPanel?.GetCurrentSettings();
+                var settings = GetPanelSettings();
                 if (settings != null)
                 {
-                    settings.SaveToFile(filePath);
+                    SaveSettingsToFile(settings, filePath);
+                    lastSavedSettings = CloneSettings(settings);
+                    hasUnsavedChanges = false;
 
-                    currentConfigurationFile = filePath;
-                    lastSavedSettings = settings.Clone();
-
-                    UpdateWindowTitle(Path.GetFileNameWithoutExtension(filePath));
                     UpdateStatus($"Configuration saved to {Path.GetFileName(filePath)}");
-
                     MessageBox.Show("Mathematics configuration saved successfully!",
                                   "Save Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                    OnStatusUpdated("Configuration saved successfully");
                 }
                 else
                 {
@@ -606,17 +689,20 @@ namespace DS1000Z_E_USB_Control.Mathematics
         {
             try
             {
-                var settings = MathematicsSettings.LoadFromFile(filePath);
-                MathPanel?.LoadSettings(settings);
+                var settings = LoadSettingsFromFile(filePath);
+                LoadSettingsIntoPanel(settings);
 
                 currentConfigurationFile = filePath;
-                lastSavedSettings = settings.Clone();
+                lastSavedSettings = CloneSettings(settings);
+                hasUnsavedChanges = false;
 
                 UpdateWindowTitle(Path.GetFileNameWithoutExtension(filePath));
                 UpdateStatus($"Configuration loaded from {Path.GetFileName(filePath)}");
 
                 MessageBox.Show("Mathematics configuration loaded successfully!",
                               "Load Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                OnStatusUpdated("Configuration loaded successfully");
             }
             catch (Exception ex)
             {
@@ -639,6 +725,8 @@ namespace DS1000Z_E_USB_Control.Mathematics
                 UpdateStatus($"SCPI commands exported to {Path.GetFileName(filePath)}");
                 MessageBox.Show("SCPI commands exported successfully!",
                               "Export Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                OnStatusUpdated("SCPI commands exported successfully");
             }
             catch (Exception ex)
             {
@@ -648,254 +736,157 @@ namespace DS1000Z_E_USB_Control.Mathematics
 
         #endregion
 
-        #region Helper Methods - File Operations
+        #region Settings Management
 
         /// <summary>
-        /// Generate default filename for saving
+        /// Save settings to file using JSON serialization
         /// </summary>
-        private string GenerateDefaultFileName()
+        private void SaveSettingsToFile(MathematicsSettings settings, string filePath)
         {
-            var settings = MathPanel?.GetCurrentSettings();
-            var configName = settings?.ConfigurationName ?? "MathConfig";
-            var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-            return $"{configName}_{timestamp}.json";
-        }
-
-        /// <summary>
-        /// Get configuration directory
-        /// </summary>
-        private string GetConfigurationDirectory()
-        {
-            var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            var configPath = Path.Combine(appDataPath, "DS1000Z_E_Control", "Mathematics");
-
-            if (!Directory.Exists(configPath))
+            try
             {
-                Directory.CreateDirectory(configPath);
+                var options = new JsonSerializerOptions
+                {
+                    WriteIndented = true,
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                };
+
+                var json = JsonSerializer.Serialize(settings, options);
+                File.WriteAllText(filePath, json);
             }
-
-            return configPath;
-        }
-
-        /// <summary>
-        /// Get current SCPI commands from panel
-        /// </summary>
-        private string GetCurrentSCPICommands()
-        {
-            // This would need to be implemented to get commands from the panel
-            // For now, return a placeholder
-            return "// SCPI Commands would be retrieved from MathematicsPanel";
-        }
-
-        /// <summary>
-        /// Generate export content for commands
-        /// </summary>
-        private string GenerateCommandExportContent(string commands)
-        {
-            var sb = new StringBuilder();
-            sb.AppendLine("# Rigol DS1000Z-E Mathematics SCPI Commands");
-            sb.AppendLine($"# Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-            sb.AppendLine($"# Configuration: {MathPanel?.GetCurrentSettings()?.ConfigurationName ?? "Unknown"}");
-            sb.AppendLine();
-            sb.AppendLine("# Commands:");
-            sb.AppendLine(commands);
-            sb.AppendLine();
-            sb.AppendLine("# End of file");
-
-            return sb.ToString();
-        }
-
-        #endregion
-
-        #region Helper Methods - UI Dialogs
-
-        /// <summary>
-        /// Create preset selection dialog
-        /// </summary>
-        private Window CreatePresetSelectionDialog(Dictionary<string, MathematicsSettings> presets)
-        {
-            var dialog = new Window
+            catch (Exception ex)
             {
-                Title = "Select Mathematics Preset",
-                Width = 500,
-                Height = 400,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                Owner = this,
-                ResizeMode = ResizeMode.NoResize
-            };
-
-            // Implementation would create a ListBox with presets
-            // For now, return basic dialog
-            return dialog;
+                throw new InvalidOperationException($"Failed to save settings to {filePath}: {ex.Message}", ex);
+            }
         }
 
         /// <summary>
-        /// Show help dialog
+        /// Load settings from file using JSON deserialization
         /// </summary>
-        private void ShowHelpDialog()
+        private MathematicsSettings LoadSettingsFromFile(string filePath)
         {
-            var helpText = @"MATHEMATICS FUNCTIONS HELP
+            if (!File.Exists(filePath))
+                throw new FileNotFoundException($"Settings file not found: {filePath}");
 
-BASIC OPERATIONS:
-• Add: Channel 1 + Channel 2
-• Subtract: Channel 1 - Channel 2  
-• Multiply: Channel 1 × Channel 2
-• Divide: Channel 1 ÷ Channel 2
+            try
+            {
+                var json = File.ReadAllText(filePath);
+                var options = new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                };
 
-FFT ANALYSIS:
-• Rectangular: Basic windowing, good for transients
-• Blackman: Excellent frequency resolution
-• Hanning: Good general purpose windowing
-• Hamming: Similar to Hanning, slightly different response
+                var settings = JsonSerializer.Deserialize<MathematicsSettings>(json, options);
 
-DIGITAL FILTERS:
-• Low Pass: Passes frequencies below cutoff
-• High Pass: Passes frequencies above cutoff
-• Band Pass: Passes frequencies between W1 and W2
-• Band Stop: Blocks frequencies between W1 and W2
+                // Ensure all nested objects are initialized
+                if (settings != null)
+                {
+                    settings.BasicOperations ??= new BasicOperationsSettings();
+                    settings.FFTAnalysis ??= new FFTAnalysisSettings();
+                    settings.DigitalFilters ??= new DigitalFiltersSettings();
+                    settings.AdvancedMath ??= new AdvancedMathSettings();
+                }
 
-ADVANCED FUNCTIONS:
-• Integration: Calculate area under curve
-• Differentiation: Calculate rate of change
-• Square Root: Mathematical square root function
-• Logarithms: Base 10 and natural logarithms
-• Exponential: e^x function
-• Absolute Value: |x| function
-
-CONFIGURATION:
-• Save/Load: Store configurations for reuse
-• Presets: Quick apply common setups
-• Validation: Check parameter validity
-• Export: Save SCPI commands to file
-
-For detailed SCPI command reference, see the Rigol DS1000Z-E Programming Guide.";
-
-            MessageBox.Show(helpText, "Mathematics Functions Help",
-                          MessageBoxButton.OK, MessageBoxImage.Information);
+                return settings ?? new MathematicsSettings();
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Failed to load settings from {filePath}: {ex.Message}", ex);
+            }
         }
 
         /// <summary>
-        /// Show about dialog
+        /// Load settings into the math panel (placeholder - implement based on your panel's API)
         /// </summary>
-        private void ShowAboutDialog()
+        private void LoadSettingsIntoPanel(MathematicsSettings settings)
         {
-            var aboutText = @"MATHEMATICS FUNCTIONS MODULE
+            try
+            {
+                // This is a placeholder implementation
+                // You would implement this based on your MathematicsPanel's actual API
+                // For example, if your panel has a LoadSettings method:
+                // MathPanel?.LoadSettings(settings);
 
-Version: 1.0.0
-Part of: DS1000Z-E USB Control Application
+                // For now, we'll just update our tracking variables
+                lastSavedSettings = CloneSettings(settings);
+                hasUnsavedChanges = false;
 
-FEATURES:
-✓ Basic arithmetic operations (Add, Subtract, Multiply, Divide)
-✓ FFT analysis with multiple windowing functions
-✓ Digital filtering (Low/High/Band pass and stop)
-✓ Advanced math functions (Integration, Differentiation)
-✓ Configuration save/load with JSON format
-✓ Factory presets for common operations
-✓ Real-time SCPI command generation
-✓ Input validation and error handling
-
-COMPATIBILITY:
-• Rigol DS1000Z-E Series Digital Oscilloscopes
-• SCPI Command Protocol
-• USB and LAN communication
-
-SUPPORT:
-• Built-in help system
-• Configuration validation
-• Error reporting and logging
-• Export functionality for commands
-
-© 2024 - Mathematics Functions Module";
-
-            MessageBox.Show(aboutText, "About Mathematics Functions",
-                          MessageBoxButton.OK, MessageBoxImage.Information);
+                UpdateStatus("Settings loaded into panel");
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Failed to load settings into panel: {ex.Message}", ex);
+            }
         }
 
         /// <summary>
-        /// Show error dialog
+        /// Create a clone of settings for change tracking
         /// </summary>
-        private void ShowErrorDialog(string title, string message)
+        private MathematicsSettings CloneSettings(MathematicsSettings settings)
         {
-            MessageBox.Show(message, title, MessageBoxButton.OK, MessageBoxImage.Error);
-        }
+            try
+            {
+                if (settings == null) return new MathematicsSettings();
 
-        /// <summary>
-        /// Get template information
-        /// </summary>
-        private string GetTemplateInformation()
-        {
-            return @"MATHEMATICS FUNCTION TEMPLATES
-
-Available templates for quick configuration:
-
-📊 BASIC OPERATIONS:
-• Simple Addition (CH1 + CH2)
-• Signal Subtraction (CH1 - CH2)
-• Power Calculation (CH1 × CH2)
-• Ratio Analysis (CH1 ÷ CH2)
-
-📈 FFT ANALYSIS:
-• Spectrum Analysis (Hanning window, dB scale)
-• Frequency Response (Full display)
-• Harmonic Analysis (Blackman window)
-
-🔧 DIGITAL FILTERS:
-• Anti-Aliasing (Low Pass, 1kHz-10kHz)
-• High Frequency Analysis (High Pass)
-• Bandlimited Analysis (Band Pass)
-• Notch Filtering (Band Stop)
-
-🔬 ADVANCED MATH:
-• Signal Integration (Area calculation)
-• Edge Detection (Differentiation)
-• Magnitude Analysis (Absolute value)
-• Logarithmic Scaling (Log functions)
-
-Select a template from the presets menu to apply these configurations automatically.";
+                // Simple JSON-based cloning
+                var json = JsonSerializer.Serialize(settings);
+                return JsonSerializer.Deserialize<MathematicsSettings>(json) ?? new MathematicsSettings();
+            }
+            catch (Exception)
+            {
+                // Fallback to creating new settings if cloning fails
+                return new MathematicsSettings();
+            }
         }
 
         #endregion
 
-        #region Status Management
+        #region UI Update Methods
 
         /// <summary>
-        /// Update main status text
+        /// Update window title with configuration name
         /// </summary>
-        private void UpdateStatus(string message)
+        private void UpdateWindowTitle(string configurationName)
+        {
+            try
+            {
+                var title = $"{WINDOW_TITLE_PREFIX}{configurationName}";
+                if (hasUnsavedChanges)
+                    title += " *";
+
+                this.Title = title;
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error updating window title: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Update status bar with message
+        /// </summary>
+        private void UpdateStatus(string message, bool isError = false)
         {
             try
             {
                 if (StatusText != null)
                 {
                     StatusText.Text = message;
-                    UpdateTimestamp();
+                    StatusText.Foreground = new SolidColorBrush(isError ? Colors.Red : Colors.Black);
+                }
+
+                if (StatusIcon != null && isError)
+                {
+                    StatusIcon.Text = "⚠️";
+                }
+                else if (StatusIcon != null)
+                {
+                    StatusIcon.Text = "🧮";
                 }
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error updating status: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// Update connection status indicator
-        /// </summary>
-        public void UpdateConnectionStatus(bool isConnected)
-        {
-            try
-            {
-                isConnectedToOscilloscope = isConnected;
-
-                if (ConnectionIndicator != null && ConnectionText != null)
-                {
-                    ConnectionIndicator.Fill = new SolidColorBrush(isConnected ? Colors.Green : Colors.Red);
-                    ConnectionText.Text = isConnected ? "Connected" : "Disconnected";
-                    ConnectionText.Foreground = new SolidColorBrush(isConnected ? Colors.LightGreen : Colors.LightCoral);
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Error updating connection status: {ex.Message}");
             }
         }
 
@@ -908,7 +899,7 @@ Select a template from the presets menu to apply these configurations automatica
             {
                 if (TimestampText != null)
                 {
-                    TimestampText.Text = $"Last Updated: {DateTime.Now:HH:mm:ss}";
+                    TimestampText.Text = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
                 }
             }
             catch (Exception ex)
@@ -918,130 +909,312 @@ Select a template from the presets menu to apply these configurations automatica
         }
 
         /// <summary>
-        /// Show temporary status message
+        /// Update connection status indicator
         /// </summary>
-        private void ShowTemporaryStatusMessage(string message, TimeSpan duration)
+        private void UpdateConnectionStatus(bool isConnected)
         {
             try
             {
-                var originalMessage = StatusText?.Text;
-                UpdateStatus(message);
+                isConnectedToOscilloscope = isConnected;
 
-                var timer = new DispatcherTimer
+                if (ConnectionIndicator != null)
                 {
-                    Interval = duration
-                };
-                timer.Tick += (s, e) =>
-                {
-                    UpdateStatus(originalMessage ?? "Ready");
-                    timer.Stop();
-                };
-                timer.Start();
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Error showing temporary message: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// Update window title
-        /// </summary>
-        private void UpdateWindowTitle(string configurationName = null)
-        {
-            try
-            {
-                var baseTitle = "Mathematics Functions - Rigol DS1000Z-E";
-
-                if (!string.IsNullOrEmpty(configurationName))
-                {
-                    this.Title = $"{baseTitle} - {configurationName}";
+                    ConnectionIndicator.Fill = new SolidColorBrush(isConnected ? Colors.Green : Colors.Red);
                 }
-                else
+
+                if (ConnectionText != null)
                 {
-                    this.Title = baseTitle;
+                    ConnectionText.Text = isConnected ? "Connected" : "Disconnected";
+                    ConnectionText.Foreground = new SolidColorBrush(isConnected ? Colors.Green : Colors.Red);
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error updating window title: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Error updating connection status: {ex.Message}");
             }
         }
 
         #endregion
 
-        #region Utility Methods
+        #region Helper Methods
 
         /// <summary>
-        /// Check if there are unsaved changes
+        /// Add command to recent commands list
         /// </summary>
-        private bool HasUnsavedChanges()
+        private void AddToRecentCommands(string command)
         {
             try
             {
-                var currentSettings = MathPanel?.GetCurrentSettings();
+                recentCommands.Insert(0, $"[{DateTime.Now:HH:mm:ss}] {command}");
 
-                if (currentSettings == null || lastSavedSettings == null)
-                    return false;
-
-                return !currentSettings.IsEquivalentTo(lastSavedSettings);
+                // Keep only the most recent commands
+                while (recentCommands.Count > MAX_RECENT_COMMANDS)
+                {
+                    recentCommands.RemoveAt(recentCommands.Count - 1);
+                }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error checking unsaved changes: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Error adding to recent commands: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Get current SCPI commands from panel
+        /// </summary>
+        private string GetCurrentSCPICommands()
+        {
+            try
+            {
+                if (recentCommands.Count > 0)
+                {
+                    return string.Join("\n", recentCommands);
+                }
+                else
+                {
+                    return "# No SCPI commands have been generated yet";
+                }
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error getting SCPI commands: {ex.Message}");
+                return $"# Error retrieving commands: {ex.Message}";
+            }
+        }
+
+        /// <summary>
+        /// Generate export content for commands
+        /// </summary>
+        private string GenerateCommandExportContent(string commands)
+        {
+            try
+            {
+                var sb = new StringBuilder();
+                sb.AppendLine("# Rigol DS1000Z-E Mathematics SCPI Commands");
+                sb.AppendLine($"# Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+
+                var settings = GetPanelSettings();
+                sb.AppendLine($"# Configuration: {settings?.ConfigurationName ?? "Unknown"}");
+                sb.AppendLine($"# Current Mode: {MathPanel?.GetCurrentMathMode() ?? "Unknown"}");
+                sb.AppendLine();
+                sb.AppendLine("# Commands:");
+                sb.AppendLine(commands);
+                sb.AppendLine();
+                sb.AppendLine("# End of export");
+
+                return sb.ToString();
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Error generating export content: {ex.Message}", ex);
+            }
+        }
+
+        /// <summary>
+        /// Generate default filename for saving
+        /// </summary>
+        private string GenerateDefaultFileName()
+        {
+            try
+            {
+                var settings = GetPanelSettings();
+                var configName = settings?.ConfigurationName ?? "MathConfig";
+                var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                return $"{configName}_{timestamp}.mathconfig";
+            }
+            catch
+            {
+                return $"MathConfig_{DateTime.Now:yyyyMMdd_HHmmss}.mathconfig";
+            }
+        }
+
+        /// <summary>
+        /// Confirm if user wants to discard unsaved changes
+        /// </summary>
+        private bool ConfirmDiscardChanges()
+        {
+            try
+            {
+                var result = MessageBox.Show(
+                    "You have unsaved changes that will be lost.\n\n" +
+                    "Do you want to continue without saving?",
+                    "Unsaved Changes",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question,
+                    MessageBoxResult.No);
+
+                return result == MessageBoxResult.Yes;
+            }
+            catch
+            {
                 return false;
             }
         }
 
-        #endregion
-
-        #region Public Methods
-
         /// <summary>
-        /// Set connection status from external source
+        /// Validate settings and return list of issues
         /// </summary>
-        /// <param name="isConnected">Connection status</param>
-        public void SetConnectionStatus(bool isConnected)
+        private List<string> ValidateSettings(MathematicsSettings settings)
         {
-            UpdateConnectionStatus(isConnected);
-        }
+            var issues = new List<string>();
 
-        /// <summary>
-        /// Apply specific preset by name
-        /// </summary>
-        /// <param name="presetName">Name of preset to apply</param>
-        public void ApplyPreset(string presetName)
-        {
             try
             {
-                MathPanel?.ApplyPreset(presetName);
-                UpdateStatus($"Applied preset: {presetName}");
+                // Validate basic operations
+                if (settings.BasicOperations != null)
+                {
+                    if (string.IsNullOrEmpty(settings.BasicOperations.Source1))
+                        issues.Add("Basic Operations: Source 1 not selected");
+                    if (string.IsNullOrEmpty(settings.BasicOperations.Source2))
+                        issues.Add("Basic Operations: Source 2 not selected");
+                    if (string.IsNullOrEmpty(settings.BasicOperations.Operation))
+                        issues.Add("Basic Operations: Operation not selected");
+                }
+
+                // Validate FFT settings
+                if (settings.FFTAnalysis != null)
+                {
+                    if (string.IsNullOrEmpty(settings.FFTAnalysis.Source))
+                        issues.Add("FFT Analysis: Source not selected");
+                    if (string.IsNullOrEmpty(settings.FFTAnalysis.Window))
+                        issues.Add("FFT Analysis: Window function not selected");
+                }
+
+                // Validate filter settings
+                if (settings.DigitalFilters != null)
+                {
+                    if (settings.DigitalFilters.W1Frequency <= 0)
+                        issues.Add("Digital Filters: W1 frequency must be positive");
+                    if (settings.DigitalFilters.W2Frequency <= 0)
+                        issues.Add("Digital Filters: W2 frequency must be positive");
+                    if (settings.DigitalFilters.W1Frequency >= settings.DigitalFilters.W2Frequency)
+                        issues.Add("Digital Filters: W1 frequency must be less than W2 frequency");
+                }
+
+                // Validate advanced math settings
+                if (settings.AdvancedMath != null)
+                {
+                    if (string.IsNullOrEmpty(settings.AdvancedMath.Function))
+                        issues.Add("Advanced Math: Function not selected");
+                }
             }
             catch (Exception ex)
             {
-                OnErrorOccurred($"Error applying preset {presetName}: {ex.Message}");
+                issues.Add($"Validation error: {ex.Message}");
+            }
+
+            return issues;
+        }
+
+        /// <summary>
+        /// Update connection status from parent application
+        /// </summary>
+        private void UpdateConnectionStatusFromParent()
+        {
+            try
+            {
+                // Request connection status update from parent
+                ConnectionStatusRequested?.Invoke(this, isConnectedToOscilloscope);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error updating connection status: {ex.Message}");
             }
         }
 
         /// <summary>
-        /// Load configuration file by path
+        /// Clear temporary status messages
         /// </summary>
-        /// <param name="filePath">Path to configuration file</param>
-        public void LoadConfiguration(string filePath)
+        private void ClearTemporaryStatus()
         {
-            try
-            {
-                LoadConfigurationFromFile(filePath);
-            }
-            catch (Exception ex)
-            {
-                OnErrorOccurred($"Error loading configuration from {filePath}: {ex.Message}");
-            }
+            // This could be enhanced to clear status messages after a certain time
+            // For now, it's a placeholder for future functionality
+        }
+
+        /// <summary>
+        /// Show help dialog with mathematics information
+        /// </summary>
+        private void ShowHelpDialog()
+        {
+            var helpText = @"MATHEMATICS FUNCTIONS HELP
+
+OVERVIEW:
+The Mathematics Functions window provides comprehensive control over the Rigol DS1000Z-E oscilloscope's mathematical operations.
+
+MATH MODES (Mutually Exclusive):
+📊 Basic Operations: Add, Subtract, Multiply, Divide two channels
+📈 FFT Analysis: Fast Fourier Transform with windowing options  
+🔧 Digital Filters: Low/High/Band pass and stop filters
+🔬 Advanced Math: Integration, Differentiation, and other functions
+
+SCPI COMMAND SEQUENCE:
+When switching modes, the system follows the proper sequence:
+1. :MATH:DISPlay OFF; :MATH:RESet (150ms delay)
+2. :MATH:DISPlay ON; :MATH:OPERator [MODE] (500ms delay)
+3. Mode-specific configuration commands (50ms between commands)
+
+FILE OPERATIONS:
+• Save/Load: Store complete configurations in .mathconfig files
+• Export: Save SCPI command history to text files
+• Validate: Check configuration for completeness and errors
+
+SAFETY FEATURES:
+• Only one math mode active at a time
+• Automatic cleanup when closing panel
+• Unsaved changes detection
+• Comprehensive error handling
+
+For detailed SCPI command reference, see the Rigol DS1000Z-E Programming Guide.";
+
+            MessageBox.Show(helpText, "Mathematics Functions Help",
+                          MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        /// <summary>
+        /// Show about dialog
+        /// </summary>
+        private void ShowAboutDialog()
+        {
+            var aboutText = @"MATHEMATICS FUNCTIONS WINDOW
+
+Version: 2.0.0
+Part of: DS1000Z-E USB Control Application
+
+FEATURES:
+✓ Mutually exclusive math modes with proper SCPI sequencing
+✓ Complete configuration save/load system
+✓ SCPI command export and history tracking
+✓ Real-time status monitoring and error handling
+✓ Comprehensive validation and safety checks
+✓ Integration with main oscilloscope control application
+
+COMPATIBILITY:
+• Rigol DS1000Z-E Series Digital Oscilloscopes
+• SCPI Command Protocol with proper timing
+• USB and LAN communication interfaces
+
+MATH MODES SUPPORTED:
+• Basic Operations (ADD, SUB, MUL, DIV)
+• FFT Analysis with windowing (Rectangular, Blackman, Hanning, Hamming)
+• Digital Filters (Low/High/Band Pass/Stop)
+• Advanced Math (Integration, Differentiation, Square Root, Logarithms)
+
+TECHNICAL COMPLIANCE:
+• Follows DS1000Z-E Programming Guide specifications
+• Implements proper SCPI command timing sequences
+• Ensures mutual exclusivity of math operations
+• Provides comprehensive error handling and recovery
+
+© 2024 - Mathematics Functions Module
+Built for reliable oscilloscope control and measurement automation.";
+
+            MessageBox.Show(aboutText, "About Mathematics Functions",
+                          MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         #endregion
 
-        #region Cleanup
+        #region Cleanup and Resource Management
 
         /// <summary>
         /// Cleanup window resources
@@ -1050,8 +1223,9 @@ Select a template from the presets menu to apply these configurations automatica
         {
             try
             {
-                // Stop timer
+                // Stop timers
                 statusTimer?.Stop();
+                timestampTimer?.Stop();
 
                 // Unsubscribe from panel events
                 if (MathPanel != null)
@@ -1071,6 +1245,44 @@ Select a template from the presets menu to apply these configurations automatica
 
         #endregion
 
+        #region Public Methods
+
+        /// <summary>
+        /// Set connection status from parent application
+        /// </summary>
+        /// <param name="isConnected">True if connected to oscilloscope</param>
+        public void SetConnectionStatus(bool isConnected)
+        {
+            try
+            {
+                Dispatcher.Invoke(() => UpdateConnectionStatus(isConnected));
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error setting connection status: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Get current mathematics panel reference
+        /// </summary>
+        /// <returns>Mathematics panel instance</returns>
+        public MathematicsPanel GetMathematicsPanel()
+        {
+            return MathPanel;
+        }
+
+        /// <summary>
+        /// Check if there are unsaved changes
+        /// </summary>
+        /// <returns>True if changes need to be saved</returns>
+        public bool HasUnsavedChanges()
+        {
+            return hasUnsavedChanges;
+        }
+
+        #endregion
+
         #region Event Raising Methods
 
         /// <summary>
@@ -1078,7 +1290,7 @@ Select a template from the presets menu to apply these configurations automatica
         /// </summary>
         protected virtual void OnErrorOccurred(string error)
         {
-            ErrorOccurred?.Invoke(this, error);
+            ErrorOccurred?.Invoke(this, new ErrorEventArgs(error));
         }
 
         /// <summary>
@@ -1086,14 +1298,9 @@ Select a template from the presets menu to apply these configurations automatica
         /// </summary>
         protected virtual void OnStatusUpdated(string status)
         {
-            StatusUpdated?.Invoke(this, status);
+            StatusUpdated?.Invoke(this, new StatusEventArgs(status));
         }
 
         #endregion
-
-        private void MathPanel_Loaded(object sender, RoutedEventArgs e)
-        {
-
-        }
     }
 }

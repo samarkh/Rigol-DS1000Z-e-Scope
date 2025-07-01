@@ -203,6 +203,28 @@ namespace Rigol_DS1000Z_E_Control
         //    }
         //}
 
+        /// <summary>
+        /// Initialize VISA manager properly
+        /// </summary>
+        private void InitializeVisaManager()
+        {
+            try
+            {
+                // Initialize the VISA manager if it doesn't exist
+                if (visaManager == null)
+                {
+                    visaManager = new VisaManager();
+                    visaManager.LogEvent += (sender, message) => Log(message);
+                    Log("🔌 VISA Manager initialized");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Error initializing VISA Manager: {ex.Message}");
+                // Continue without VISA manager - graceful degradation
+                visaManager = null;
+            }
+        }
         #endregion
 
         #region Connection Management
@@ -594,23 +616,39 @@ namespace Rigol_DS1000Z_E_Control
             }
         }
 
-        private void OnSCPICommandGenerated(object sender, string command)
+        /// <summary>
+        /// Handle SCPI command generation events - FIXED SIGNATURE
+        /// </summary>
+        private void OnSCPICommandGenerated(object sender, SCPICommandEventArgs e)
         {
-            // This is where you integrate with your existing oscilloscope communication
             try
             {
-                // Replace this with your actual SCPI communication method
-                SendSCPICommand(command);
+                if (e == null || string.IsNullOrEmpty(e.Command)) return;
 
-                // Optional: Log the command
-                LogMessage($"Sent: {command}");
+                // Log the command with source information
+                string logMessage = string.IsNullOrEmpty(e.Source)
+                    ? $"SCPI: {e.Command}"
+                    : $"SCPI [{e.Source}]: {e.Command}";
+
+                Log(logMessage);
+
+                // Send the command to the oscilloscope if connected
+                if (isConnected && oscilloscope != null)
+                {
+                    bool success = oscilloscope.SendCommand(e.Command);
+                    if (!success)
+                    {
+                        Log($"❌ Failed to send SCPI command: {e.Command}");
+                    }
+                }
+                else
+                {
+                    Log("⚠️ SCPI command queued (oscilloscope not connected)");
+                }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error sending SCPI command: {ex.Message}",
-                              "Communication Error",
-                              MessageBoxButton.OK,
-                              MessageBoxImage.Error);
+                Log($"❌ Error in OnSCPICommandGenerated: {ex.Message}");
             }
         }
 
@@ -2022,34 +2060,34 @@ namespace Rigol_DS1000Z_E_Control
         //    }
         //}
 
-        /// <summary>
-        /// Handle SCPI command generation events
-        /// </summary>
-        private void OnSCPICommandGenerated(object sender, SCPICommandEventArgs e)
-        {
-            try
-            {
-                if (e == null || string.IsNullOrEmpty(e.Command)) return;
+        ///// <summary>
+        ///// Handle SCPI command generation events
+        ///// </summary>
+        //private void OnSCPICommandGenerated(object sender, SCPICommandEventArgs e)
+        //{
+        //    try
+        //    {
+        //        if (e == null || string.IsNullOrEmpty(e.Command)) return;
 
-                // Log the command
-                Log($"SCPI: {e.Command}");
+        //        // Log the command
+        //        Log($"SCPI: {e.Command}");
 
-                // Send the command if connected
-                if (isConnected && oscilloscope != null)
-                {
-                    oscilloscope.SendCommand(e.Command);
-                    OnStatusUpdated($"Command sent: {e.Command}");
-                }
-                else
-                {
-                    OnStatusUpdated($"Command generated (not connected): {e.Command}");
-                }
-            }
-            catch (Exception ex)
-            {
-                OnErrorOccurred($"Error handling SCPI command: {ex.Message}");
-            }
-        }
+        //        // Send the command if connected
+        //        if (isConnected && oscilloscope != null)
+        //        {
+        //            oscilloscope.SendCommand(e.Command);
+        //            OnStatusUpdated($"Command sent: {e.Command}");
+        //        }
+        //        else
+        //        {
+        //            OnStatusUpdated($"Command generated (not connected): {e.Command}");
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        OnErrorOccurred($"Error handling SCPI command: {ex.Message}");
+        //    }
+        //}
 
         /// <summary>
         /// Handle error events

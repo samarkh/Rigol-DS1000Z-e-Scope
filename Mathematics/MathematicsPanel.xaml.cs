@@ -653,6 +653,54 @@ namespace DS1000Z_E_USB_Control.Mathematics
 
         #endregion
 
+
+        #region missingEvents
+
+        private void MathModeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            // Implementation based on the current mode selection
+            var combo = sender as ComboBox;
+            var selectedMode = combo?.SelectedItem?.ToString();
+            // Handle mode change logic
+        }
+
+        private async void ApplyBasicOperation_Click(object sender, RoutedEventArgs e)
+        {
+            await ConfigureBasicOperationsAsync();
+        }
+
+        private async void ApplyFFT_Click(object sender, RoutedEventArgs e)
+        {
+            await ConfigureFFTAnalysisAsync();
+        }
+
+        private async void ApplyFilter_Click(object sender, RoutedEventArgs e)
+        {
+            await ConfigureDigitalFiltersAsync();
+        }
+
+        private async void ApplyAdvancedMath_Click(object sender, RoutedEventArgs e)
+        {
+            await ConfigureAdvancedMathAsync();
+        }
+
+        private void DisableMath_Click(object sender, RoutedEventArgs e)
+        {
+            DisableMathDisplay();
+        }
+
+        private void SaveSettings_Click(object sender, RoutedEventArgs e)
+        {
+            // Implement settings save logic
+            var settings = GetCurrentSettings();
+            // Save settings to file or registry
+        }
+
+
+        #endregion
+
+
+
         #region Cleanup
 
         /// <summary>

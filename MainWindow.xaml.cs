@@ -2003,24 +2003,24 @@ namespace Rigol_DS1000Z_E_Control
         #region Missing Methods - Add These to Your Existing MainWindow.xaml.cs
 
         /// <summary>
-        /// Initialize VISA manager properly
-        /// </summary>
-        private void InitializeVisaManager()
-        {
-            try
-            {
-                // Initialize the VISA manager if it doesn't exist
-                if (visaManager == null)
-                {
-                    visaManager = new VisaManager();
-                    Log("🔌 VISA Manager initialized");
-                }
-            }
-            catch (Exception ex)
-            {
-                Log($"❌ Error initializing VISA Manager: {ex.Message}");
-            }
-        }
+        ///// Initialize VISA manager properly
+        ///// </summary>
+        //private void OnSCPICommandGenerated(object sender, SCPICommandEventArgs e)
+        //{
+        //    try
+        //    {
+        //        // Initialize the VISA manager if it doesn't exist
+        //        if (visaManager == null)
+        //        {
+        //            visaManager = new VisaManager();
+        //            Log("🔌 VISA Manager initialized");
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Log($"❌ Error initializing VISA Manager: {ex.Message}");
+        //    }
+        //}
 
         /// <summary>
         /// Handle SCPI command generation events
@@ -2054,6 +2054,9 @@ namespace Rigol_DS1000Z_E_Control
         /// <summary>
         /// Handle error events
         /// </summary>
+        /// <summary>
+        /// Handle error events
+        /// </summary>
         private void OnErrorOccurred(string errorMessage)
         {
             try
@@ -2066,12 +2069,16 @@ namespace Rigol_DS1000Z_E_Control
                 // Update status with error indication
                 Dispatcher.Invoke(() =>
                 {
+                    // REMOVE THIS BLOCK:
+                    /*
                     if (StatusTextBlock != null)
                     {
                         StatusTextBlock.Text = $"Error: {errorMessage}";
                         StatusTextBlock.Foreground = new SolidColorBrush(Colors.Red);
                     }
-                    else if (StatusText != null) // Fallback if StatusTextBlock doesn't exist
+                    else 
+                    */
+                    if (StatusText != null) // Keep only this part
                     {
                         StatusText.Text = $"Error: {errorMessage}";
                         StatusText.Foreground = new SolidColorBrush(Colors.Red);
@@ -2100,12 +2107,16 @@ namespace Rigol_DS1000Z_E_Control
                 // Update status display
                 Dispatcher.Invoke(() =>
                 {
+                    // REMOVE THIS BLOCK:
+                    /*
                     if (StatusTextBlock != null)
                     {
                         StatusTextBlock.Text = statusMessage;
                         StatusTextBlock.Foreground = new SolidColorBrush(Colors.Green);
                     }
-                    else if (StatusText != null) // Fallback if StatusTextBlock doesn't exist
+                    else 
+                    */
+                    if (StatusText != null) // Keep only this part
                     {
                         StatusText.Text = statusMessage;
                         StatusText.Foreground = new SolidColorBrush(Colors.Green);

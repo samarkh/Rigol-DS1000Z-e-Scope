@@ -911,7 +911,9 @@ namespace DS1000Z_E_USB_Control.Mathematics
         /// </summary>
         private void OnSCPICommandGenerated(string command)
         {
-            SCPICommandGenerated?.Invoke(this, command);
+            // Create the appropriate EventArgs and invoke the event
+            var eventArgs = new SCPICommandEventArgs(command, "MathematicsPanel", "MATH");
+            SCPICommandGenerated?.Invoke(this, eventArgs);
         }
 
         /// <summary>
@@ -919,7 +921,9 @@ namespace DS1000Z_E_USB_Control.Mathematics
         /// </summary>
         private void OnStatusUpdated(string message)
         {
-            StatusUpdated?.Invoke(this, message);
+            // Create the appropriate EventArgs and invoke the event
+            var eventArgs = new StatusEventArgs(message, StatusLevel.Info, "MathematicsPanel", "MATH");
+            StatusUpdated?.Invoke(this, eventArgs);
         }
 
         /// <summary>
@@ -927,7 +931,9 @@ namespace DS1000Z_E_USB_Control.Mathematics
         /// </summary>
         private void OnErrorOccurred(string error)
         {
-            ErrorOccurred?.Invoke(this, error);
+            // Create the appropriate ErrorEventArgs and invoke the event
+            var eventArgs = new ErrorEventArgs(error);
+            ErrorOccurred?.Invoke(this, eventArgs);
         }
 
         #endregion

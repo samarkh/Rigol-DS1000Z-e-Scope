@@ -346,7 +346,7 @@ namespace Rigol_DS1000Z_E_Control
 
         // Add this method anywhere in your MainWindow class
         /// <summary>
-        /// Open Mathematics Functions window
+        /// Open Mathematics Functions window - Alternative version with explicit EventArgs handling
         /// </summary>
         private void OpenMathematics_Click(object sender, RoutedEventArgs e)
         {
@@ -356,14 +356,14 @@ namespace Rigol_DS1000Z_E_Control
                 {
                     _mathematicsWindow = new MathematicsWindow();
 
-                    // Subscribe to events
-                    _mathematicsWindow.SCPICommandGenerated += (s, command) =>
+                    // Subscribe to events with explicit EventArgs parameter names
+                    _mathematicsWindow.SCPICommandGenerated += (mathWindow, scpiEventArgs) =>
                     {
                         // Forward SCPI commands to oscilloscope
                         if (isConnected && oscilloscope != null)
                         {
-                            oscilloscope.SendCommand(command);
-                            Log($"📊 Math Command: {command}");
+                            oscilloscope.SendCommand(scpiEventArgs.Command);
+                            Log($"📊 Math Command: {scpiEventArgs.Command}");
                         }
                         else
                         {
@@ -371,14 +371,14 @@ namespace Rigol_DS1000Z_E_Control
                         }
                     };
 
-                    _mathematicsWindow.ErrorOccurred += (s, error) =>
+                    _mathematicsWindow.ErrorOccurred += (mathWindow, errorEventArgs) =>
                     {
-                        Log($"❌ Math Error: {error}");
+                        Log($"❌ Math Error: {errorEventArgs.Error}");
                     };
 
-                    _mathematicsWindow.StatusUpdated += (s, status) =>
+                    _mathematicsWindow.StatusUpdated += (mathWindow, statusEventArgs) =>
                     {
-                        Log($"📊 Math Status: {status}");
+                        Log($"📊 Math Status: {statusEventArgs.Message}");
                     };
 
                     // Update connection status

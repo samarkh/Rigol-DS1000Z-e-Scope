@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -12,7 +13,7 @@ namespace DS1000Z_E_USB_Control.Mathematics
     /// Mathematics configuration settings model
     /// Handles all math function parameters, persistence, and validation
     /// </summary>
-    public class MathematicsSettings : INotifyPropertyChanged
+    public partial class MathematicsSettings : INotifyPropertyChanged
     {
         #region Private Fields
 
@@ -42,8 +43,14 @@ namespace DS1000Z_E_USB_Control.Mathematics
         private string _description = "";
         private DateTime _lastModified = DateTime.Now;
 
-        // ADDED: Active mode property for mutual exclusivity
+        // Active mode property for mutual exclusivity
         private string _activeMode = "BasicOperations";
+
+        // Nested settings private fields
+        private BasicOperationsSettings _basicOperations;
+        private FFTAnalysisSettings _fftAnalysis;
+        private DigitalFiltersSettings _digitalFilters;
+        private AdvancedMathSettings _advancedMath;
 
         #endregion
 
@@ -241,7 +248,6 @@ namespace DS1000Z_E_USB_Control.Mathematics
 
         /// <summary>
         /// Currently active mathematics mode (BasicOperations, FFTAnalysis, DigitalFilters, AdvancedMath)
-        /// ADDED: For mutual exclusivity control
         /// </summary>
         [JsonPropertyName("activeMode")]
         public string ActiveMode
@@ -286,21 +292,180 @@ namespace DS1000Z_E_USB_Control.Mathematics
 
         #endregion
 
+        #region Nested Settings Properties
+
+        /// <summary>
+        /// Basic operations settings (ADD, SUB, MUL, DIV)
+        /// </summary>
+        [JsonPropertyName("basicOperations")]
+        public BasicOperationsSettings BasicOperations
+        {
+            get => _basicOperations ??= new BasicOperationsSettings();
+            set => SetProperty(ref _basicOperations, value);
+        }
+
+        /// <summary>
+        /// FFT analysis settings
+        /// </summary>
+        [JsonPropertyName("fftAnalysis")]
+        public FFTAnalysisSettings FFTAnalysis
+        {
+            get => _fftAnalysis ??= new FFTAnalysisSettings();
+            set => SetProperty(ref _fftAnalysis, value);
+        }
+
+        /// <summary>
+        /// Digital filters settings
+        /// </summary>
+        [JsonPropertyName("digitalFilters")]
+        public DigitalFiltersSettings DigitalFilters
+        {
+            get => _digitalFilters ??= new DigitalFiltersSettings();
+            set => SetProperty(ref _digitalFilters, value);
+        }
+
+        /// <summary>
+        /// Advanced math settings
+        /// </summary>
+        [JsonPropertyName("advancedMath")]
+        public AdvancedMathSettings AdvancedMath
+        {
+            get => _advancedMath ??= new AdvancedMathSettings();
+            set => SetProperty(ref _advancedMath, value);
+        }
+
+        #endregion
+
+        #region Constructor
+
+        /// <summary>
+        /// Default constructor
+        /// </summary>
+        public MathematicsSettings()
+        {
+            // Initialize all nested settings to prevent null reference exceptions
+            _basicOperations = new BasicOperationsSettings();
+            _fftAnalysis = new FFTAnalysisSettings();
+            _digitalFilters = new DigitalFiltersSettings();
+            _advancedMath = new AdvancedMathSettings();
+        }
+
+        #endregion
+
         #region INotifyPropertyChanged Implementation
 
+        /// <summary>
+        /// Property changed event
+        /// </summary>
         public event PropertyChangedEventHandler PropertyChanged;
 
+        /// <summary>
+        /// Raise property changed notification
+        /// </summary>
+        /// <param name="propertyName">Property name</param>
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
+        /// <summary>
+        /// Set property with change notification
+        /// </summary>
+        /// <typeparam name="T">Property type</typeparam>
+        /// <param name="field">Field reference</param>
+        /// <param name="value">New value</param>
+        /// <param name="propertyName">Property name</param>
+        /// <returns>True if value changed</returns>
         protected bool SetProperty<T>(ref T field, T value, [CallerMemberName] string propertyName = null)
         {
             if (EqualityComparer<T>.Default.Equals(field, value)) return false;
             field = value;
             OnPropertyChanged(propertyName);
             return true;
+        }
+
+        #endregion
+
+        #region Synchronization Methods
+
+        /// <summary>
+        /// Synchronize individual properties with nested settings
+        /// Keeps backward compatibility with existing flat properties
+        /// </summary>
+        public void SynchronizeSettings()
+        {
+            // Sync Basic Operations
+            if (BasicOperations != null)
+            {
+                BasicOperations.Source1 = Source1;
+                BasicOperations.Source2 = Source2;
+                BasicOperations.Operation = Operation;
+            }
+
+            // Sync FFT Analysis
+            if (FFTAnalysis != null)
+            {
+                FFTAnalysis.Source = FFTSource;
+                FFTAnalysis.Window = FFTWindow;
+                FFTAnalysis.Split = FFTSplit;
+                FFTAnalysis.Unit = FFTUnit;
+            }
+
+            // Sync Digital Filters
+            if (DigitalFilters != null)
+            {
+                DigitalFilters.FilterType = FilterType;
+                DigitalFilters.W1 = FilterW1;
+                DigitalFilters.W2 = FilterW2;
+            }
+
+            // Sync Advanced Math
+            if (AdvancedMath != null)
+            {
+                AdvancedMath.Function = AdvancedFunction;
+                AdvancedMath.StartPoint = StartPoint;
+                AdvancedMath.EndPoint = EndPoint;
+            }
+        }
+
+        /// <summary>
+        /// Update flat properties from nested settings
+        /// For reverse synchronization
+        /// </summary>
+        public void UpdateFromNestedSettings()
+        {
+            // Update from Basic Operations
+            if (BasicOperations != null)
+            {
+                Source1 = BasicOperations.Source1;
+                Source2 = BasicOperations.Source2;
+                Operation = BasicOperations.Operation;
+            }
+
+            // Update from FFT Analysis
+            if (FFTAnalysis != null)
+            {
+                FFTSource = FFTAnalysis.Source;
+                FFTWindow = FFTAnalysis.Window;
+                FFTSplit = FFTAnalysis.Split;
+                FFTUnit = FFTAnalysis.Unit;
+            }
+
+            // Update from Digital Filters
+            if (DigitalFilters != null)
+            {
+                FilterType = DigitalFilters.FilterType;
+                FilterW1 = DigitalFilters.W1;
+                FilterW2 = DigitalFilters.W2;
+            }
+
+            // Update from Advanced Math
+            if (AdvancedMath != null)
+            {
+                AdvancedFunction = AdvancedMath.Function;
+                StartPoint = AdvancedMath.StartPoint;
+                EndPoint = AdvancedMath.EndPoint;
+            }
         }
 
         #endregion
@@ -315,102 +480,118 @@ namespace DS1000Z_E_USB_Control.Mathematics
         {
             var result = new ValidationResult();
 
-            // Validate sources
-            if (!IsValidSource(Source1))
-                result.AddError("Source1", $"Invalid source: {Source1}");
+            try
+            {
+                // Validate sources
+                if (!IsValidSource(Source1))
+                    result.AddError("Source1", $"Invalid source: {Source1}");
 
-            if (!IsValidSource(Source2))
-                result.AddError("Source2", $"Invalid source: {Source2}");
+                if (!IsValidSource(Source2))
+                    result.AddError("Source2", $"Invalid source: {Source2}");
 
-            // Validate operation
-            if (!IsValidOperation(Operation))
-                result.AddError("Operation", $"Invalid operation: {Operation}");
+                // Validate operation
+                if (!IsValidOperation(Operation))
+                    result.AddError("Operation", $"Invalid operation: {Operation}");
 
-            // Validate FFT settings
-            if (!IsValidSource(FFTSource))
-                result.AddError("FFTSource", $"Invalid FFT source: {FFTSource}");
+                // Validate FFT settings
+                if (!IsValidSource(FFTSource))
+                    result.AddError("FFTSource", $"Invalid FFT source: {FFTSource}");
 
-            // Validate filter frequencies
-            if (!double.TryParse(FilterW1, out double w1) || w1 <= 0)
-                result.AddError("FilterW1", $"Invalid lower frequency: {FilterW1}");
+                // Validate filter frequencies
+                if (!double.TryParse(FilterW1, out double w1) || w1 <= 0)
+                    result.AddError("FilterW1", $"Invalid lower frequency: {FilterW1}");
 
-            if (!double.TryParse(FilterW2, out double w2) || w2 <= 0)
-                result.AddError("FilterW2", $"Invalid upper frequency: {FilterW2}");
+                if (!double.TryParse(FilterW2, out double w2) || w2 <= 0)
+                    result.AddError("FilterW2", $"Invalid upper frequency: {FilterW2}");
 
-            if (w1 >= w2)
-                result.AddError("FilterFrequencies", "Lower frequency must be less than upper frequency");
+                if (w1 >= w2)
+                    result.AddError("FilterFrequencies", "Lower frequency must be less than upper frequency");
 
-            // Validate advanced math points
-            if (!double.TryParse(StartPoint, out double start))
-                result.AddError("StartPoint", $"Invalid start point: {StartPoint}");
+                // Validate advanced math points
+                if (!double.TryParse(StartPoint, out double start))
+                    result.AddError("StartPoint", $"Invalid start point: {StartPoint}");
 
-            if (!double.TryParse(EndPoint, out double end))
-                result.AddError("EndPoint", $"Invalid end point: {EndPoint}");
+                if (!double.TryParse(EndPoint, out double end))
+                    result.AddError("EndPoint", $"Invalid end point: {EndPoint}");
 
-            // Validate scale and offset
-            if (!double.TryParse(Scale, out double scale) || scale <= 0)
-                result.AddError("Scale", $"Invalid scale: {Scale}");
+                if (start >= end)
+                    result.AddError("MathPoints", "Start point must be less than end point");
 
-            if (!double.TryParse(Offset, out _))
-                result.AddError("Offset", $"Invalid offset: {Offset}");
+                // Validate scale and offset
+                if (!double.TryParse(Scale, out double scale) || scale <= 0)
+                    result.AddError("Scale", $"Invalid scale: {Scale}");
 
-            // Validate active mode
-            if (!IsValidActiveMode(ActiveMode))
-                result.AddError("ActiveMode", $"Invalid active mode: {ActiveMode}");
+                if (!double.TryParse(Offset, out _))
+                    result.AddError("Offset", $"Invalid offset: {Offset}");
+
+                // Validate active mode
+                if (!IsValidActiveMode(ActiveMode))
+                    result.AddError("ActiveMode", $"Invalid active mode: {ActiveMode}");
+            }
+            catch (Exception ex)
+            {
+                result.AddError("Validation", $"Validation error: {ex.Message}");
+            }
 
             return result;
         }
 
         /// <summary>
-        /// Simple validation that returns list of errors - Alternative method for compatibility
+        /// Validate settings and return simple error list
         /// </summary>
-        /// <returns>List of validation error messages</returns>
-        public List<string> ValidateSettingsSimple()
+        /// <returns>List of validation errors</returns>
+        public List<string> ValidateSimple()
         {
             var errors = new List<string>();
 
-            // Validate sources
-            if (!IsValidSource(Source1))
-                errors.Add($"Invalid Source1: {Source1}");
+            try
+            {
+                // Validate sources
+                if (!IsValidSource(Source1))
+                    errors.Add($"Invalid Source 1: {Source1}");
 
-            if (!IsValidSource(Source2))
-                errors.Add($"Invalid Source2: {Source2}");
+                if (!IsValidSource(Source2))
+                    errors.Add($"Invalid Source 2: {Source2}");
 
-            // Validate operation
-            if (!IsValidOperation(Operation))
-                errors.Add($"Invalid Operation: {Operation}");
+                // Validate operation
+                if (!IsValidOperation(Operation))
+                    errors.Add($"Invalid Operation: {Operation}");
 
-            // Validate FFT settings
-            if (!IsValidSource(FFTSource))
-                errors.Add($"Invalid FFT Source: {FFTSource}");
+                // Validate filter frequencies
+                if (!double.TryParse(FilterW1, out double w1) || w1 <= 0)
+                    errors.Add($"Invalid Lower Frequency: {FilterW1}");
 
-            // Validate filter frequencies
-            if (!double.TryParse(FilterW1, out double w1) || w1 <= 0)
-                errors.Add($"Invalid Filter W1: {FilterW1}");
+                if (!double.TryParse(FilterW2, out double w2) || w2 <= 0)
+                    errors.Add($"Invalid Upper Frequency: {FilterW2}");
 
-            if (!double.TryParse(FilterW2, out double w2) || w2 <= 0)
-                errors.Add($"Invalid Filter W2: {FilterW2}");
+                if (w1 >= w2)
+                    errors.Add("Lower frequency must be less than upper frequency");
 
-            if (double.TryParse(FilterW1, out w1) && double.TryParse(FilterW2, out w2) && w1 >= w2)
-                errors.Add("Lower frequency must be less than upper frequency");
+                // Validate advanced math points
+                if (!double.TryParse(StartPoint, out double start))
+                    errors.Add($"Invalid Start Point: {StartPoint}");
 
-            // Validate advanced math points
-            if (!double.TryParse(StartPoint, out _))
-                errors.Add($"Invalid Start Point: {StartPoint}");
+                if (!double.TryParse(EndPoint, out double end))
+                    errors.Add($"Invalid End Point: {EndPoint}");
 
-            if (!double.TryParse(EndPoint, out _))
-                errors.Add($"Invalid End Point: {EndPoint}");
+                if (start >= end)
+                    errors.Add("Start point must be less than end point");
 
-            // Validate scale and offset
-            if (!double.TryParse(Scale, out double scale) || scale <= 0)
-                errors.Add($"Invalid Scale: {Scale}");
+                // Validate scale and offset
+                if (!double.TryParse(Scale, out double scale) || scale <= 0)
+                    errors.Add($"Invalid Scale: {Scale}");
 
-            if (!double.TryParse(Offset, out _))
-                errors.Add($"Invalid Offset: {Offset}");
+                if (!double.TryParse(Offset, out _))
+                    errors.Add($"Invalid Offset: {Offset}");
 
-            // Validate active mode
-            if (!IsValidActiveMode(ActiveMode))
-                errors.Add($"Invalid Active Mode: {ActiveMode}");
+                // Validate active mode
+                if (!IsValidActiveMode(ActiveMode))
+                    errors.Add($"Invalid Active Mode: {ActiveMode}");
+            }
+            catch (Exception ex)
+            {
+                errors.Add($"Validation error: {ex.Message}");
+            }
 
             return errors;
         }
@@ -446,10 +627,13 @@ namespace DS1000Z_E_USB_Control.Mathematics
             try
             {
                 LastModified = DateTime.Now;
-                var json = JsonSerializer.Serialize(this, new JsonSerializerOptions
+                var options = new JsonSerializerOptions
                 {
-                    WriteIndented = true
-                });
+                    WriteIndented = true,
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                };
+
+                var json = JsonSerializer.Serialize(this, options);
                 File.WriteAllText(filePath, json);
             }
             catch (Exception ex)
@@ -471,85 +655,24 @@ namespace DS1000Z_E_USB_Control.Mathematics
                     throw new FileNotFoundException($"Settings file not found: {filePath}");
 
                 var json = File.ReadAllText(filePath);
-                return JsonSerializer.Deserialize<MathematicsSettings>(json) ?? new MathematicsSettings();
+                var options = new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                };
+
+                var settings = JsonSerializer.Deserialize<MathematicsSettings>(json, options);
+                if (settings == null)
+                    throw new InvalidOperationException("Failed to deserialize settings");
+
+                // Ensure nested settings are initialized
+                settings.SynchronizeSettings();
+
+                return settings;
             }
             catch (Exception ex)
             {
                 throw new InvalidOperationException($"Failed to load settings: {ex.Message}", ex);
             }
-        }
-
-        #endregion
-
-        #region Clone and Copy Methods
-
-        /// <summary>
-        /// Create a deep copy of the current settings - Required by MathematicsWindow
-        /// </summary>
-        public MathematicsSettings Clone()
-        {
-            try
-            {
-                var json = JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = false });
-                var clone = JsonSerializer.Deserialize<MathematicsSettings>(json) ?? new MathematicsSettings();
-                clone.LastModified = DateTime.Now;
-                return clone;
-            }
-            catch (Exception)
-            {
-                // Fallback to manual copy if JSON serialization fails
-                return new MathematicsSettings
-                {
-                    Source1 = this.Source1,
-                    Source2 = this.Source2,
-                    Operation = this.Operation,
-                    FFTSource = this.FFTSource,
-                    FFTWindow = this.FFTWindow,
-                    FFTSplit = this.FFTSplit,
-                    FFTUnit = this.FFTUnit,
-                    FilterType = this.FilterType,
-                    FilterW1 = this.FilterW1,
-                    FilterW2 = this.FilterW2,
-                    AdvancedFunction = this.AdvancedFunction,
-                    StartPoint = this.StartPoint,
-                    EndPoint = this.EndPoint,
-                    MathDisplayEnabled = this.MathDisplayEnabled,
-                    InvertWaveform = this.InvertWaveform,
-                    Scale = this.Scale,
-                    Offset = this.Offset,
-                    ActiveMode = this.ActiveMode,
-                    ConfigurationName = this.ConfigurationName + " (Copy)",
-                    Description = this.Description,
-                    LastModified = DateTime.Now
-                };
-            }
-        }
-
-        /// <summary>
-        /// Check if this settings object is equivalent to another - Required by MathematicsWindow
-        /// </summary>
-        public bool IsEquivalentTo(MathematicsSettings other)
-        {
-            if (other == null) return false;
-
-            return Source1 == other.Source1 &&
-                   Source2 == other.Source2 &&
-                   Operation == other.Operation &&
-                   FFTSource == other.FFTSource &&
-                   FFTWindow == other.FFTWindow &&
-                   FFTSplit == other.FFTSplit &&
-                   FFTUnit == other.FFTUnit &&
-                   FilterType == other.FilterType &&
-                   FilterW1 == other.FilterW1 &&
-                   FilterW2 == other.FilterW2 &&
-                   AdvancedFunction == other.AdvancedFunction &&
-                   StartPoint == other.StartPoint &&
-                   EndPoint == other.EndPoint &&
-                   MathDisplayEnabled == other.MathDisplayEnabled &&
-                   InvertWaveform == other.InvertWaveform &&
-                   Scale == other.Scale &&
-                   Offset == other.Offset &&
-                   ActiveMode == other.ActiveMode;
         }
 
         #endregion
@@ -561,7 +684,7 @@ namespace DS1000Z_E_USB_Control.Mathematics
         /// </summary>
         public static MathematicsSettings CreateBasicOperationsDefault()
         {
-            return new MathematicsSettings
+            var settings = new MathematicsSettings
             {
                 ActiveMode = "BasicOperations",
                 Source1 = "CHANnel1",
@@ -569,6 +692,9 @@ namespace DS1000Z_E_USB_Control.Mathematics
                 Operation = "ADD",
                 ConfigurationName = "Basic Addition Default"
             };
+
+            settings.SynchronizeSettings();
+            return settings;
         }
 
         /// <summary>
@@ -576,7 +702,7 @@ namespace DS1000Z_E_USB_Control.Mathematics
         /// </summary>
         public static MathematicsSettings CreateFFTAnalysisDefault()
         {
-            return new MathematicsSettings
+            var settings = new MathematicsSettings
             {
                 ActiveMode = "FFTAnalysis",
                 FFTSource = "CHANnel1",
@@ -585,6 +711,9 @@ namespace DS1000Z_E_USB_Control.Mathematics
                 FFTUnit = "VRMS",
                 ConfigurationName = "FFT Analysis Default"
             };
+
+            settings.SynchronizeSettings();
+            return settings;
         }
 
         /// <summary>
@@ -592,7 +721,7 @@ namespace DS1000Z_E_USB_Control.Mathematics
         /// </summary>
         public static MathematicsSettings CreateDigitalFiltersDefault()
         {
-            return new MathematicsSettings
+            var settings = new MathematicsSettings
             {
                 ActiveMode = "DigitalFilters",
                 FilterType = "LPASs",
@@ -600,6 +729,9 @@ namespace DS1000Z_E_USB_Control.Mathematics
                 FilterW2 = "10000",
                 ConfigurationName = "Low Pass Filter Default"
             };
+
+            settings.SynchronizeSettings();
+            return settings;
         }
 
         /// <summary>
@@ -607,7 +739,7 @@ namespace DS1000Z_E_USB_Control.Mathematics
         /// </summary>
         public static MathematicsSettings CreateAdvancedMathDefault()
         {
-            return new MathematicsSettings
+            var settings = new MathematicsSettings
             {
                 ActiveMode = "AdvancedMath",
                 AdvancedFunction = "INTG",
@@ -615,10 +747,13 @@ namespace DS1000Z_E_USB_Control.Mathematics
                 EndPoint = "100",
                 ConfigurationName = "Integration Default"
             };
+
+            settings.SynchronizeSettings();
+            return settings;
         }
 
         /// <summary>
-        /// Get factory preset configurations - Required by MathematicsWindow
+        /// Get factory preset configurations
         /// </summary>
         public static Dictionary<string, MathematicsSettings> GetFactoryPresets()
         {
@@ -672,11 +807,64 @@ namespace DS1000Z_E_USB_Control.Mathematics
         }
 
         #endregion
+
+        #region Comparison and Equality
+
+        /// <summary>
+        /// Check if settings are equal to another settings object
+        /// </summary>
+        /// <param name="other">Other settings to compare</param>
+        /// <returns>True if equal</returns>
+        public bool Equals(MathematicsSettings other)
+        {
+            if (other == null) return false;
+
+            return Source1 == other.Source1 &&
+                   Source2 == other.Source2 &&
+                   Operation == other.Operation &&
+                   FFTSource == other.FFTSource &&
+                   FFTWindow == other.FFTWindow &&
+                   FFTSplit == other.FFTSplit &&
+                   FFTUnit == other.FFTUnit &&
+                   FilterType == other.FilterType &&
+                   FilterW1 == other.FilterW1 &&
+                   FilterW2 == other.FilterW2 &&
+                   AdvancedFunction == other.AdvancedFunction &&
+                   StartPoint == other.StartPoint &&
+                   EndPoint == other.EndPoint &&
+                   MathDisplayEnabled == other.MathDisplayEnabled &&
+                   InvertWaveform == other.InvertWaveform &&
+                   Scale == other.Scale &&
+                   Offset == other.Offset &&
+                   ActiveMode == other.ActiveMode;
+        }
+
+        /// <summary>
+        /// Create a deep copy of the settings
+        /// </summary>
+        /// <returns>Cloned settings</returns>
+        public MathematicsSettings Clone()
+        {
+            try
+            {
+                var json = JsonSerializer.Serialize(this);
+                var clone = JsonSerializer.Deserialize<MathematicsSettings>(json);
+                clone?.SynchronizeSettings();
+                return clone ?? new MathematicsSettings();
+            }
+            catch
+            {
+                return new MathematicsSettings();
+            }
+        }
+
+        #endregion
     }
+
+    #region Supporting Classes
 
     /// <summary>
     /// Validation result class for settings validation
-    /// ADDED: For proper validation feedback
     /// </summary>
     public class ValidationResult
     {
@@ -697,7 +885,7 @@ namespace DS1000Z_E_USB_Control.Mathematics
         {
             if (IsValid) return "All settings are valid.";
 
-            var summary = new System.Text.StringBuilder();
+            var summary = new StringBuilder();
             summary.AppendLine("Validation errors found:");
 
             foreach (var kvp in _errors)
@@ -709,269 +897,5 @@ namespace DS1000Z_E_USB_Control.Mathematics
         }
     }
 
-
-    public partial class MathematicsSettings : INotifyPropertyChanged
-    {
-        #region ADDED: Missing Nested Settings Properties
-
-        // Private fields for nested settings
-        private BasicOperationsSettings _basicOperations;
-        private FFTAnalysisSettings _fftAnalysis;
-        private DigitalFiltersSettings _digitalFilters;
-        private AdvancedMathSettings _advancedMath;
-
-        /// <summary>
-        /// Basic operations settings (ADD, SUB, MUL, DIV)
-        /// ADDED: Missing property that MathematicsWindow expects
-        /// </summary>
-        [JsonPropertyName("basicOperations")]
-        public BasicOperationsSettings BasicOperations
-        {
-            get => _basicOperations ??= new BasicOperationsSettings();
-            set => SetProperty(ref _basicOperations, value);
-        }
-
-        /// <summary>
-        /// FFT analysis settings
-        /// ADDED: Missing property that MathematicsWindow expects
-        /// </summary>
-        [JsonPropertyName("fftAnalysis")]
-        public FFTAnalysisSettings FFTAnalysis
-        {
-            get => _fftAnalysis ??= new FFTAnalysisSettings();
-            set => SetProperty(ref _fftAnalysis, value);
-        }
-
-        /// <summary>
-        /// Digital filters settings
-        /// ADDED: Missing property that MathematicsWindow expects
-        /// </summary>
-        [JsonPropertyName("digitalFilters")]
-        public DigitalFiltersSettings DigitalFilters
-        {
-            get => _digitalFilters ??= new DigitalFiltersSettings();
-            set => SetProperty(ref _digitalFilters, value);
-        }
-
-        /// <summary>
-        /// Advanced math settings
-        /// ADDED: Missing property that MathematicsWindow expects
-        /// </summary>
-        [JsonPropertyName("advancedMath")]
-        public AdvancedMathSettings AdvancedMath
-        {
-            get => _advancedMath ??= new AdvancedMathSettings();
-            set => SetProperty(ref _advancedMath, value);
-        }
-
-        #endregion
-
-        #region UPDATED: Constructor
-
-        /// <summary>
-        /// Default constructor - UPDATED to initialize nested settings
-        /// </summary>
-        public MathematicsSettings()
-        {
-            // Initialize all nested settings to prevent null reference exceptions
-            _basicOperations = new BasicOperationsSettings();
-            _fftAnalysis = new FFTAnalysisSettings();
-            _digitalFilters = new DigitalFiltersSettings();
-            _advancedMath = new AdvancedMathSettings();
-        }
-
-        #endregion
-
-        #region UPDATED: Synchronization Methods
-
-        /// <summary>
-        /// Synchronize individual properties with nested settings
-        /// ADDED: Keep backward compatibility with existing flat properties
-        /// </summary>
-        public void SynchronizeSettings()
-        {
-            // Sync Basic Operations
-            if (BasicOperations != null)
-            {
-                BasicOperations.Source1 = Source1;
-                BasicOperations.Source2 = Source2;
-                BasicOperations.Operation = Operation;
-            }
-
-            // Sync FFT Analysis
-            if (FFTAnalysis != null)
-            {
-                FFTAnalysis.Source = FFTSource;
-                FFTAnalysis.Window = FFTWindow;
-                FFTAnalysis.Split = FFTSplit;
-                FFTAnalysis.Unit = FFTUnit;
-            }
-
-            // Sync Digital Filters
-            if (DigitalFilters != null)
-            {
-                DigitalFilters.FilterType = FilterType;
-                DigitalFilters.W1 = FilterW1;
-                DigitalFilters.W2 = FilterW2;
-            }
-
-            // Sync Advanced Math
-            if (AdvancedMath != null)
-            {
-                AdvancedMath.Function = AdvancedFunction;
-                AdvancedMath.StartPoint = StartPoint;
-                AdvancedMath.EndPoint = EndPoint;
-            }
-        }
-
-        /// <summary>
-        /// Update flat properties from nested settings
-        /// ADDED: For reverse synchronization
-        /// </summary>
-        public void UpdateFromNestedSettings()
-        {
-            // Update from Basic Operations
-            if (BasicOperations != null)
-            {
-                Source1 = BasicOperations.Source1;
-                Source2 = BasicOperations.Source2;
-                Operation = BasicOperations.Operation;
-            }
-
-            // Update from FFT Analysis
-            if (FFTAnalysis != null)
-            {
-                FFTSource = FFTAnalysis.Source;
-                FFTWindow = FFTAnalysis.Window;
-                FFTSplit = FFTAnalysis.Split;
-                FFTUnit = FFTAnalysis.Unit;
-            }
-
-            // Update from Digital Filters
-            if (DigitalFilters != null)
-            {
-                FilterType = DigitalFilters.FilterType;
-                FilterW1 = DigitalFilters.W1;
-                FilterW2 = DigitalFilters.W2;
-            }
-
-            // Update from Advanced Math
-            if (AdvancedMath != null)
-            {
-                AdvancedFunction = AdvancedMath.Function;
-                StartPoint = AdvancedMath.StartPoint;
-                EndPoint = AdvancedMath.EndPoint;
-            }
-        }
-
-        #endregion
-
-        #region UPDATED: Factory Methods
-
-        /// <summary>
-        /// Create default settings for Basic Operations - UPDATED
-        /// </summary>
-        public static MathematicsSettings CreateBasicOperationsDefault()
-        {
-            var settings = new MathematicsSettings
-            {
-                ActiveMode = "BasicOperations",
-                Source1 = "CHANnel1",
-                Source2 = "CHANnel2",
-                Operation = "ADD",
-                ConfigurationName = "Basic Addition Default"
-            };
-
-            settings.SynchronizeSettings();
-            return settings;
-        }
-
-        /// <summary>
-        /// Create default settings for FFT Analysis - UPDATED
-        /// </summary>
-        public static MathematicsSettings CreateFFTAnalysisDefault()
-        {
-            var settings = new MathematicsSettings
-            {
-                ActiveMode = "FFTAnalysis",
-                FFTSource = "CHANnel1",
-                FFTWindow = "HANNing",
-                FFTSplit = "FULL",
-                FFTUnit = "VRMS",
-                ConfigurationName = "FFT Analysis Default"
-            };
-
-            settings.SynchronizeSettings();
-            return settings;
-        }
-
-        /// <summary>
-        /// Create default settings for Digital Filters - UPDATED
-        /// </summary>
-        public static MathematicsSettings CreateDigitalFiltersDefault()
-        {
-            var settings = new MathematicsSettings
-            {
-                ActiveMode = "DigitalFilters",
-                FilterType = "LPASs",
-                FilterW1 = "1000",
-                FilterW2 = "10000",
-                ConfigurationName = "Low Pass Filter Default"
-            };
-
-            settings.SynchronizeSettings();
-            return settings;
-        }
-
-        /// <summary>
-        /// Create default settings for Advanced Math - UPDATED
-        /// </summary>
-        public static MathematicsSettings CreateAdvancedMathDefault()
-        {
-            var settings = new MathematicsSettings
-            {
-                ActiveMode = "AdvancedMath",
-                AdvancedFunction = "INTG",
-                StartPoint = "0",
-                EndPoint = "100",
-                ConfigurationName = "Integration Default"
-            };
-
-            settings.SynchronizeSettings();
-            return settings;
-        }
-
-        #endregion
-
-        #region FIXED: Property Change Notifications
-
-        /// <summary>
-        /// Set property with change notification - FIXED to handle all types
-        /// </summary>
-        protected bool SetProperty<T>(ref T field, T value, [CallerMemberName] string propertyName = null)
-        {
-            if (EqualityComparer<T>.Default.Equals(field, value))
-                return false;
-
-            field = value;
-            OnPropertyChanged(propertyName);
-            return true;
-        }
-
-        /// <summary>
-        /// Property changed notification
-        /// </summary>
-        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-
-        /// <summary>
-        /// Property changed event
-        /// </summary>
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        #endregion
-    }
-
+    #endregion
 }

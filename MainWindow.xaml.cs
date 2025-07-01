@@ -57,6 +57,9 @@ namespace Rigol_DS1000Z_E_Control
             oscilloscope = new RigolDS1000ZE();
             oscilloscope.LogEvent += Oscilloscope_LogEvent;
 
+            // Initialize the VISA manager
+            InitializeVisaManager();
+
             // Initialize the settings manager
             settingsManager = new OscilloscopeSettingsManager(oscilloscope);
             settingsManager.LogEvent += (sender, message) => Log(message);
@@ -164,6 +167,37 @@ namespace Rigol_DS1000Z_E_Control
                 Log($"❌ Enhanced storage initialization error: {ex.Message}");
             }
         }
+
+
+        // ===================================================================
+
+        // ✅ PROBLEM 2: visaManager initialization issue  
+        // FIX: Ensure visaManager is properly initialized in the constructor
+
+        // ✅ FIND THIS METHOD in MainWindow.xaml.cs (in the constructor region):
+        // Look for: private void InitializeControlPanels()
+        // ADD THIS METHOD or UPDATE the existing one:
+
+        /// <summary>
+        /// FIXED: Initialize VISA manager properly
+        /// </summary>
+        private void InitializeVisaManager()
+        {
+            try
+            {
+                // ✅ FIX: Initialize the VISA manager if it doesn't exist
+                if (visaManager == null)
+                {
+                    visaManager = new VisaManager();
+                    Log("🔌 VISA Manager initialized");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Error initializing VISA Manager: {ex.Message}");
+            }
+        }
+
         #endregion
 
         #region Connection Management
@@ -222,8 +256,6 @@ namespace Rigol_DS1000Z_E_Control
                 }
             }
         }
-
-
 
         // MODIFICATION: Update your disconnect method to clean up events
         private void DisconnectFromOscilloscope()
@@ -341,65 +373,67 @@ namespace Rigol_DS1000Z_E_Control
             if (QuickRestoreButton != null) QuickRestoreButton.IsEnabled = isConnected;
             if (BatchExportButton != null) BatchExportButton.IsEnabled = isConnected;
         }
-        #endregion
-
-
-        // Add this method anywhere in your MainWindow class
+ 
         /// <summary>
-        /// Open Mathematics Functions window - Alternative version with explicit EventArgs handling
+        /// FIXED: Open mathematics window with proper VISA manager integration
         /// </summary>
-        private void OpenMathematics_Click(object sender, RoutedEventArgs e)
+        private async void OpenMathematics_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                if (_mathematicsWindow == null || !_mathematicsWindow.IsLoaded)
+                // Check if window is already open
+                if (_mathematicsWindow == null || !_mathematicsWindow.IsVisible)
                 {
                     _mathematicsWindow = new MathematicsWindow();
 
-                    // Subscribe to events with explicit EventArgs parameter names
-                    _mathematicsWindow.SCPICommandGenerated += (mathWindow, scpiEventArgs) =>
+                    // ✅ FIX: Use 'this.visaManager' and ensure it's connected
+                    if (this.visaManager != null && this.visaManager.IsConnected)
                     {
-                        // Forward SCPI commands to oscilloscope
-                        if (isConnected && oscilloscope != null)
+                        // Initialize with status polling - THIS IS THE KEY FIX
+                        bool initialized = await _mathematicsWindow.InitializeAsync(this.visaManager);
+
+                        if (!initialized)
                         {
-                            oscilloscope.SendCommand(scpiEventArgs.Command);
-                            Log($"📊 Math Command: {scpiEventArgs.Command}");
+                            this.OnErrorOccurred("Failed to initialize Mathematics panel with status polling");
+                            // Continue anyway but warn user
                         }
                         else
                         {
-                            Log("⚠️ Not connected to oscilloscope. Math command not sent.");
+                            this.OnStatusUpdated("✅ Mathematics window initialized with status polling");
                         }
-                    };
-
-                    _mathematicsWindow.ErrorOccurred += (mathWindow, errorEventArgs) =>
+                    }
+                    else
                     {
-                        Log($"❌ Math Error: {errorEventArgs.Error}");
-                    };
+                        this.OnErrorOccurred("⚠️ Mathematics window opened but oscilloscope not connected - status polling unavailable");
+                    }
 
-                    _mathematicsWindow.StatusUpdated += (mathWindow, statusEventArgs) =>
-                    {
-                        Log($"📊 Math Status: {statusEventArgs.Message}");
-                    };
+                    // Subscribe to SCPI command events
+                    _mathematicsWindow.SCPICommandGenerated += OnSCPICommandGenerated;
 
-                    // Update connection status
-                    _mathematicsWindow.SetConnectionStatus(isConnected);
+                    // Position relative to main window
+                    _mathematicsWindow.Owner = this;
+                    _mathematicsWindow.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+
+                    _mathematicsWindow.Show();
+                    this.OnStatusUpdated("📊 Mathematics window opened");
                 }
-
-                _mathematicsWindow.Show();
-                _mathematicsWindow.Activate();
-                Log("🧮 Mathematics Functions window opened");
+                else
+                {
+                    // Bring existing window to front
+                    _mathematicsWindow.Activate();
+                    _mathematicsWindow.Focus();
+                }
             }
             catch (Exception ex)
             {
-                Log($"❌ Error opening Mathematics window: {ex.Message}");
-                MessageBox.Show($"Error opening Mathematics Functions: {ex.Message}",
-                               "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                // ✅ FIX: Use 'this.OnErrorOccurred' to call the existing method
+                this.OnErrorOccurred($"Error opening mathematics window: {ex.Message}");
             }
         }
 
+       #endregion
 
         // Add this to your MainWindow.xaml.cs class in the connection/initialization section
-
         #region Channel Settings Change Event Wiring
 
         /// <summary>

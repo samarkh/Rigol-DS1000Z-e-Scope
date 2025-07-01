@@ -110,7 +110,8 @@ namespace DS1000Z_E_USB_Control.Mathematics
         }
 
         /// <summary>
-        /// Subscribe to Math Panel events with null checks
+        /// Subscribe to math panel events
+        /// FIXED: Proper event subscription with correct signatures
         /// </summary>
         private void SubscribeToMathPanelEvents()
         {
@@ -118,14 +119,39 @@ namespace DS1000Z_E_USB_Control.Mathematics
             {
                 if (MathPanel != null)
                 {
+                    // Subscribe to the correctly typed events
                     MathPanel.SCPICommandGenerated += OnMathPanelSCPICommand;
                     MathPanel.ErrorOccurred += OnMathPanelError;
                     MathPanel.StatusUpdated += OnMathPanelStatus;
+
+                    UpdateStatus("Event subscriptions established");
                 }
             }
             catch (Exception ex)
             {
-                OnErrorOccurred($"Failed to subscribe to math panel events: {ex.Message}");
+                OnErrorOccurred($"Error subscribing to panel events: {ex.Message}");
+            }
+        }
+
+
+        /// <summary>
+        /// Unsubscribe from math panel events
+        /// FIXED: Proper event unsubscription
+        /// </summary>
+        private void UnsubscribeFromMathPanelEvents()
+        {
+            try
+            {
+                if (MathPanel != null)
+                {
+                    MathPanel.SCPICommandGenerated -= OnMathPanelSCPICommand;
+                    MathPanel.ErrorOccurred -= OnMathPanelError;
+                    MathPanel.StatusUpdated -= OnMathPanelStatus;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error unsubscribing from events: {ex.Message}");
             }
         }
 
@@ -203,13 +229,16 @@ namespace DS1000Z_E_USB_Control.Mathematics
         }
 
         /// <summary>
-        /// Safely get settings from panel
+        /// Get panel settings safely
+        /// FIXED: Handles null coalescing operator type mismatch
         /// </summary>
         private MathematicsSettings GetPanelSettings()
         {
             try
             {
-                return MathPanel?.GetCurrentSettings() ?? new MathematicsSettings();
+                // Get settings from panel if available, otherwise return new instance
+                var settings = MathPanel?.GetCurrentSettings();
+                return settings ?? new MathematicsSettings();
             }
             catch (Exception ex)
             {
@@ -224,6 +253,7 @@ namespace DS1000Z_E_USB_Control.Mathematics
 
         /// <summary>
         /// Handle SCPI commands from math panel
+        /// FIXED: Now properly handles SCPICommandEventArgs parameter
         /// </summary>
         private void OnMathPanelSCPICommand(object sender, SCPICommandEventArgs e)
         {
@@ -247,8 +277,10 @@ namespace DS1000Z_E_USB_Control.Mathematics
             }
         }
 
+
         /// <summary>
         /// Handle errors from math panel
+        /// FIXED: Now properly handles ErrorEventArgs parameter
         /// </summary>
         private void OnMathPanelError(object sender, ErrorEventArgs e)
         {
@@ -275,6 +307,7 @@ namespace DS1000Z_E_USB_Control.Mathematics
 
         /// <summary>
         /// Handle status updates from math panel
+        /// FIXED: Now properly handles StatusEventArgs parameter
         /// </summary>
         private void OnMathPanelStatus(object sender, StatusEventArgs e)
         {
@@ -863,26 +896,27 @@ namespace DS1000Z_E_USB_Control.Mathematics
         }
 
         /// <summary>
-        /// Update status bar with message
+        /// Update status with optional error indication
         /// </summary>
         private void UpdateStatus(string message, bool isError = false)
         {
             try
             {
-                if (StatusText != null)
+                Dispatcher.BeginInvoke(new Action(() =>
                 {
-                    StatusText.Text = message;
-                    StatusText.Foreground = new SolidColorBrush(isError ? Colors.Red : Colors.Black);
-                }
+                    if (StatusText != null)
+                    {
+                        StatusText.Text = message;
+                        StatusText.Foreground = isError ?
+                            new SolidColorBrush(Colors.Red) :
+                            new SolidColorBrush(Colors.Green);
+                    }
 
-                if (StatusIcon != null && isError)
-                {
-                    StatusIcon.Text = "⚠️";
-                }
-                else if (StatusIcon != null)
-                {
-                    StatusIcon.Text = "🧮";
-                }
+                    if (TimestampText != null)
+                    {
+                        TimestampText.Text = $"Last Updated: {DateTime.Now:HH:mm:ss}";
+                    }
+                }));
             }
             catch (Exception ex)
             {
@@ -945,17 +979,19 @@ namespace DS1000Z_E_USB_Control.Mathematics
         {
             try
             {
-                recentCommands.Insert(0, $"[{DateTime.Now:HH:mm:ss}] {command}");
+                if (string.IsNullOrEmpty(command)) return;
 
-                // Keep only the most recent commands
-                while (recentCommands.Count > MAX_RECENT_COMMANDS)
+                recentCommands.Add($"[{DateTime.Now:HH:mm:ss}] {command}");
+
+                // Keep only recent commands (prevent memory issues)
+                if (recentCommands.Count > MAX_RECENT_COMMANDS)
                 {
-                    recentCommands.RemoveAt(recentCommands.Count - 1);
+                    recentCommands.RemoveAt(0);
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error adding to recent commands: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Error adding recent command: {ex.Message}");
             }
         }
 

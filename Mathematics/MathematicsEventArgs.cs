@@ -5,10 +5,76 @@ using System.Text;
 using System.Threading.Tasks;
 
 // File: Mathematics/MathematicsEventArgs.cs
-// Create this new file to contain the missing EventArgs classes
+// Clean consolidated version - removes all duplicate definitions
 
 namespace DS1000Z_E_USB_Control.Mathematics
 {
+    #region Supporting Enumerations
+
+    /// <summary>
+    /// Status levels for status events
+    /// </summary>
+    public enum StatusLevel
+    {
+        /// <summary>
+        /// Debug level - detailed diagnostic information
+        /// </summary>
+        Debug,
+
+        /// <summary>
+        /// Information level - general information
+        /// </summary>
+        Info,
+
+        /// <summary>
+        /// Warning level - potential problems
+        /// </summary>
+        Warning,
+
+        /// <summary>
+        /// Error level - error conditions
+        /// </summary>
+        Error,
+
+        /// <summary>
+        /// Critical level - critical errors
+        /// </summary>
+        Critical
+    }
+
+    /// <summary>
+    /// Error severity levels
+    /// </summary>
+    public enum ErrorSeverity
+    {
+        /// <summary>
+        /// Low severity - minor issues
+        /// </summary>
+        Low,
+
+        /// <summary>
+        /// Medium severity - moderate issues
+        /// </summary>
+        Medium,
+
+        /// <summary>
+        /// High severity - serious issues
+        /// </summary>
+        High,
+
+        /// <summary>
+        /// Error severity - standard errors
+        /// </summary>
+        Error,
+
+        /// <summary>
+        /// Critical severity - system-critical errors
+        /// </summary>
+        Critical
+    }
+
+    #endregion
+
     #region SCPICommandEventArgs
 
     /// <summary>
@@ -262,42 +328,6 @@ namespace DS1000Z_E_USB_Control.Mathematics
 
     #endregion
 
-    #region Supporting Enumerations
-
-    /// <summary>
-    /// Status levels for status events
-    /// </summary>
-    public enum StatusLevel
-    {
-        /// <summary>
-        /// Debug level - detailed diagnostic information
-        /// </summary>
-        Debug,
-
-        /// <summary>
-        /// Information level - general information
-        /// </summary>
-        Info,
-
-        /// <summary>
-        /// Warning level - potential problems
-        /// </summary>
-        Warning,
-
-        /// <summary>
-        /// Error level - error conditions
-        /// </summary>
-        Error,
-
-        /// <summary>
-        /// Critical level - critical errors
-        /// </summary>
-        Critical
-    }
-
-    #endregion
-
-
     #region ErrorEventArgs
 
     /// <summary>
@@ -439,44 +469,129 @@ namespace DS1000Z_E_USB_Control.Mathematics
 
     #endregion
 
-    #region Supporting Enumerations
+    #region Static Factory Methods
 
     /// <summary>
-    /// Error severity levels
+    /// Static factory methods for creating event args
     /// </summary>
-    public enum ErrorSeverity
+    public static class MathematicsEventArgsFactory
     {
-        /// <summary>
-        /// Low severity - minor issues
-        /// </summary>
-        Low,
+        #region SCPICommandEventArgs Factory Methods
 
         /// <summary>
-        /// Medium severity - moderate issues
+        /// Create a basic SCPI command event
         /// </summary>
-        Medium,
+        /// <param name="command">The SCPI command</param>
+        /// <returns>SCPICommandEventArgs instance</returns>
+        public static SCPICommandEventArgs CreateSCPICommand(string command)
+        {
+            return new SCPICommandEventArgs(command);
+        }
 
         /// <summary>
-        /// High severity - serious issues
+        /// Create a SCPI command event with source
         /// </summary>
-        High,
+        /// <param name="command">The SCPI command</param>
+        /// <param name="source">The source of the command</param>
+        /// <returns>SCPICommandEventArgs instance</returns>
+        public static SCPICommandEventArgs CreateSCPICommand(string command, string source)
+        {
+            return new SCPICommandEventArgs(command, source);
+        }
 
         /// <summary>
-        /// Error severity - standard errors
+        /// Create a mathematics SCPI command event
         /// </summary>
-        Error,
+        /// <param name="command">The SCPI command</param>
+        /// <returns>SCPICommandEventArgs instance</returns>
+        public static SCPICommandEventArgs CreateMathCommand(string command)
+        {
+            return new SCPICommandEventArgs(command, "Mathematics", "MATH");
+        }
+
+        #endregion
+
+        #region StatusEventArgs Factory Methods
 
         /// <summary>
-        /// Critical severity - system-critical errors
+        /// Create an info status event
         /// </summary>
-        Critical
+        /// <param name="message">The status message</param>
+        /// <returns>StatusEventArgs instance</returns>
+        public static StatusEventArgs CreateInfo(string message)
+        {
+            return new StatusEventArgs(message, StatusLevel.Info);
+        }
+
+        /// <summary>
+        /// Create a warning status event
+        /// </summary>
+        /// <param name="message">The status message</param>
+        /// <returns>StatusEventArgs instance</returns>
+        public static StatusEventArgs CreateWarning(string message)
+        {
+            return new StatusEventArgs(message, StatusLevel.Warning);
+        }
+
+        /// <summary>
+        /// Create an error status event
+        /// </summary>
+        /// <param name="message">The status message</param>
+        /// <returns>StatusEventArgs instance</returns>
+        public static StatusEventArgs CreateError(string message)
+        {
+            return new StatusEventArgs(message, StatusLevel.Error);
+        }
+
+        /// <summary>
+        /// Create a mathematics status event
+        /// </summary>
+        /// <param name="message">The status message</param>
+        /// <param name="level">The status level</param>
+        /// <returns>StatusEventArgs instance</returns>
+        public static StatusEventArgs CreateMathStatus(string message, StatusLevel level = StatusLevel.Info)
+        {
+            return new StatusEventArgs(message, level, "Mathematics", "MATH");
+        }
+
+        #endregion
+
+        #region ErrorEventArgs Factory Methods
+
+        /// <summary>
+        /// Create a basic error event
+        /// </summary>
+        /// <param name="errorMessage">The error message</param>
+        /// <returns>ErrorEventArgs instance</returns>
+        public static ErrorEventArgs CreateErrorEvent(string errorMessage)
+        {
+            return new ErrorEventArgs(errorMessage);
+        }
+
+        /// <summary>
+        /// Create an error event with exception
+        /// </summary>
+        /// <param name="errorMessage">The error message</param>
+        /// <param name="exception">The exception that caused the error</param>
+        /// <returns>ErrorEventArgs instance</returns>
+        public static ErrorEventArgs CreateErrorEvent(string errorMessage, Exception exception)
+        {
+            return new ErrorEventArgs(errorMessage, exception);
+        }
+
+        /// <summary>
+        /// Create a mathematics error event
+        /// </summary>
+        /// <param name="errorMessage">The error message</param>
+        /// <param name="exception">Optional exception</param>
+        /// <returns>ErrorEventArgs instance</returns>
+        public static ErrorEventArgs CreateMathError(string errorMessage, Exception exception = null)
+        {
+            return new ErrorEventArgs(errorMessage, exception, "Mathematics", ErrorSeverity.Error, "MATH");
+        }
+
+        #endregion
     }
 
-
-
     #endregion
-
-
-    
-       
 }

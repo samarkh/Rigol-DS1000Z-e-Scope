@@ -708,4 +708,270 @@ namespace DS1000Z_E_USB_Control.Mathematics
             return summary.ToString();
         }
     }
+
+
+    public partial class MathematicsSettings : INotifyPropertyChanged
+    {
+        #region ADDED: Missing Nested Settings Properties
+
+        // Private fields for nested settings
+        private BasicOperationsSettings _basicOperations;
+        private FFTAnalysisSettings _fftAnalysis;
+        private DigitalFiltersSettings _digitalFilters;
+        private AdvancedMathSettings _advancedMath;
+
+        /// <summary>
+        /// Basic operations settings (ADD, SUB, MUL, DIV)
+        /// ADDED: Missing property that MathematicsWindow expects
+        /// </summary>
+        [JsonPropertyName("basicOperations")]
+        public BasicOperationsSettings BasicOperations
+        {
+            get => _basicOperations ??= new BasicOperationsSettings();
+            set => SetProperty(ref _basicOperations, value);
+        }
+
+        /// <summary>
+        /// FFT analysis settings
+        /// ADDED: Missing property that MathematicsWindow expects
+        /// </summary>
+        [JsonPropertyName("fftAnalysis")]
+        public FFTAnalysisSettings FFTAnalysis
+        {
+            get => _fftAnalysis ??= new FFTAnalysisSettings();
+            set => SetProperty(ref _fftAnalysis, value);
+        }
+
+        /// <summary>
+        /// Digital filters settings
+        /// ADDED: Missing property that MathematicsWindow expects
+        /// </summary>
+        [JsonPropertyName("digitalFilters")]
+        public DigitalFiltersSettings DigitalFilters
+        {
+            get => _digitalFilters ??= new DigitalFiltersSettings();
+            set => SetProperty(ref _digitalFilters, value);
+        }
+
+        /// <summary>
+        /// Advanced math settings
+        /// ADDED: Missing property that MathematicsWindow expects
+        /// </summary>
+        [JsonPropertyName("advancedMath")]
+        public AdvancedMathSettings AdvancedMath
+        {
+            get => _advancedMath ??= new AdvancedMathSettings();
+            set => SetProperty(ref _advancedMath, value);
+        }
+
+        #endregion
+
+        #region UPDATED: Constructor
+
+        /// <summary>
+        /// Default constructor - UPDATED to initialize nested settings
+        /// </summary>
+        public MathematicsSettings()
+        {
+            // Initialize all nested settings to prevent null reference exceptions
+            _basicOperations = new BasicOperationsSettings();
+            _fftAnalysis = new FFTAnalysisSettings();
+            _digitalFilters = new DigitalFiltersSettings();
+            _advancedMath = new AdvancedMathSettings();
+        }
+
+        #endregion
+
+        #region UPDATED: Synchronization Methods
+
+        /// <summary>
+        /// Synchronize individual properties with nested settings
+        /// ADDED: Keep backward compatibility with existing flat properties
+        /// </summary>
+        public void SynchronizeSettings()
+        {
+            // Sync Basic Operations
+            if (BasicOperations != null)
+            {
+                BasicOperations.Source1 = Source1;
+                BasicOperations.Source2 = Source2;
+                BasicOperations.Operation = Operation;
+            }
+
+            // Sync FFT Analysis
+            if (FFTAnalysis != null)
+            {
+                FFTAnalysis.Source = FFTSource;
+                FFTAnalysis.Window = FFTWindow;
+                FFTAnalysis.Split = FFTSplit;
+                FFTAnalysis.Unit = FFTUnit;
+            }
+
+            // Sync Digital Filters
+            if (DigitalFilters != null)
+            {
+                DigitalFilters.FilterType = FilterType;
+                DigitalFilters.W1 = FilterW1;
+                DigitalFilters.W2 = FilterW2;
+            }
+
+            // Sync Advanced Math
+            if (AdvancedMath != null)
+            {
+                AdvancedMath.Function = AdvancedFunction;
+                AdvancedMath.StartPoint = StartPoint;
+                AdvancedMath.EndPoint = EndPoint;
+            }
+        }
+
+        /// <summary>
+        /// Update flat properties from nested settings
+        /// ADDED: For reverse synchronization
+        /// </summary>
+        public void UpdateFromNestedSettings()
+        {
+            // Update from Basic Operations
+            if (BasicOperations != null)
+            {
+                Source1 = BasicOperations.Source1;
+                Source2 = BasicOperations.Source2;
+                Operation = BasicOperations.Operation;
+            }
+
+            // Update from FFT Analysis
+            if (FFTAnalysis != null)
+            {
+                FFTSource = FFTAnalysis.Source;
+                FFTWindow = FFTAnalysis.Window;
+                FFTSplit = FFTAnalysis.Split;
+                FFTUnit = FFTAnalysis.Unit;
+            }
+
+            // Update from Digital Filters
+            if (DigitalFilters != null)
+            {
+                FilterType = DigitalFilters.FilterType;
+                FilterW1 = DigitalFilters.W1;
+                FilterW2 = DigitalFilters.W2;
+            }
+
+            // Update from Advanced Math
+            if (AdvancedMath != null)
+            {
+                AdvancedFunction = AdvancedMath.Function;
+                StartPoint = AdvancedMath.StartPoint;
+                EndPoint = AdvancedMath.EndPoint;
+            }
+        }
+
+        #endregion
+
+        #region UPDATED: Factory Methods
+
+        /// <summary>
+        /// Create default settings for Basic Operations - UPDATED
+        /// </summary>
+        public static MathematicsSettings CreateBasicOperationsDefault()
+        {
+            var settings = new MathematicsSettings
+            {
+                ActiveMode = "BasicOperations",
+                Source1 = "CHANnel1",
+                Source2 = "CHANnel2",
+                Operation = "ADD",
+                ConfigurationName = "Basic Addition Default"
+            };
+
+            settings.SynchronizeSettings();
+            return settings;
+        }
+
+        /// <summary>
+        /// Create default settings for FFT Analysis - UPDATED
+        /// </summary>
+        public static MathematicsSettings CreateFFTAnalysisDefault()
+        {
+            var settings = new MathematicsSettings
+            {
+                ActiveMode = "FFTAnalysis",
+                FFTSource = "CHANnel1",
+                FFTWindow = "HANNing",
+                FFTSplit = "FULL",
+                FFTUnit = "VRMS",
+                ConfigurationName = "FFT Analysis Default"
+            };
+
+            settings.SynchronizeSettings();
+            return settings;
+        }
+
+        /// <summary>
+        /// Create default settings for Digital Filters - UPDATED
+        /// </summary>
+        public static MathematicsSettings CreateDigitalFiltersDefault()
+        {
+            var settings = new MathematicsSettings
+            {
+                ActiveMode = "DigitalFilters",
+                FilterType = "LPASs",
+                FilterW1 = "1000",
+                FilterW2 = "10000",
+                ConfigurationName = "Low Pass Filter Default"
+            };
+
+            settings.SynchronizeSettings();
+            return settings;
+        }
+
+        /// <summary>
+        /// Create default settings for Advanced Math - UPDATED
+        /// </summary>
+        public static MathematicsSettings CreateAdvancedMathDefault()
+        {
+            var settings = new MathematicsSettings
+            {
+                ActiveMode = "AdvancedMath",
+                AdvancedFunction = "INTG",
+                StartPoint = "0",
+                EndPoint = "100",
+                ConfigurationName = "Integration Default"
+            };
+
+            settings.SynchronizeSettings();
+            return settings;
+        }
+
+        #endregion
+
+        #region FIXED: Property Change Notifications
+
+        /// <summary>
+        /// Set property with change notification - FIXED to handle all types
+        /// </summary>
+        protected bool SetProperty<T>(ref T field, T value, [CallerMemberName] string propertyName = null)
+        {
+            if (EqualityComparer<T>.Default.Equals(field, value))
+                return false;
+
+            field = value;
+            OnPropertyChanged(propertyName);
+            return true;
+        }
+
+        /// <summary>
+        /// Property changed notification
+        /// </summary>
+        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        /// <summary>
+        /// Property changed event
+        /// </summary>
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        #endregion
+    }
+
 }

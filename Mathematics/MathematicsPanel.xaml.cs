@@ -938,4 +938,71 @@ namespace DS1000Z_E_USB_Control.Mathematics
 
         #endregion
     }
+
+    public partial class MathematicsPanel : UserControl
+    {
+        #region Events - UPDATED SIGNATURES
+
+        /// <summary>
+        /// Event raised when SCPI command is generated
+        /// FIXED: Changed from EventHandler<string> to EventHandler<SCPICommandEventArgs>
+        /// </summary>
+        public event EventHandler<SCPICommandEventArgs> SCPICommandGenerated;
+
+        /// <summary>
+        /// Event raised for status updates
+        /// FIXED: Changed from EventHandler<string> to EventHandler<StatusEventArgs>
+        /// </summary>
+        public event EventHandler<StatusEventArgs> StatusUpdated;
+
+        /// <summary>
+        /// Event raised when error occurs
+        /// FIXED: Changed from EventHandler<string> to EventHandler<ErrorEventArgs>
+        /// </summary>
+        public event EventHandler<ErrorEventArgs> ErrorOccurred;
+
+        #endregion
+
+        #region Event Handlers for Status Updates - UPDATED IMPLEMENTATIONS
+
+        /// <summary>
+        /// Event handler for SCPI command generation
+        /// FIXED: Now creates proper SCPICommandEventArgs
+        /// </summary>
+        private void OnSCPICommandGenerated(string command)
+        {
+            // Create the appropriate EventArgs and invoke the event
+            var eventArgs = new SCPICommandEventArgs(command, "MathematicsPanel", "MATH");
+            SCPICommandGenerated?.Invoke(this, eventArgs);
+        }
+
+        /// <summary>
+        /// Event handler for status updates
+        /// FIXED: Now creates proper StatusEventArgs
+        /// </summary>
+        private void OnStatusUpdated(string message)
+        {
+            // Create the appropriate EventArgs and invoke the event
+            var eventArgs = new StatusEventArgs(message, StatusLevel.Info, "MathematicsPanel", "MATH");
+            StatusUpdated?.Invoke(this, eventArgs);
+        }
+
+        /// <summary>
+        /// Event handler for error occurrences
+        /// FIXED: Now creates proper ErrorEventArgs
+        /// </summary>
+        private void OnErrorOccurred(string error)
+        {
+            // Create the appropriate ErrorEventArgs and invoke the event
+            var eventArgs = new ErrorEventArgs(error);
+            eventArgs.Source = "MathematicsPanel";
+            eventArgs.Category = "MATH";
+            ErrorOccurred?.Invoke(this, eventArgs);
+        }
+
+        #endregion
+    }
+
+
+
 }

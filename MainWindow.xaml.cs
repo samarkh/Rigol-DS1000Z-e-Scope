@@ -32,7 +32,7 @@ namespace Rigol_DS1000Z_E_Control
         private OscilloscopeSettingsManager settingsManager;
         private bool isConnected = false;
         private SimpleWaveformCapture captureSystem;
-        
+
         // Serial protocol window for SCPI command testing
         private SerialProtocolWINDOW _serialProtocolWindow;
 
@@ -41,6 +41,11 @@ namespace Rigol_DS1000Z_E_Control
         private MeasurementController _measurementController;
 
 
+        // VISA manager for enhanced communication
+        private VisaManager visaManager;
+
+
+        // Mathematics window for advanced calculations
         private MathematicsWindow _mathematicsWindow;
 
         // Enhanced storage managers
@@ -181,22 +186,22 @@ namespace Rigol_DS1000Z_E_Control
         /// <summary>
         /// FIXED: Initialize VISA manager properly
         /// </summary>
-        private void InitializeVisaManager()
-        {
-            try
-            {
-                // ✅ FIX: Initialize the VISA manager if it doesn't exist
-                if (visaManager == null)
-                {
-                    visaManager = new VisaManager();
-                    Log("🔌 VISA Manager initialized");
-                }
-            }
-            catch (Exception ex)
-            {
-                Log($"❌ Error initializing VISA Manager: {ex.Message}");
-            }
-        }
+        //private void InitializeVisaManager()
+        //{
+        //    try
+        //    {
+        //        // ✅ FIX: Initialize the VISA manager if it doesn't exist
+        //        if (visaManager == null)
+        //        {
+        //            visaManager = new VisaManager();
+        //            Log("🔌 VISA Manager initialized");
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Log($"❌ Error initializing VISA Manager: {ex.Message}");
+        //    }
+        //}
 
         #endregion
 
@@ -373,7 +378,7 @@ namespace Rigol_DS1000Z_E_Control
             if (QuickRestoreButton != null) QuickRestoreButton.IsEnabled = isConnected;
             if (BatchExportButton != null) BatchExportButton.IsEnabled = isConnected;
         }
- 
+
         /// <summary>
         /// FIXED: Open mathematics window with proper VISA manager integration
         /// </summary>
@@ -431,7 +436,7 @@ namespace Rigol_DS1000Z_E_Control
             }
         }
 
-       #endregion
+        #endregion
 
         // Add this to your MainWindow.xaml.cs class in the connection/initialization section
         #region Channel Settings Change Event Wiring
@@ -753,7 +758,7 @@ namespace Rigol_DS1000Z_E_Control
                     };
 
                     // Update connection status
-                  //
+                    //
 
                     // Handle window closed event
                     _measurementWindow.Closed += (s, e) => _measurementWindow = null;
@@ -1994,5 +1999,223 @@ namespace Rigol_DS1000Z_E_Control
         {
 
         }
+
+        #region Missing Methods - Add These to Your Existing MainWindow.xaml.cs
+
+        /// <summary>
+        /// Initialize VISA manager properly
+        /// </summary>
+        private void InitializeVisaManager()
+        {
+            try
+            {
+                // Initialize the VISA manager if it doesn't exist
+                if (visaManager == null)
+                {
+                    visaManager = new VisaManager();
+                    Log("🔌 VISA Manager initialized");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Error initializing VISA Manager: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Handle SCPI command generation events
+        /// </summary>
+        private void OnSCPICommandGenerated(object sender, SCPICommandEventArgs e)
+        {
+            try
+            {
+                if (e == null || string.IsNullOrEmpty(e.Command)) return;
+
+                // Log the command
+                Log($"SCPI: {e.Command}");
+
+                // Send the command if connected
+                if (isConnected && oscilloscope != null)
+                {
+                    oscilloscope.SendCommand(e.Command);
+                    OnStatusUpdated($"Command sent: {e.Command}");
+                }
+                else
+                {
+                    OnStatusUpdated($"Command generated (not connected): {e.Command}");
+                }
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error handling SCPI command: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Handle error events
+        /// </summary>
+        private void OnErrorOccurred(string errorMessage)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(errorMessage)) return;
+
+                // Log the error
+                Log($"❌ Error: {errorMessage}");
+
+                // Update status with error indication
+                Dispatcher.Invoke(() =>
+                {
+                    if (StatusTextBlock != null)
+                    {
+                        StatusTextBlock.Text = $"Error: {errorMessage}";
+                        StatusTextBlock.Foreground = new SolidColorBrush(Colors.Red);
+                    }
+                    else if (StatusText != null) // Fallback if StatusTextBlock doesn't exist
+                    {
+                        StatusText.Text = $"Error: {errorMessage}";
+                        StatusText.Foreground = new SolidColorBrush(Colors.Red);
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                // Fallback logging
+                System.Diagnostics.Debug.WriteLine($"Error in OnErrorOccurred: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Handle status update events
+        /// </summary>
+        private void OnStatusUpdated(string statusMessage)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(statusMessage)) return;
+
+                // Log the status
+                Log($"📊 Status: {statusMessage}");
+
+                // Update status display
+                Dispatcher.Invoke(() =>
+                {
+                    if (StatusTextBlock != null)
+                    {
+                        StatusTextBlock.Text = statusMessage;
+                        StatusTextBlock.Foreground = new SolidColorBrush(Colors.Green);
+                    }
+                    else if (StatusText != null) // Fallback if StatusTextBlock doesn't exist
+                    {
+                        StatusText.Text = statusMessage;
+                        StatusText.Foreground = new SolidColorBrush(Colors.Green);
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                // Fallback logging
+                System.Diagnostics.Debug.WriteLine($"Error in OnStatusUpdated: {ex.Message}");
+            }
+        }
+
+        #endregion
+
+        // ===========================================================================
+        // 3. UPDATE YOUR EXISTING InitializeVisaManager() CALL:
+        // ===========================================================================
+
+        // In your existing MainWindow() constructor, make sure you call:
+        // InitializeVisaManager();
+
+        // ===========================================================================
+        // 4. IF YOU DON'T HAVE THESE EVENT ARGUMENT CLASSES, ADD THEM:
+        // ===========================================================================
+
+        #region Event Argument Classes - Add These if Missing
+
+        /// <summary>
+        /// Event arguments for SCPI commands
+        /// </summary>
+        public class SCPICommandEventArgs : EventArgs
+        {
+            public string Command { get; }
+            public string Source { get; }
+            public string Category { get; }
+
+            public SCPICommandEventArgs(string command, string source = "", string category = "")
+            {
+                Command = command;
+                Source = source;
+                Category = category;
+            }
+        }
+
+        /// <summary>
+        /// Event arguments for errors
+        /// </summary>
+        public class ErrorEventArgs : EventArgs
+        {
+            public string Error { get; }
+            public string Source { get; set; }
+            public string Category { get; set; }
+            public ErrorSeverity Severity { get; set; }
+
+            public ErrorEventArgs(string error)
+            {
+                Error = error;
+                Severity = ErrorSeverity.Error;
+            }
+        }
+
+        /// <summary>
+        /// Event arguments for status updates
+        /// </summary>
+        public class StatusEventArgs : EventArgs
+        {
+            public string Message { get; }
+            public StatusLevel Level { get; }
+            public string Source { get; set; }
+            public string Category { get; set; }
+
+            public StatusEventArgs(string message, StatusLevel level = StatusLevel.Info, string source = "", string category = "")
+            {
+                Message = message;
+                Level = level;
+                Source = source;
+                Category = category;
+            }
+        }
+
+        /// <summary>
+        /// Error severity levels
+        /// </summary>
+        public enum ErrorSeverity
+        {
+            Info,
+            Warning,
+            Error,
+            Critical
+        }
+
+        /// <summary>
+        /// Status levels
+        /// </summary>
+        public enum StatusLevel
+        {
+            Info,
+            Warning,
+            Success,
+            Error
+        }
+
+        #endregion
+
+
+
+
+
+
+
     }
 }

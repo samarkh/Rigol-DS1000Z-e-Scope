@@ -616,9 +616,7 @@ namespace Rigol_DS1000Z_E_Control
             }
         }
 
-        /// <summary>
-        /// Handle SCPI command generation events - FIXED SIGNATURE
-        /// </summary>
+        // In MainWindow.xaml.cs - Use this CORRECT signature:
         private void OnSCPICommandGenerated(object sender, SCPICommandEventArgs e)
         {
             try
@@ -628,27 +626,19 @@ namespace Rigol_DS1000Z_E_Control
                 // Log the command with source information
                 string logMessage = string.IsNullOrEmpty(e.Source)
                     ? $"SCPI: {e.Command}"
-                    : $"SCPI [{e.Source}]: {e.Command}";
+                    : $"SCPI ({e.Source}): {e.Command}";
 
                 Log(logMessage);
 
-                // Send the command to the oscilloscope if connected
-                if (isConnected && oscilloscope != null)
+                // Send command to VISA manager if connected
+                if (visaManager?.IsConnected == true)
                 {
-                    bool success = oscilloscope.SendCommand(e.Command);
-                    if (!success)
-                    {
-                        Log($"❌ Failed to send SCPI command: {e.Command}");
-                    }
-                }
-                else
-                {
-                    Log("⚠️ SCPI command queued (oscilloscope not connected)");
+                    visaManager.SendCommand(e.Command);
                 }
             }
             catch (Exception ex)
             {
-                Log($"❌ Error in OnSCPICommandGenerated: {ex.Message}");
+                Log($"❌ Error handling SCPI command: {ex.Message}");
             }
         }
 

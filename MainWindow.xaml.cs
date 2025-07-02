@@ -671,6 +671,161 @@ namespace Rigol_DS1000Z_E_Control
             CloseMeasurementWindow(); // Add this line
             base.OnClosed(e);
         }
+      
+        
+        // added 02/07/2025
+        
+        /// <summary>
+        /// Handle SCPI commands from Mathematics window - FIXED: Correct signature for EventHandler<SCPICommandEventArgs>
+        /// This handles line 410 error and supports comprehensive math functions
+        /// </summary>
+        private void OnMathematicsSCPICommand(object sender, SCPICommandEventArgs e)
+        {
+            try
+            {
+                if (e == null || string.IsNullOrEmpty(e.Command)) return;
+
+                // Log the command with source information for math operations
+                string logMessage = string.IsNullOrEmpty(e.Source)
+                    ? $"📊 Math SCPI: {e.Command}"
+                    : $"📊 Math SCPI [{e.Source}]: {e.Command}";
+
+                Log(logMessage);
+
+                // Send the comprehensive math command if connected
+                if (isConnected && oscilloscope != null)
+                {
+                    oscilloscope.SendCommand(e.Command);
+
+                    // Enhanced logging for different math operations
+                    string operationType = GetMathOperationType(e.Command);
+                    OnStatusUpdated($"Math {operationType} command sent: {e.Command}");
+                }
+                else
+                {
+                    OnStatusUpdated($"Math command generated (not connected): {e.Command}");
+                }
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error handling Mathematics SCPI command: {ex.Message}");
+            }
+        }
+
+
+        // added 02/07/2025
+        /// <summary>
+        /// Handle SCPI commands from Serial Protocol window - FIXED: Correct signature for EventHandler<string>
+        /// This handles line 575 error and supports serial protocol decoding commands
+        /// </summary>
+        private void OnSerialProtocolSCPICommand(object sender, string command)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(command)) return;
+
+                // Log the command with source information for serial protocol operations
+                Log($"🔍 Serial Protocol SCPI: {command}");
+
+                // Send the serial protocol command if connected
+                if (isConnected && oscilloscope != null)
+                {
+                    oscilloscope.SendCommand(command);
+
+                    // Enhanced logging for different protocol operations
+                    string protocolType = GetProtocolOperationType(command);
+                    OnStatusUpdated($"Serial Protocol {protocolType} command sent: {command}");
+                }
+                else
+                {
+                    OnStatusUpdated($"Serial Protocol command generated (not connected): {command}");
+                }
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error handling Serial Protocol SCPI command: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Helper method to identify protocol operation types for enhanced logging
+        /// </summary>
+        private string GetProtocolOperationType(string command)
+        {
+            if (string.IsNullOrEmpty(command)) return "Unknown";
+
+            string cmd = command.ToUpper();
+
+            // Decoder Configuration
+            if (cmd.Contains(":DECODER") && cmd.Contains(":MODE"))
+            {
+                if (cmd.Contains("UART")) return "UART Decoder";
+                if (cmd.Contains("SPI")) return "SPI Decoder";
+                if (cmd.Contains("IIC")) return "I²C Decoder";
+                if (cmd.Contains("PARALLEL")) return "Parallel Decoder";
+                return "Decoder Mode";
+            }
+
+            // Display Control
+            if (cmd.Contains(":DECODER") && cmd.Contains(":DISPLAY")) return "Decoder Display";
+
+            // Format Settings
+            if (cmd.Contains(":DECODER") && cmd.Contains(":FORMAT"))
+            {
+                if (cmd.Contains("HEX")) return "Hex Format";
+                if (cmd.Contains("ASCII")) return "ASCII Format";
+                if (cmd.Contains("DEC")) return "Decimal Format";
+                if (cmd.Contains("BIN")) return "Binary Format";
+                return "Display Format";
+            }
+
+            // Threshold Settings
+            if (cmd.Contains(":DECODER") && cmd.Contains(":THRESHOLD")) return "Threshold Setting";
+
+            // Protocol-Specific Settings
+            if (cmd.Contains(":UART:"))
+            {
+                if (cmd.Contains(":BAUD")) return "UART Baud Rate";
+                if (cmd.Contains(":PARITY")) return "UART Parity";
+                if (cmd.Contains(":STOP")) return "UART Stop Bits";
+                if (cmd.Contains(":DATA")) return "UART Data Bits";
+                return "UART Setting";
+            }
+
+            if (cmd.Contains(":SPI:"))
+            {
+                if (cmd.Contains(":EDGE")) return "SPI Clock Edge";
+                if (cmd.Contains(":WIDTH")) return "SPI Data Width";
+                if (cmd.Contains(":ENDIAN")) return "SPI Endian";
+                if (cmd.Contains(":TIMEOUT")) return "SPI Timeout";
+                return "SPI Setting";
+            }
+
+            if (cmd.Contains(":IIC:"))
+            {
+                if (cmd.Contains(":ADDRESS")) return "I²C Address";
+                if (cmd.Contains(":SRATE")) return "I²C Sample Rate";
+                return "I²C Setting";
+            }
+
+            if (cmd.Contains(":PARALLEL:"))
+            {
+                if (cmd.Contains(":WIDTH")) return "Parallel Bus Width";
+                if (cmd.Contains(":CLOCK")) return "Parallel Clock";
+                return "Parallel Setting";
+            }
+
+            // Configuration Management
+            if (cmd.Contains(":CONFIG:"))
+            {
+                if (cmd.Contains(":LABEL")) return "Label Display";
+                if (cmd.Contains(":LINE")) return "Bus Line Display";
+                if (cmd.Contains(":FORMAT")) return "Format Display";
+                return "Configuration";
+            }
+
+            return "Protocol Operation";
+        }
 
 
         #endregion

@@ -435,7 +435,35 @@ namespace Rigol_DS1000Z_E_Control
                     }
 
                     // Subscribe to SCPI command events
-                    _mathematicsWindow.SCPICommandGenerated += OnSCPICommandGenerated;
+                    /// <summary>
+                    /// Generic error occurred handler
+                    /// </summary>
+        private void OnErrorOccurred(string errorMessage)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(errorMessage)) return;
+
+                // Log the error
+                Log($"❌ Error: {errorMessage}");
+
+                // Update status with error indication
+                Dispatcher.Invoke(() =>
+                {
+                    if (StatusText != null)
+                    {
+                        StatusText.Text = $"Error: {errorMessage}";
+                        StatusText.Foreground = new SolidColorBrush(Colors.Red);
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                // Fallback logging if UI update fails
+                System.Diagnostics.Debug.WriteLine($"Error in OnErrorOccurred: {ex.Message}");
+            }
+        }
+        _mathematicsWindow.SCPICommandGenerated += OnSCPICommandGenerated;
 
                     // Position relative to main window
                     _mathematicsWindow.Owner = this;

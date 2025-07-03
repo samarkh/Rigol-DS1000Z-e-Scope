@@ -15,19 +15,19 @@ namespace DS1000Z_E_USB_Control.Mathematics
         #region Events
 
         /// <summary>
-        /// Event raised when a SCPI command is generated
+        /// Event raised when a SCPI command is generated - FIXED TO USE SCPICommandEventArgs
         /// </summary>
-        public event EventHandler<string> SCPICommandGenerated;
+        public event EventHandler<SCPICommandEventArgs> SCPICommandGenerated;
 
         /// <summary>
-        /// Event raised when an error occurs
+        /// Event raised when an error occurs - FIXED TO USE ErrorEventArgs
         /// </summary>
-        public event EventHandler<string> ErrorOccurred;
+        public event EventHandler<ErrorEventArgs> ErrorOccurred;
 
         /// <summary>
-        /// Event raised for logging/status updates
+        /// Event raised for logging/status updates - FIXED TO USE StatusEventArgs
         /// </summary>
-        public event EventHandler<string> StatusUpdated;
+        public event EventHandler<StatusEventArgs> StatusUpdated;
 
         #endregion
 
@@ -630,12 +630,13 @@ namespace DS1000Z_E_USB_Control.Mathematics
         }
 
         /// <summary>
-        /// Send command and raise event
+        /// Send command and raise event - FIXED TO USE SCPICommandEventArgs
         /// </summary>
         /// <param name="command">Command to send</param>
         private void SendCommand(string command)
         {
-            SCPICommandGenerated?.Invoke(this, command);
+            var eventArgs = new SCPICommandEventArgs(command, "MathematicsController", "MATH");
+            SCPICommandGenerated?.Invoke(this, eventArgs);
         }
 
         #endregion
@@ -652,12 +653,13 @@ namespace DS1000Z_E_USB_Control.Mathematics
         }
 
         /// <summary>
-        /// Raise status updated event
+        /// Raise status updated event - FIXED TO USE StatusEventArgs
         /// </summary>
         /// <param name="status">Status message</param>
         protected virtual void OnStatusUpdated(string status)
         {
-            StatusUpdated?.Invoke(this, status);
+            var eventArgs = new StatusEventArgs(status, StatusLevel.Info, "MathematicsController", "MATH");
+            StatusUpdated?.Invoke(this, eventArgs);
         }
 
         #endregion

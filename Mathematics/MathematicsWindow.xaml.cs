@@ -129,10 +129,7 @@ Built for reliable oscilloscope control and measurement automation.";
         /// </summary>
         public event EventHandler<StatusEventArgs> StatusUpdated;
 
-        /// <summary>
-        /// Event raised when window requests connection status update
-        /// </summary>
-        public event EventHandler<bool> ConnectionStatusRequested;
+
 
         #endregion
 

@@ -2315,16 +2315,31 @@ namespace Rigol_DS1000Z_E_Control
 
         #endregion
 
-        // ===========================================================================
-        // 3. UPDATE YOUR EXISTING InitializeVisaManager() CALL:
-        // ===========================================================================
+        // In MainWindow.xaml.cs - ADD this method anywhere in the class:
 
-        // In your existing MainWindow() constructor, make sure you call:
-        // InitializeVisaManager();
+        /// <summary>
+        /// Get the current math operation type from mathematics window
+        /// </summary>
+        /// <returns>Current math operation type or default</returns>
+        private string GetMathOperationType()
+        {
+            try
+            {
+                // Check if mathematics window exists and is open
+                if (_mathematicsWindow?.IsVisible == true && _mathematicsWindow.MathPanel != null)
+                {
+                    return _mathematicsWindow.MathPanel.GetCurrentMathMode();
+                }
 
-        // ===========================================================================
-        // 4. IF YOU DON'T HAVE THESE EVENT ARGUMENT CLASSES, ADD THEM:
-        // ===========================================================================
+                // Return default if no math window is open
+                return "BasicOperations";
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Error getting math operation type: {ex.Message}");
+                return "BasicOperations";
+            }
+        }
 
         #region Event Argument Classes - Add These if Missing
 

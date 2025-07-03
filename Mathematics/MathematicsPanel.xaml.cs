@@ -463,27 +463,57 @@ namespace DS1000Z_E_USB_Control.Mathematics
         #region Controller Event Handlers
 
         /// <summary>
-        /// Handle SCPI commands from controller
+        /// Handle SCPI commands from controller - FIXED SIGNATURE
         /// </summary>
-        private void Controller_SCPICommandGenerated(object sender, string command)
+        private void Controller_SCPICommandGenerated(object sender, SCPICommandEventArgs e)
         {
-            OnSCPICommandGenerated(command);
+            try
+            {
+                if (e == null) return;
+
+                // Forward the event directly (signatures now match)
+                SCPICommandGenerated?.Invoke(this, e);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error forwarding SCPI command: {ex.Message}");
+            }
         }
 
         /// <summary>
-        /// Handle errors from controller
+        /// Handle errors from controller - FIXED SIGNATURE
         /// </summary>
-        private void Controller_ErrorOccurred(object sender, string error)
+        private void Controller_ErrorOccurred(object sender, ErrorEventArgs e)
         {
-            OnErrorOccurred(error);
+            try
+            {
+                if (e == null) return;
+
+                // Forward the event directly (signatures now match)
+                ErrorOccurred?.Invoke(this, e);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error forwarding error event: {ex.Message}");
+            }
         }
 
         /// <summary>
-        /// Handle status updates from controller
+        /// Handle status updates from controller - FIXED SIGNATURE
         /// </summary>
-        private void Controller_StatusUpdated(object sender, string status)
+        private void Controller_StatusUpdated(object sender, StatusEventArgs e)
         {
-            OnStatusUpdated(status);
+            try
+            {
+                if (e == null) return;
+
+                // Forward the event directly (signatures now match)
+                StatusUpdated?.Invoke(this, e);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error forwarding status event: {ex.Message}");
+            }
         }
 
         #endregion

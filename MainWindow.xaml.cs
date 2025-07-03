@@ -2178,61 +2178,8 @@ namespace Rigol_DS1000Z_E_Control
         }
         #endregion
 
-        private void TimeBasePanel_Loaded(object sender, RoutedEventArgs e)
-        {
-
-        }
 
         #region Missing Methods - Add These to Your Existing MainWindow.xaml.cs
-
-        /// <summary>
-        ///// Initialize VISA manager properly
-        ///// </summary>
-        //private void OnSCPICommandGenerated(object sender, SCPICommandEventArgs e)
-        //{
-        //    try
-        //    {
-        //        // Initialize the VISA manager if it doesn't exist
-        //        if (visaManager == null)
-        //        {
-        //            visaManager = new VisaManager();
-        //            Log("🔌 VISA Manager initialized");
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Log($"❌ Error initializing VISA Manager: {ex.Message}");
-        //    }
-        //}
-
-        ///// <summary>
-        ///// Handle SCPI command generation events
-        ///// </summary>
-        //private void OnSCPICommandGenerated(object sender, SCPICommandEventArgs e)
-        //{
-        //    try
-        //    {
-        //        if (e == null || string.IsNullOrEmpty(e.Command)) return;
-
-        //        // Log the command
-        //        Log($"SCPI: {e.Command}");
-
-        //        // Send the command if connected
-        //        if (isConnected && oscilloscope != null)
-        //        {
-        //            oscilloscope.SendCommand(e.Command);
-        //            OnStatusUpdated($"Command sent: {e.Command}");
-        //        }
-        //        else
-        //        {
-        //            OnStatusUpdated($"Command generated (not connected): {e.Command}");
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        OnErrorOccurred($"Error handling SCPI command: {ex.Message}");
-        //    }
-        //}
 
         /// <summary>
         /// Handle error events
@@ -2290,15 +2237,6 @@ namespace Rigol_DS1000Z_E_Control
                 // Update status display
                 Dispatcher.Invoke(() =>
                 {
-                    // REMOVE THIS BLOCK:
-                    /*
-                    if (StatusTextBlock != null)
-                    {
-                        StatusTextBlock.Text = statusMessage;
-                        StatusTextBlock.Foreground = new SolidColorBrush(Colors.Green);
-                    }
-                    else 
-                    */
                     if (StatusText != null) // Keep only this part
                     {
                         StatusText.Text = statusMessage;
@@ -2313,7 +2251,6 @@ namespace Rigol_DS1000Z_E_Control
             }
         }
 
-        #endregion
 
         // In MainWindow.xaml.cs - ADD this method anywhere in the class:
 
@@ -2339,82 +2276,85 @@ namespace Rigol_DS1000Z_E_Control
             }
         }
 
+        #endregion
+
+
         #region Event Argument Classes - Add These if Missing
 
-        /// <summary>
-        /// Event arguments for SCPI commands
-        /// </summary>
-        public class SCPICommandEventArgs : EventArgs
-        {
-            public string Command { get; }
-            public string Source { get; }
-            public string Category { get; }
+        ///// <summary>
+        ///// Event arguments for SCPI commands
+        ///// </summary>
+        //public class SCPICommandEventArgs : EventArgs
+        //{
+        //    public string Command { get; }
+        //    public string Source { get; }
+        //    public string Category { get; }
 
-            public SCPICommandEventArgs(string command, string source = "", string category = "")
-            {
-                Command = command;
-                Source = source;
-                Category = category;
-            }
-        }
+        //    public SCPICommandEventArgs(string command, string source = "", string category = "")
+        //    {
+        //        Command = command;
+        //        Source = source;
+        //        Category = category;
+        //    }
+        //}
 
-        /// <summary>
-        /// Event arguments for errors
-        /// </summary>
-        public class ErrorEventArgs : EventArgs
-        {
-            public string Error { get; }
-            public string Source { get; set; }
-            public string Category { get; set; }
-            public ErrorSeverity Severity { get; set; }
+        ///// <summary>
+        ///// Event arguments for errors
+        ///// </summary>
+        //public class ErrorEventArgs : EventArgs
+        //{
+        //    public string Error { get; }
+        //    public string Source { get; set; }
+        //    public string Category { get; set; }
+        //    public ErrorSeverity Severity { get; set; }
 
-            public ErrorEventArgs(string error)
-            {
-                Error = error;
-                Severity = ErrorSeverity.Error;
-            }
-        }
+        //    public ErrorEventArgs(string error)
+        //    {
+        //        Error = error;
+        //        Severity = ErrorSeverity.Error;
+        //    }
+        //}
 
-        /// <summary>
-        /// Event arguments for status updates
-        /// </summary>
-        public class StatusEventArgs : EventArgs
-        {
-            public string Message { get; }
-            public StatusLevel Level { get; }
-            public string Source { get; set; }
-            public string Category { get; set; }
+        ///// <summary>
+        ///// Event arguments for status updates
+        ///// </summary>
+        //public class StatusEventArgs : EventArgs
+        //{
+        //    public string Message { get; }
+        //    public StatusLevel Level { get; }
+        //    public string Source { get; set; }
+        //    public string Category { get; set; }
 
-            public StatusEventArgs(string message, StatusLevel level = StatusLevel.Info, string source = "", string category = "")
-            {
-                Message = message;
-                Level = level;
-                Source = source;
-                Category = category;
-            }
-        }
+        //    public StatusEventArgs(string message, StatusLevel level = StatusLevel.Info, string source = "", string category = "")
+        //    {
+        //        Message = message;
+        //        Level = level;
+        //        Source = source;
+        //        Category = category;
+        //    }
+        //}
 
-        /// <summary>
-        /// Error severity levels
-        /// </summary>
-        public enum ErrorSeverity
-        {
-            Info,
-            Warning,
-            Error,
-            Critical
-        }
+        ///// <summary>
+        ///// Error severity levels
+        ///// </summary>
+        //public enum ErrorSeverity
+        //{
+        //    Info,
+        //    Warning,
+        //    Error,
+        //    Critical
+        //}
 
-        /// <summary>
-        /// Status levels
-        /// </summary>
-        public enum StatusLevel
-        {
-            Info,
-            Warning,
-            Success,
-            Error
-        }
+        ///// <summary>
+        ///// Status levels
+        ///// </summary>
+        //public enum StatusLevel
+        //{
+        //    Info,
+        //    Warning,
+        //    Success,
+        //    Error
+        //}
 
         #endregion
 

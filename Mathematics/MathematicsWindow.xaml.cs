@@ -126,9 +126,51 @@ Compatible with Rigol DS1000Z-E Series";
             MessageBox.Show(aboutText, "About Mathematics", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
-        private void MathPanel_Loaded(object sender, RoutedEventArgs e)
+        private async void MathPanel_Loaded(object sender, RoutedEventArgs e)
         {
-            // Panel loaded
+            try
+            {
+                OnStatusUpdated("📊 MathPanel_Loaded event fired - starting debug");
+
+                // Debug: Check if MathPanel exists
+                if (MathPanel == null)
+                {
+                    OnStatusUpdated("❌ DEBUG: MathPanel is NULL!");
+                    return;
+                }
+                else
+                {
+                    OnStatusUpdated("✅ DEBUG: MathPanel exists");
+                }
+
+                // Debug: Check what mode we're in
+                string currentMode = MathPanel.GetCurrentMathMode();
+                OnStatusUpdated($"🔍 DEBUG: Current math mode = '{currentMode}'");
+
+                // Debug: Check the comparison
+                bool isBasicOperations = currentMode == "BasicOperations";
+                OnStatusUpdated($"🔍 DEBUG: Is BasicOperations? {isBasicOperations}");
+
+                // Wait a moment for the panel to fully settle
+                await Task.Delay(200);
+
+                // Apply default basic math operation if conditions are met
+                if (MathPanel != null && MathPanel.GetCurrentMathMode() == "BasicOperations")
+                {
+                    OnStatusUpdated("✅ DEBUG: Conditions met - applying default math operation");
+                    // Trigger the apply basic operation to activate math immediately
+                    await MathPanel.ChangeMathModeAsync("BasicOperations");
+                    OnStatusUpdated("✅ Default math operation applied: CHANnel1 + CHANnel2");
+                }
+                else
+                {
+                    OnStatusUpdated($"❌ DEBUG: Conditions NOT met - MathPanel={MathPanel != null}, Mode='{MathPanel?.GetCurrentMathMode()}'");
+                }
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error in MathPanel_Loaded debug: {ex.Message}");
+            }
         }
         #endregion
 

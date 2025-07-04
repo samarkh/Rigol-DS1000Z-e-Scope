@@ -29,26 +29,50 @@ namespace DS1000Z_E_USB_Control.Mathematics
             InitializeWindow();
         }
 
-        private void InitializeWindow()
+        private async void InitializeWindow()
         {
             try
             {
+                OnStatusUpdated("🔥 DEBUG: InitializeWindow started");
+
                 // Subscribe to panel events
                 if (MathPanel != null)
                 {
+                    OnStatusUpdated("🔥 DEBUG: MathPanel exists during initialization");
                     MathPanel.SCPICommandGenerated += OnMathPanelSCPICommand;
                     MathPanel.StatusUpdated += OnMathPanelStatus;
                     MathPanel.ErrorOccurred += OnMathPanelError;
                 }
+                else
+                {
+                    OnStatusUpdated("❌ DEBUG: MathPanel is NULL during initialization!");
+                }
 
                 isInitialized = true;
                 OnStatusUpdated("Mathematics window initialized");
+
+                OnStatusUpdated("🔥 DEBUG: Starting 500ms delay...");
+                await Task.Delay(500);
+                OnStatusUpdated("🔥 DEBUG: Delay completed, checking MathPanel...");
+
+                if (MathPanel != null)
+                {
+                    OnStatusUpdated("🔥 MANUAL: MathPanel exists, applying default math operation...");
+                    await MathPanel.ChangeMathModeAsync("BasicOperations");
+                    OnStatusUpdated("✅ MANUAL: Default math operation applied!");
+                }
+                else
+                {
+                    OnStatusUpdated("❌ MANUAL: MathPanel is NULL after delay!");
+                }
             }
             catch (Exception ex)
             {
+                OnStatusUpdated($"❌ DEBUG: Exception in InitializeWindow: {ex.Message}");
                 OnErrorOccurred($"Window initialization failed: {ex.Message}");
             }
         }
+
         #endregion
 
         #region Public Methods

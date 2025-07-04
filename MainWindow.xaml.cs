@@ -401,41 +401,40 @@ namespace Rigol_DS1000Z_E_Control
             if (BatchExportButton != null) BatchExportButton.IsEnabled = isConnected;
         }
 
-        /// <summary>
-        /// FIXED: Open mathematics window with proper VISA manager integration
+        // <summary>
+        /// SIMPLE FIX: Keep the existing OpenMathematics_Click method mostly unchanged
+        /// Just ensure proper event subscription
         /// </summary>
         private async void OpenMathematics_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                // Check if window is already open
-                if (_mathematicsWindow == null || !_mathematicsWindow.IsVisible)
+                if (_mathematicsWindow == null || !_mathematicsWindow.IsLoaded)
                 {
                     _mathematicsWindow = new MathematicsWindow();
 
-                    // ✅ FIX: Use 'this.visaManager' and ensure it's connected
-                    if (this.visaManager != null && this.visaManager.IsConnected)
+                    // Use the existing connection check - no changes needed here
+                    if (isConnected && oscilloscope?.IsConnected == true)
                     {
-                        // Initialize with status polling - THIS IS THE KEY FIX
-                        bool initialized = await _mathematicsWindow.InitializeAsync(this.visaManager);
+                        // Simple initialization - no need for complex VisaManager passing
+                        bool initialized = await _mathematicsWindow.InitializeAsync(oscilloscope);
 
                         if (!initialized)
                         {
-                            this.OnErrorOccurred("Failed to initialize Mathematics panel with status polling");
-                            // Continue anyway but warn user
+                            this.OnErrorOccurred("Failed to initialize Mathematics panel");
                         }
                         else
                         {
-                            this.OnStatusUpdated("✅ Mathematics window initialized with status polling");
+                            this.OnStatusUpdated("✅ Mathematics window initialized");
                         }
                     }
                     else
                     {
-                        this.OnErrorOccurred("⚠️ Mathematics window opened but oscilloscope not connected - status polling unavailable");
+                        this.OnErrorOccurred("⚠️ Mathematics window opened but oscilloscope not connected");
                     }
 
-                    // Subscribe to SCPI command events
-                    _mathematicsWindow.SCPICommandGenerated += OnSCPICommandGenerated;
+                    // Subscribe to SCPI command events - THIS IS THE KEY
+                    _mathematicsWindow.SCPICommandGenerated += OnMathematicsSCPICommand;
 
                     // Position relative to main window
                     _mathematicsWindow.Owner = this;
@@ -453,7 +452,6 @@ namespace Rigol_DS1000Z_E_Control
             }
             catch (Exception ex)
             {
-                // ✅ FIX: Use 'this.OnErrorOccurred' to call the existing method
                 this.OnErrorOccurred($"Error opening mathematics window: {ex.Message}");
             }
         }
@@ -687,10 +685,9 @@ namespace Rigol_DS1000Z_E_Control
         }
 
 
-        // added 02/07/2025
-
         /// <summary>
-        /// Handle SCPI commands from Mathematics window - FIXED VERSION
+        /// SIMPLE FIX: Use the existing oscilloscope's VisaManager directly
+        /// No need for a second VisaManager instance
         /// </summary>
         private void OnMathematicsSCPICommand(object sender, SCPICommandEventArgs e)
         {
@@ -698,26 +695,42 @@ namespace Rigol_DS1000Z_E_Control
             {
                 if (e == null || string.IsNullOrEmpty(e.Command)) return;
 
-                // Log the command
+                // Log the command with extra debug info
                 Log($"📊 Math SCPI: {e.Command}");
+                Log($"🔍 Debug: isConnected={isConnected}, oscilloscope.IsConnected={oscilloscope?.IsConnected}");
 
-                // FIX: Use visaManager instead of oscilloscope object
-                // This ensures commands appear in VISA trace
-                if (visaManager?.IsConnected == true)
+                // SIMPLE FIX: Use the existing oscilloscope connection
+                // This should work and appear in VISA trace
+                if (isConnected && oscilloscope?.IsConnected == true)
                 {
-                    visaManager.SendCommand(e.Command);
+                    // Add timestamp for NI Trace correlation
+                    Log($"⏰ Sending at {DateTime.Now:HH:mm:ss.fff}: {e.Command}");
 
-                    // Parse operation type directly from command
-                    string operationType = ParseMathOperationFromCommand(e.Command);
-                    OnStatusUpdated($"Math {operationType} command sent: {e.Command}");
+                    // Send through the existing, working oscilloscope object
+                    bool success = oscilloscope.SendCommand(e.Command);
+
+                    if (success)
+                    {
+                        // Parse operation type directly from command
+                        string operationType = ParseMathOperationFromCommand(e.Command);
+                        Log($"✅ Math command sent successfully: {e.Command}");
+                        OnStatusUpdated($"Math {operationType} command sent: {e.Command}");
+                    }
+                    else
+                    {
+                        Log($"❌ Math command failed: {e.Command}");
+                        OnErrorOccurred($"Failed to send math command: {e.Command}");
+                    }
                 }
                 else
                 {
+                    Log($"⚠️ Not connected - math command not sent: {e.Command}");
                     OnStatusUpdated($"Math command generated (not connected): {e.Command}");
                 }
             }
             catch (Exception ex)
             {
+                Log($"❌ Exception in math SCPI handler: {ex.Message}");
                 OnErrorOccurred($"Error handling Mathematics SCPI command: {ex.Message}");
             }
         }

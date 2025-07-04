@@ -52,7 +52,7 @@ namespace DS1000Z_E_USB_Control.Mathematics
 
                 isInitialized = true;
                 OnStatusUpdated("🔥 STEP 4: About to call final message");
-                OnStatusUpdated("Mathematics window initialized");
+                OnStatusUpdated("🔥🔥🔥 CHANGED: Mathematics window initialized 🔥🔥🔥");
                 OnStatusUpdated("🔥 STEP 5: Method completed successfully");
             }
             catch (Exception ex)

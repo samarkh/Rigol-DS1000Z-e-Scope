@@ -32,6 +32,8 @@ namespace DS1000Z_E_USB_Control.Mathematics
         private void InitializeWindow()
         {
             OnStatusUpdated("🔥 STEP 1: Method started");
+            // Add this as the FIRST line to verify the method runs
+            MessageBox.Show("InitializeWindow is running with your changes!", "Debug");
 
             try
             {

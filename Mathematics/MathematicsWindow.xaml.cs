@@ -31,23 +31,33 @@ namespace DS1000Z_E_USB_Control.Mathematics
 
         private void InitializeWindow()
         {
+            OnStatusUpdated("🔥 STEP 1: Method started");
+
             try
             {
-                OnStatusUpdated("🔥 SIMPLE TEST: This should appear in the log!");
+                OnStatusUpdated("🔥 STEP 2: Inside try block");
 
                 // Subscribe to panel events
                 if (MathPanel != null)
                 {
+                    OnStatusUpdated("🔥 STEP 3: MathPanel exists");
                     MathPanel.SCPICommandGenerated += OnMathPanelSCPICommand;
                     MathPanel.StatusUpdated += OnMathPanelStatus;
                     MathPanel.ErrorOccurred += OnMathPanelError;
                 }
+                else
+                {
+                    OnStatusUpdated("🔥 STEP 3: MathPanel is NULL");
+                }
 
                 isInitialized = true;
+                OnStatusUpdated("🔥 STEP 4: About to call final message");
                 OnStatusUpdated("Mathematics window initialized");
+                OnStatusUpdated("🔥 STEP 5: Method completed successfully");
             }
             catch (Exception ex)
             {
+                OnStatusUpdated($"🔥 EXCEPTION: {ex.Message}");
                 OnErrorOccurred($"Window initialization failed: {ex.Message}");
             }
         }

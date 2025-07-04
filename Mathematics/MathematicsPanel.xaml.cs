@@ -29,6 +29,8 @@ namespace DS1000Z_E_USB_Control.Mathematics
         public event EventHandler<SCPICommandEventArgs> SCPICommandGenerated;
         public event EventHandler<StatusEventArgs> StatusUpdated;
         public event EventHandler<ErrorEventArgs> ErrorOccurred;
+
+
         #endregion
 
         #region Constructor
@@ -36,6 +38,8 @@ namespace DS1000Z_E_USB_Control.Mathematics
         {
             InitializeComponent();
             InitializePanel();
+            WireUpParameterEventHandlers();
+            isInitialized = true;
         }
 
         private void InitializePanel()
@@ -199,20 +203,44 @@ namespace DS1000Z_E_USB_Control.Mathematics
             await Task.Delay(COMMAND_DELAY);
         }
 
+        // STEP 4: REPLACE your existing ConfigureDigitalFiltersAsync method with this FIXED version:
         private async Task ConfigureDigitalFiltersAsync()
         {
-            var filterType = GetSelectedTag(FilterTypeCombo);
-            var w1 = FilterW1Text.Text;
-            var w2 = FilterW2Text.Text;
+            try
+            {
+                var filterType = GetSelectedTag(FilterTypeCombo);
+                var w1 = FilterW1Text?.Text ?? "1000";
+                var w2 = FilterW2Text?.Text ?? "10000";
 
-            OnSCPICommandGenerated($":MATH:OPERator {filterType}");
-            await Task.Delay(COMMAND_DELAY);
-            OnSCPICommandGenerated($":MATH:FILTer:W1 {w1}");
-            await Task.Delay(COMMAND_DELAY);
-            OnSCPICommandGenerated($":MATH:FILTer:W2 {w2}");
-            await Task.Delay(COMMAND_DELAY);
-            OnSCPICommandGenerated(":MATH:DISPlay ON");
-            await Task.Delay(COMMAND_DELAY);
+                // DEBUG: Log what we're trying to do
+                OnStatusUpdated($"🔧 Applying filter: {filterType}, W1={w1}Hz, W2={w2}Hz");
+
+                // Clear and reset first
+                OnSCPICommandGenerated(":MATH:DISPlay OFF");
+                await Task.Delay(COMMAND_DELAY);
+                OnSCPICommandGenerated(":MATH:RESet");
+                await Task.Delay(COMMAND_DELAY);
+
+                // Try the filter operator
+                OnSCPICommandGenerated($":MATH:OPERator {filterType}");
+                await Task.Delay(COMMAND_DELAY);
+
+                // Set filter frequencies
+                OnSCPICommandGenerated($":MATH:FILTer:W1 {w1}");
+                await Task.Delay(COMMAND_DELAY);
+                OnSCPICommandGenerated($":MATH:FILTer:W2 {w2}");
+                await Task.Delay(COMMAND_DELAY);
+
+                // Enable display
+                OnSCPICommandGenerated(":MATH:DISPlay ON");
+                await Task.Delay(COMMAND_DELAY);
+
+                OnStatusUpdated($"✅ Digital filter applied: {filterType}");
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Digital filter error: {ex.Message}");
+            }
         }
 
         private async Task ConfigureAdvancedMathAsync()
@@ -232,9 +260,8 @@ namespace DS1000Z_E_USB_Control.Mathematics
         }
         #endregion
 
-        #region Event Handlers - CORRECTED TO MATCH XAML
-
-        // CORRECTED: Main mode selection handler
+        #region Event Handlers
+                
         private async void MathModeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (!isInitialized || isModeChanging) return;
@@ -299,6 +326,154 @@ namespace DS1000Z_E_USB_Control.Mathematics
                 OnErrorOccurred($"Error saving settings: {ex.Message}");
             }
         }
+
+
+        /// <summary>
+        /// Handle operation selection changes - apply immediately
+        /// </summary>
+        private async void OperationCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (!isInitialized || isModeChanging) return;
+
+            if (currentActiveMode == "BasicOperations")
+            {
+                await ConfigureBasicOperationsAsync();
+            }
+        }
+
+        /// <summary>
+        /// Handle source 1 selection changes - apply immediately
+        /// </summary>
+        private async void Source1Combo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (!isInitialized || isModeChanging) return;
+
+            if (currentActiveMode == "BasicOperations")
+            {
+                await ConfigureBasicOperationsAsync();
+            }
+        }
+
+        /// <summary>
+        /// Handle source 2 selection changes - apply immediately
+        /// </summary>
+        private async void Source2Combo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (!isInitialized || isModeChanging) return;
+
+            if (currentActiveMode == "BasicOperations")
+            {
+                await ConfigureBasicOperationsAsync();
+            }
+        }
+
+        /// <summary>
+        /// Handle FFT source selection changes - apply immediately
+        /// </summary>
+        private async void FFTSourceCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (!isInitialized || isModeChanging) return;
+
+            if (currentActiveMode == "FFTAnalysis")
+            {
+                await ConfigureFFTAnalysisAsync();
+            }
+        }
+
+        /// <summary>
+        /// Handle FFT window selection changes - apply immediately
+        /// </summary>
+        private async void FFTWindowCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (!isInitialized || isModeChanging) return;
+
+            if (currentActiveMode == "FFTAnalysis")
+            {
+                await ConfigureFFTAnalysisAsync();
+            }
+        }
+
+        /// <summary>
+        /// Handle filter type selection changes - apply immediately
+        /// </summary>
+        private async void FilterTypeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (!isInitialized || isModeChanging) return;
+
+            if (currentActiveMode == "DigitalFilters")
+            {
+                await ConfigureDigitalFiltersAsync();
+            }
+        }
+
+        /// <summary>
+        /// Handle filter W1 frequency changes - apply when user finishes typing
+        /// </summary>
+        private async void FilterW1Text_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (!isInitialized || isModeChanging) return;
+
+            if (currentActiveMode == "DigitalFilters")
+            {
+                await ConfigureDigitalFiltersAsync();
+            }
+        }
+
+        /// <summary>
+        /// Handle filter W2 frequency changes - apply when user finishes typing
+        /// </summary>
+        private async void FilterW2Text_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (!isInitialized || isModeChanging) return;
+
+            if (currentActiveMode == "DigitalFilters")
+            {
+                await ConfigureDigitalFiltersAsync();
+            }
+        }
+
+        /// <summary>
+        /// Handle advanced function selection changes - apply immediately
+        /// </summary>
+        private async void AdvancedFunctionCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (!isInitialized || isModeChanging) return;
+
+            if (currentActiveMode == "AdvancedMath")
+            {
+                await ConfigureAdvancedMathAsync();
+            }
+        }
+
+        /// <summary>
+        /// Handle start point changes - apply when user finishes typing
+        /// </summary>
+        private async void StartPointText_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (!isInitialized || isModeChanging) return;
+
+            if (currentActiveMode == "AdvancedMath")
+            {
+                await ConfigureAdvancedMathAsync();
+            }
+        }
+
+        /// <summary>
+        /// Handle end point changes - apply when user finishes typing
+        /// </summary>
+        private async void EndPointText_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (!isInitialized || isModeChanging) return;
+
+            if (currentActiveMode == "AdvancedMath")
+            {
+                await ConfigureAdvancedMathAsync();
+            }
+        }
+
+
+
+
         #endregion
 
         #region Settings Management
@@ -315,6 +490,95 @@ namespace DS1000Z_E_USB_Control.Mathematics
                 OnErrorOccurred($"Error loading settings: {ex.Message}");
             }
         }
+
+
+
+
+        // STEP 2: Add this method anywhere in your MathematicsPanel class:
+        /// <summary>
+        /// Wire up event handlers for immediate parameter updates
+        /// </summary>
+        private void WireUpParameterEventHandlers()
+        {
+            try
+            {
+                // Basic Operations - wire up immediately when controls change
+                if (OperationCombo != null)
+                    OperationCombo.SelectionChanged += async (s, e) => {
+                        if (isInitialized) await ApplyCurrentMathMode();
+                    };
+
+                if (Source1Combo != null)
+                    Source1Combo.SelectionChanged += async (s, e) => {
+                        if (isInitialized) await ApplyCurrentMathMode();
+                    };
+
+                if (Source2Combo != null)
+                    Source2Combo.SelectionChanged += async (s, e) => {
+                        if (isInitialized) await ApplyCurrentMathMode();
+                    };
+
+                // FFT Analysis
+                if (FFTSourceCombo != null)
+                    FFTSourceCombo.SelectionChanged += async (s, e) => {
+                        if (isInitialized) await ApplyCurrentMathMode();
+                    };
+
+                if (FFTWindowCombo != null)
+                    FFTWindowCombo.SelectionChanged += async (s, e) => {
+                        if (isInitialized) await ApplyCurrentMathMode();
+                    };
+
+                // Digital Filters
+                if (FilterTypeCombo != null)
+                    FilterTypeCombo.SelectionChanged += async (s, e) => {
+                        if (isInitialized) await ApplyCurrentMathMode();
+                    };
+
+                if (FilterW1Text != null)
+                    FilterW1Text.LostFocus += async (s, e) => {
+                        if (isInitialized) await ApplyCurrentMathMode();
+                    };
+
+                if (FilterW2Text != null)
+                    FilterW2Text.LostFocus += async (s, e) => {
+                        if (isInitialized) await ApplyCurrentMathMode();
+                    };
+
+                // Advanced Math
+                if (AdvancedFunctionCombo != null)
+                    AdvancedFunctionCombo.SelectionChanged += async (s, e) => {
+                        if (isInitialized) await ApplyCurrentMathMode();
+                    };
+
+                if (StartPointText != null)
+                    StartPointText.LostFocus += async (s, e) => {
+                        if (isInitialized) await ApplyCurrentMathMode();
+                    };
+
+                if (EndPointText != null)
+                    EndPointText.LostFocus += async (s, e) => {
+                        if (isInitialized) await ApplyCurrentMathMode();
+                    };
+            }
+            catch (Exception ex)
+            {
+                // Handle errors quietly to avoid breaking initialization
+                System.Diagnostics.Debug.WriteLine($"Error wiring events: {ex.Message}");
+            }
+        }
+
+
+
+
+
+
+
+
+
+
+
+
 
         private void UpdateCurrentSettings()
         {
@@ -358,6 +622,53 @@ namespace DS1000Z_E_USB_Control.Mathematics
         {
             return (combo?.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "";
         }
+
+
+
+
+
+        // STEP 3: Add this helper method to apply the current mode's settings:
+        /// <summary>
+        /// Apply the current math mode with current parameter settings
+        /// </summary>
+        private async Task ApplyCurrentMathMode()
+        {
+            try
+            {
+                // Determine which mode we're in and apply its settings
+                if (BasicOperationsSection?.Visibility == Visibility.Visible)
+                {
+                    await ConfigureBasicOperationsAsync();
+                }
+                else if (FFTAnalysisSection?.Visibility == Visibility.Visible)
+                {
+                    await ConfigureFFTAnalysisAsync();
+                }
+                else if (DigitalFiltersSection?.Visibility == Visibility.Visible)
+                {
+                    await ConfigureDigitalFiltersAsync();
+                }
+                else if (AdvancedMathSection?.Visibility == Visibility.Visible)
+                {
+                    await ConfigureAdvancedMathAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error applying math mode: {ex.Message}");
+            }
+        }
+
+
+
+
+
+
+
+
+
+
+
 
         // ADDED: Update status display in UI
         private void UpdateStatusDisplay(string message)

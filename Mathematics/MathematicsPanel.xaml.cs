@@ -95,11 +95,11 @@ namespace DS1000Z_E_USB_Control.Mathematics
                 UpdateStatusDisplay($"Switching to {newMode}...");
 
                 // Step 1: Disable current math display
-                OnSCPICommandGenerated(":MATH:DISPlay OFF");
+                SendSCPICommand(":MATH:DISPlay OFF");
                 await Task.Delay(RESET_DELAY);
 
                 // Step 2: Reset math system
-                OnSCPICommandGenerated(":MATH:RESet");
+                SendSCPICommand(":MATH:RESet");
                 await Task.Delay(RESET_DELAY);
 
                 // Step 3: Update UI visibility
@@ -176,13 +176,13 @@ namespace DS1000Z_E_USB_Control.Mathematics
             var source1 = GetSelectedTag(Source1Combo);
             var source2 = GetSelectedTag(Source2Combo);
 
-            OnSCPICommandGenerated($":MATH:OPERator {operation}");
+            SendSCPICommand($":MATH:OPERator {operation}");
             await Task.Delay(COMMAND_DELAY);
-            OnSCPICommandGenerated($":MATH:SOURce1 {source1}");
+            SendSCPICommand($":MATH:SOURce1 {source1}");
             await Task.Delay(COMMAND_DELAY);
-            OnSCPICommandGenerated($":MATH:SOURce2 {source2}");
+            SendSCPICommand($":MATH:SOURce2 {source2}");
             await Task.Delay(COMMAND_DELAY);
-            OnSCPICommandGenerated(":MATH:DISPlay ON");
+            SendSCPICommand(":MATH:DISPlay ON");
             await Task.Delay(COMMAND_DELAY);
         }
 
@@ -191,15 +191,15 @@ namespace DS1000Z_E_USB_Control.Mathematics
             var source = GetSelectedTag(FFTSourceCombo);
             var window = GetSelectedTag(FFTWindowCombo);
 
-            OnSCPICommandGenerated(":MATH:OPERator FFT");
+            SendSCPICommand(":MATH:OPERator FFT");
             await Task.Delay(COMMAND_DELAY);
-            OnSCPICommandGenerated($":MATH:FFT:SOURce {source}");
+            SendSCPICommand($":MATH:FFT:SOURce {source}");
             await Task.Delay(COMMAND_DELAY);
-            OnSCPICommandGenerated($":MATH:FFT:WINDow {window}");
+            SendSCPICommand($":MATH:FFT:WINDow {window}");
             await Task.Delay(COMMAND_DELAY);
-            OnSCPICommandGenerated(":MATH:FFT:SPLit FULL");
+            SendSCPICommand(":MATH:FFT:SPLit FULL");
             await Task.Delay(COMMAND_DELAY);
-            OnSCPICommandGenerated(":MATH:DISPlay ON");
+            SendSCPICommand(":MATH:DISPlay ON");
             await Task.Delay(COMMAND_DELAY);
         }
 
@@ -216,23 +216,23 @@ namespace DS1000Z_E_USB_Control.Mathematics
                 OnStatusUpdated($"🔧 Applying filter: {filterType}, W1={w1}Hz, W2={w2}Hz");
 
                 // Clear and reset first
-                OnSCPICommandGenerated(":MATH:DISPlay OFF");
+                SendSCPICommand(":MATH:DISPlay OFF");
                 await Task.Delay(COMMAND_DELAY);
-                OnSCPICommandGenerated(":MATH:RESet");
+                SendSCPICommand(":MATH:RESet");
                 await Task.Delay(COMMAND_DELAY);
 
                 // Try the filter operator
-                OnSCPICommandGenerated($":MATH:OPERator {filterType}");
+                SendSCPICommand($":MATH:OPERator {filterType}");
                 await Task.Delay(COMMAND_DELAY);
 
                 // Set filter frequencies
-                OnSCPICommandGenerated($":MATH:FILTer:W1 {w1}");
+                SendSCPICommand($":MATH:FILTer:W1 {w1}");
                 await Task.Delay(COMMAND_DELAY);
-                OnSCPICommandGenerated($":MATH:FILTer:W2 {w2}");
+                SendSCPICommand($":MATH:FILTer:W2 {w2}");
                 await Task.Delay(COMMAND_DELAY);
 
                 // Enable display
-                OnSCPICommandGenerated(":MATH:DISPlay ON");
+                SendSCPICommand(":MATH:DISPlay ON");
                 await Task.Delay(COMMAND_DELAY);
 
                 OnStatusUpdated($"✅ Digital filter applied: {filterType}");
@@ -249,13 +249,13 @@ namespace DS1000Z_E_USB_Control.Mathematics
             var start = StartPointText.Text;  // CORRECTED: was AdvancedStartText
             var end = EndPointText.Text;      // CORRECTED: was AdvancedEndText
 
-            OnSCPICommandGenerated($":MATH:OPERator {function}");
+            SendSCPICommand($":MATH:OPERator {function}");
             await Task.Delay(COMMAND_DELAY);
-            OnSCPICommandGenerated($":MATH:OPTion:STARt {start}");
+            SendSCPICommand($":MATH:OPTion:STARt {start}");
             await Task.Delay(COMMAND_DELAY);
-            OnSCPICommandGenerated($":MATH:OPTion:END {end}");
+            SendSCPICommand($":MATH:OPTion:END {end}");
             await Task.Delay(COMMAND_DELAY);
-            OnSCPICommandGenerated(":MATH:DISPlay ON");
+            SendSCPICommand(":MATH:DISPlay ON");
             await Task.Delay(COMMAND_DELAY);
         }
         #endregion
@@ -306,9 +306,9 @@ namespace DS1000Z_E_USB_Control.Mathematics
 
         private async void DisableMath_Click(object sender, RoutedEventArgs e)
         {
-            OnSCPICommandGenerated(":MATH:DISPlay OFF");
+            SendSCPICommand(":MATH:DISPlay OFF");
             await Task.Delay(COMMAND_DELAY);
-            OnSCPICommandGenerated(":MATH:RESet");
+            SendSCPICommand(":MATH:RESet");
             OnStatusUpdated("Math functions disabled");
             UpdateStatusDisplay("Math Disabled");
         }
@@ -684,7 +684,7 @@ namespace DS1000Z_E_USB_Control.Mathematics
             }
         }
 
-        private void OnSCPICommandGenerated(string command)
+        private void SendSCPICommand(string command)
         {
             try
             {

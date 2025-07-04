@@ -701,12 +701,13 @@ namespace Rigol_DS1000Z_E_Control
                 // Log the command
                 Log($"📊 Math SCPI: {e.Command}");
 
-                // Send the command if connected
-                if (isConnected && oscilloscope != null)
+                // FIX: Use visaManager instead of oscilloscope object
+                // This ensures commands appear in VISA trace
+                if (visaManager?.IsConnected == true)
                 {
-                    oscilloscope.SendCommand(e.Command);
+                    visaManager.SendCommand(e.Command);
 
-                    // FIXED: Parse operation type directly from command
+                    // Parse operation type directly from command
                     string operationType = ParseMathOperationFromCommand(e.Command);
                     OnStatusUpdated($"Math {operationType} command sent: {e.Command}");
                 }

@@ -592,27 +592,41 @@ namespace Rigol_DS1000Z_E_Control
         #region Serial Protocol Button Handlers
 
         // Add this event handler method
+        /// <summary>
+        /// Opens Serial Protocol window with proper event handling
+        /// </summary>
         private void OpenSerialProtocol_Click(object sender, RoutedEventArgs e)
         {
-            // Check if window is already open
-            if (_serialProtocolWindow == null || !_serialProtocolWindow.IsVisible)
+            try
             {
-                _serialProtocolWindow = new SerialProtocolWINDOW();
+                if (_serialProtocolWindow == null || !_serialProtocolWindow.IsVisible)
+                {
+                    _serialProtocolWindow = new SerialProtocolWINDOW();
 
-                // Subscribe to SCPI command events
-                _serialProtocolWindow.SCPICommandGenerated += OnSCPICommandGenerated;
+                    // FIX: Convert event signatures properly
+                    _serialProtocolWindow.SCPICommandGenerated += (s, command) =>
+                    {
+                        var args = new SCPICommandEventArgs(command, "SerialProtocol", "PROTOCOL");
+                        OnSCPICommandGenerated(this, args);
+                    };
 
-                // Position relative to main window
-                _serialProtocolWindow.Owner = this;
-                _serialProtocolWindow.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                    // FIX: Clean up reference when window closes
+                    _serialProtocolWindow.Closed += (s, args) => _serialProtocolWindow = null;
 
-                _serialProtocolWindow.Show();
+                    _serialProtocolWindow.Owner = this;
+                    _serialProtocolWindow.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                    _serialProtocolWindow.Show();
+                    OnStatusUpdated("🔧 Serial Protocol window opened");
+                }
+                else
+                {
+                    _serialProtocolWindow.Activate();
+                    _serialProtocolWindow.Focus();
+                }
             }
-            else
+            catch (Exception ex)
             {
-                // Bring existing window to front
-                _serialProtocolWindow.Activate();
-                _serialProtocolWindow.Focus();
+                OnErrorOccurred($"Error opening serial protocol window: {ex.Message}");
             }
         }
 
@@ -671,13 +685,12 @@ namespace Rigol_DS1000Z_E_Control
             CloseMeasurementWindow(); // Add this line
             base.OnClosed(e);
         }
-      
-        
+
+
         // added 02/07/2025
-        
+
         /// <summary>
-        /// Handle SCPI commands from Mathematics window - FIXED: Correct signature for EventHandler<SCPICommandEventArgs>
-        /// This handles line 410 error and supports comprehensive math functions
+        /// Handle SCPI commands from Mathematics window - FIXED VERSION
         /// </summary>
         private void OnMathematicsSCPICommand(object sender, SCPICommandEventArgs e)
         {
@@ -685,20 +698,16 @@ namespace Rigol_DS1000Z_E_Control
             {
                 if (e == null || string.IsNullOrEmpty(e.Command)) return;
 
-                // Log the command with source information for math operations
-                string logMessage = string.IsNullOrEmpty(e.Source)
-                    ? $"📊 Math SCPI: {e.Command}"
-                    : $"📊 Math SCPI [{e.Source}]: {e.Command}";
+                // Log the command
+                Log($"📊 Math SCPI: {e.Command}");
 
-                Log(logMessage);
-
-                // Send the comprehensive math command if connected
+                // Send the command if connected
                 if (isConnected && oscilloscope != null)
                 {
                     oscilloscope.SendCommand(e.Command);
 
-                    // Enhanced logging for different math operations
-                    string operationType = GetMathOperationType(e.Command);
+                    // FIXED: Parse operation type directly from command
+                    string operationType = ParseMathOperationFromCommand(e.Command);
                     OnStatusUpdated($"Math {operationType} command sent: {e.Command}");
                 }
                 else
@@ -710,6 +719,37 @@ namespace Rigol_DS1000Z_E_Control
             {
                 OnErrorOccurred($"Error handling Mathematics SCPI command: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// Parse math operation type from SCPI command
+        /// </summary>
+        private string ParseMathOperationFromCommand(string command)
+        {
+            if (string.IsNullOrEmpty(command)) return "Unknown";
+
+            string cmd = command.ToUpper();
+
+            // Basic Operations
+            if (cmd.Contains("ADD")) return "Add";
+            if (cmd.Contains("SUBTRACT")) return "Subtract";
+            if (cmd.Contains("MULTIPLY")) return "Multiply";
+            if (cmd.Contains("DIVISION")) return "Divide";
+
+            // FFT Analysis
+            if (cmd.Contains("FFT")) return "FFT Analysis";
+
+            // Digital Filters
+            if (cmd.Contains("FILTER")) return "Filter";
+
+            // Advanced Math
+            if (cmd.Contains("OPTION")) return "Advanced Math";
+
+            // Display controls
+            if (cmd.Contains("DISPLAY")) return "Display Control";
+            if (cmd.Contains("RESET")) return "Reset";
+
+            return "Math Operation";
         }
 
 

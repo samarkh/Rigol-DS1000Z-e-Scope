@@ -145,48 +145,34 @@ Compatible with Rigol DS1000Z-E Series";
         {
             try
             {
-                OnStatusUpdated("📊 MathPanel_Loaded event fired - starting debug");
+                OnStatusUpdated("📊 MathPanel_Loaded - direct mode switching");
+                await Task.Delay(500);
 
-                // Debug: Check if MathPanel exists
-                if (MathPanel == null)
+                if (MathPanel != null)
                 {
-                    OnStatusUpdated("❌ DEBUG: MathPanel is NULL!");
-                    return;
-                }
-                else
-                {
-                    OnStatusUpdated("✅ DEBUG: MathPanel exists");
-                }
+                    // Direct method calls instead of UI manipulation
+                    OnStatusUpdated("🔄 Switching to FFT then Basic Operations...");
 
-                // Debug: Check what mode we're in
-                string currentMode = MathPanel.GetCurrentMathMode();
-                OnStatusUpdated($"🔍 DEBUG: Current math mode = '{currentMode}'");
+                    await MathPanel.ChangeMathModeAsync("FFTAnalysis");
+                    await Task.Delay(300);
 
-                // Debug: Check the comparison
-                bool isBasicOperations = currentMode == "BasicOperations";
-                OnStatusUpdated($"🔍 DEBUG: Is BasicOperations? {isBasicOperations}");
-
-                // Wait a moment for the panel to fully settle
-                await Task.Delay(200);
-
-                // Apply default basic math operation if conditions are met
-                if (MathPanel != null && MathPanel.GetCurrentMathMode() == "BasicOperations")
-                {
-                    OnStatusUpdated("✅ DEBUG: Conditions met - applying default math operation");
-                    // Trigger the apply basic operation to activate math immediately
                     await MathPanel.ChangeMathModeAsync("BasicOperations");
-                    OnStatusUpdated("✅ Default math operation applied: CHANnel1 + CHANnel2");
-                }
-                else
-                {
-                    OnStatusUpdated($"❌ DEBUG: Conditions NOT met - MathPanel={MathPanel != null}, Mode='{MathPanel?.GetCurrentMathMode()}'");
+                    await Task.Delay(200);
+
+                    // Ensure dropdown matches the current mode
+                    if (MathPanel.MathModeCombo != null)
+                        MathPanel.MathModeCombo.SelectedIndex = 0;
+
+                    OnStatusUpdated("✅ Direct mode switching completed");
                 }
             }
             catch (Exception ex)
             {
-                OnErrorOccurred($"Error in MathPanel_Loaded debug: {ex.Message}");
+                OnErrorOccurred($"Error in direct mode switching: {ex.Message}");
             }
         }
+
+
         #endregion
 
         #region Helper Methods

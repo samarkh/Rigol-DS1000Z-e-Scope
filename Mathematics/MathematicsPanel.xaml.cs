@@ -751,6 +751,13 @@ namespace DS1000Z_E_USB_Control.Mathematics
         #endregion
 
         #region Utility Methods
+
+        private string GetSelectedComboBoxTag(ComboBox comboBox)
+        {
+            return (comboBox?.SelectedItem as ComboBoxItem)?.Tag?.ToString();
+        }
+
+
         private string GetSelectedTag(ComboBox comboBox)
         {
             return (comboBox?.SelectedItem as ComboBoxItem)?.Tag?.ToString();

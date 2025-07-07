@@ -481,7 +481,7 @@ namespace DS1000Z_E_USB_Control.Mathematics
             {
                 CurrentTimebase = timebaseSeconds.ToString("E", System.Globalization.CultureInfo.InvariantCulture);
 
-                var (minFreq, maxFreq, stepSize) = MathematicsCommands.CalculateFilterFrequencyRange(timebaseSeconds, FilterType);
+                (double minFreq, double maxFreq, double stepSize) = MathematicsCommands.CalculateFilterFrequencyRange(timebaseSeconds, FilterType);
 
                 CalculatedMinFreq = minFreq.ToString("E", System.Globalization.CultureInfo.InvariantCulture);
                 CalculatedMaxFreq = maxFreq.ToString("E", System.Globalization.CultureInfo.InvariantCulture);

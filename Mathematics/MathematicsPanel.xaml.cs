@@ -1,9 +1,12 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
 using System.Globalization;
 using System.Threading.Tasks;
-using System.Windows;
+
 using System.Windows.Controls;
-using Microsoft.Win32;
+using System.Windows.Media;          // For VisualTreeHelper and color brushes
+using System.Windows;                // For LogicalTreeHelper (if used)
+
 
 namespace DS1000Z_E_USB_Control.Mathematics
 {
@@ -586,10 +589,47 @@ namespace DS1000Z_E_USB_Control.Mathematics
         {
             if (!isInitialized || isModeChanging) return;
 
-            var selectedMode = GetSelectedTag(sender as ComboBox);
-            if (!string.IsNullOrEmpty(selectedMode))
+            try
             {
-                await ChangeMathModeAsync(selectedMode);
+                var selectedMode = GetSelectedTag(sender as ComboBox);
+                if (!string.IsNullOrEmpty(selectedMode) && selectedMode != currentActiveMode)
+                {
+                    // IMMEDIATE UI UPDATES - This fixes your issue!
+                    UpdateModeVisibility(selectedMode);
+
+                    // Update status text immediately
+                    if (StatusText != null)
+                    {
+                        StatusText.Text = selectedMode switch
+                        {
+                            "BasicOperations" => "Basic Operations Mode Active",
+                            "FFTAnalysis" => "FFT Analysis Mode Active",
+                            "DigitalFilters" => "Digital Filters Mode Active",
+                            "AdvancedMath" => "Advanced Math Mode Active",
+                            _ => "Ready"
+                        };
+                    }
+
+                    // Update status indicator color
+                    if (StatusIndicator != null)
+                    {
+                        StatusIndicator.Foreground = selectedMode switch
+                        {
+                            "BasicOperations" => new SolidColorBrush(Color.FromRgb(46, 204, 113)),
+                            "FFTAnalysis" => new SolidColorBrush(Color.FromRgb(52, 152, 219)),
+                            "DigitalFilters" => new SolidColorBrush(Color.FromRgb(155, 89, 182)),
+                            "AdvancedMath" => new SolidColorBrush(Color.FromRgb(230, 126, 34)),
+                            _ => new SolidColorBrush(Color.FromRgb(149, 165, 166))
+                        };
+                    }
+
+                    // Then apply the mode configuration
+                    await ChangeMathModeAsync(selectedMode);
+                }
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error in mode selection: {ex.Message}");
             }
         }
 

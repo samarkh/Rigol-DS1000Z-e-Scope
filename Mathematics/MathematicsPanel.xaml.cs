@@ -587,7 +587,8 @@ namespace DS1000Z_E_USB_Control.Mathematics
         // MISSING METHOD - Add this for XAML compatibility
         private async void MathModeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (!isInitialized || isModeChanging) return;
+            //if (!isInitialized || isModeChanging) return;
+            if (isModeChanging) return;
 
             try
             {

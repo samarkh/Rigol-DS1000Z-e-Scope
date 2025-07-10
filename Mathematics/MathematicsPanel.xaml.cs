@@ -1362,17 +1362,43 @@ namespace DS1000Z_E_USB_Control.Mathematics
 
         public string GetCurrentMathMode()
         {
-            // Return the current math mode based on your UI state
-            // This is just an example - adjust based on your actual implementation
-            if (radioButtonAdd?.IsChecked == true) return "ADD";
-            if (radioButtonSubtract?.IsChecked == true) return "SUBTRACT";
-            if (radioButtonMultiply?.IsChecked == true) return "MULTIPLY";
-            if (radioButtonDivide?.IsChecked == true) return "DIVIDE";
-            if (radioButtonFFT?.IsChecked == true) return "FFT";
+            try
+            {
+                string selectedMode = GetSelectedTag(MathModeCombo);
 
-            return "NONE"; // Default value
+                switch (selectedMode)
+                {
+                    case "BasicOperations":
+                        // Return the specific operation for basic operations
+                        string operation = GetSelectedTag(OperationCombo);
+                        switch (operation)
+                        {
+                            case "ADD": return "ADD";
+                            case "SUBTract": return "SUBTRACT";
+                            case "MULTiply": return "MULTIPLY";
+                            case "DIVision": return "DIVIDE";
+                            default: return "ADD";
+                        }
+
+                    case "FFTAnalysis":
+                        return "FFT";
+
+                    case "DigitalFilters":
+                        return "FILTER";
+
+                    case "AdvancedMath":
+                        return "ADVANCED";
+
+                    default:
+                        return currentActiveMode ?? "BasicOperations";
+                }
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error getting current math mode: {ex.Message}");
+                return "BasicOperations";
+            }
         }
-
 
 
 

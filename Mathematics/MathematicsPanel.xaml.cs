@@ -1355,6 +1355,35 @@ namespace DS1000Z_E_USB_Control.Mathematics
             }
         }
 
+
+
+
+
+
+        public string GetCurrentMathMode()
+        {
+            // Return the current math mode based on your UI state
+            // This is just an example - adjust based on your actual implementation
+            if (radioButtonAdd?.IsChecked == true) return "ADD";
+            if (radioButtonSubtract?.IsChecked == true) return "SUBTRACT";
+            if (radioButtonMultiply?.IsChecked == true) return "MULTIPLY";
+            if (radioButtonDivide?.IsChecked == true) return "DIVIDE";
+            if (radioButtonFFT?.IsChecked == true) return "FFT";
+
+            return "NONE"; // Default value
+        }
+
+
+
+
+
+
+
+
+
+
+
+
         #endregion
     }
 

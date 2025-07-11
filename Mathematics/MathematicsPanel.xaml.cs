@@ -1355,11 +1355,6 @@ namespace DS1000Z_E_USB_Control.Mathematics
             }
         }
 
-
-
-
-
-
         public string GetCurrentMathMode()
         {
             try
@@ -1400,52 +1395,7 @@ namespace DS1000Z_E_USB_Control.Mathematics
             }
         }
 
-
-
-
-
-
-
-
-
-
-
         #endregion
     }
 
-    //#region Event Args Classes
-
-    //public class SCPICommandEventArgs : EventArgs
-    //{
-    //    public string Command { get; }
-    //    public string Description { get; }
-
-    //    public SCPICommandEventArgs(string command, string description = "")
-    //    {
-    //        Command = command;
-    //        Description = description;
-    //    }
-    //}
-
-    //public class StatusEventArgs : EventArgs
-    //{
-    //    public string Message { get; }
-
-    //    public StatusEventArgs(string message)
-    //    {
-    //        Message = message;
-    //    }
-    //}
-
-    //public class ErrorEventArgs : EventArgs
-    //{
-    //    public string Message { get; }
-
-    //    public ErrorEventArgs(string message)
-    //    {
-    //        Message = message;
-    //    }
-    //}
-
-    //#endregion
 }

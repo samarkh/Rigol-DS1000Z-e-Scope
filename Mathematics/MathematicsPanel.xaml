@@ -98,7 +98,7 @@
                             <TextBlock Text="Low/High/Band pass and stop digital filters"/>
                         </ComboBoxItem.ToolTip>
                     </ComboBoxItem>
-                    <ComboBoxItem Content="🔬 Advanced Math" Tag="AdvancedMath">
+                    <ComboBoxItem Content="🔬 Advanced Maths" Tag="AdvancedMath">
                         <ComboBoxItem.ToolTip>
                             <TextBlock Text="Integration, differentiation, and advanced functions"/>
                         </ComboBoxItem.ToolTip>
@@ -262,8 +262,8 @@
                     </StackPanel>
                 </GroupBox>
 
-                <!-- Advanced Math Section -->
-                <GroupBox x:Name="AdvancedMathSection" Header="🔬 Advanced Math" 
+                <!-- Advanced Maths Section -->
+                <GroupBox x:Name="AdvancedMathSection" Header="🔬 Advanced Maths" 
                           Style="{StaticResource SectionStyle}" Visibility="Collapsed">
                     <StackPanel>
                         <Grid>
@@ -290,14 +290,14 @@
 
                             <Label Grid.Row="1" Grid.Column="0" Content="Start Point:" Style="{StaticResource LabelStyle}"/>
                             <TextBox x:Name="StartPointText" Grid.Row="1" Grid.Column="1" Style="{StaticResource TextBoxStyle}" 
-                                     Text="0" ToolTip="Enter start point for calculation"/>
+                                     Text="0" ToolTip="Enter start point for calculation (0 to 1198)"/>
 
                             <Label Grid.Row="2" Grid.Column="0" Content="End Point:" Style="{StaticResource LabelStyle}"/>
                             <TextBox x:Name="EndPointText" Grid.Row="2" Grid.Column="1" Style="{StaticResource TextBoxStyle}" 
-                                     Text="100" ToolTip="Enter end point for calculation"/>
+                                     Text="100" ToolTip="Enter end point for calculation  (1 to 1199)"/>
 
                             <Button Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2"
-                                    Content="🔬 Apply Advanced Math"
+                                    Content="🔬 Apply Advanced Maths"
                                     Style="{StaticResource MathButtonStyle}"
                                     Background="#E67E22" BorderBrush="#D35400"
                                     Click="ApplyAdvancedMath_Click" Margin="0,15,0,5"/>

@@ -529,7 +529,7 @@ namespace DS1000Z_E_USB_Control.Mathematics
         /// <summary>
         /// Apply INTG operation: Integration with start/end points
         /// </summary>
-        public async Task ApplyIntegrationOperationAsync(double startPoint = 0, double endPoint = 100)
+        public async Task ApplyIntegrationOperationAsync(double startPoint = 0, double endPoint = 1199) // 0 to 1199 is full screen
         {
             try
             {
@@ -561,7 +561,7 @@ namespace DS1000Z_E_USB_Control.Mathematics
         /// <summary>
         /// Apply DIFF operation: Differentiation with start/end points
         /// </summary>
-        public async Task ApplyDifferentiationOperationAsync(double startPoint = 0, double endPoint = 100)
+        public async Task ApplyDifferentiationOperationAsync(double startPoint = 200, double endPoint = 999) // Middle 2/3
         {
             try
             {

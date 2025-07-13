@@ -27,6 +27,7 @@ namespace DS1000Z_E_USB_Control.Mathematics
         public event Action<string> StatusUpdated;
         public event Action<string> ErrorOccurred;
         public event Func<string, string, string> SendSCPICommand; // Returns response
+        public event Action<string, string> SCPICommandGenerated; // ADDED: Missing event
 
         #endregion
 
@@ -54,6 +55,31 @@ namespace DS1000Z_E_USB_Control.Mathematics
             {
                 OnErrorOccurred($"Error setting initial mode: {ex.Message}");
             }
+        }
+
+        #endregion
+
+        #region Public Properties and Methods - ADDED: Missing methods
+
+        /// <summary>
+        /// Get current math mode - ADDED: Missing method
+        /// </summary>
+        public string GetCurrentMathMode()
+        {
+            return currentActiveMode;
+        }
+
+        /// <summary>
+        /// Check if mode is currently changing
+        /// </summary>
+        public bool IsModeChanging => isModeChanging;
+
+        /// <summary>
+        /// Get available math modes
+        /// </summary>
+        public string[] GetAvailableModes()
+        {
+            return new string[] { "BasicOperations", "FFTAnalysis", "DigitalFilters", "AdvancedMath" };
         }
 
         #endregion
@@ -109,11 +135,11 @@ namespace DS1000Z_E_USB_Control.Mathematics
                 UpdateStatusDisplay($"Switching to {newMode}...");
 
                 // Step 1: Disable current math display
-                ExecuteSCPICommand(":MATH:DISPlay OFF", "Disable math display");
+                await ExecuteSCPICommandAsync(":MATH:DISPlay OFF", "Disable math display");
                 await Task.Delay(RESET_DELAY);
 
                 // Step 2: Reset math system
-                ExecuteSCPICommand(":MATH:RESet", "Reset math system");
+                await ExecuteSCPICommandAsync(":MATH:RESet", "Reset math system");
                 await Task.Delay(RESET_DELAY);
 
                 // Step 3: Hide all sections
@@ -176,7 +202,7 @@ namespace DS1000Z_E_USB_Control.Mathematics
             await ConfigureDigitalFiltersAsync();
         }
 
-        // Advanced Math - UPDATED with Source Selection
+        // Advanced Math - UPDATED with Source Selection - FIXED: Event handler name
         private async void ApplyAdvancedMath_Click(object sender, RoutedEventArgs e)
         {
             await ConfigureAdvancedMathAsync();
@@ -222,16 +248,16 @@ namespace DS1000Z_E_USB_Control.Mathematics
             {
                 OnStatusUpdated("Applying ADD operation...");
 
-                ExecuteSCPICommand(":MATH:DISPlay ON", "Enable math display");
+                await ExecuteSCPICommandAsync(":MATH:DISPlay ON", "Enable math display");
                 await Task.Delay(COMMAND_DELAY);
 
-                ExecuteSCPICommand($":MATH:SOURce1 {source1}", $"Set source 1 to {source1}");
+                await ExecuteSCPICommandAsync($":MATH:SOURce1 {source1}", $"Set source 1 to {source1}");
                 await Task.Delay(COMMAND_DELAY);
 
-                ExecuteSCPICommand($":MATH:SOURce2 {source2}", $"Set source 2 to {source2}");
+                await ExecuteSCPICommandAsync($":MATH:SOURce2 {source2}", $"Set source 2 to {source2}");
                 await Task.Delay(COMMAND_DELAY);
 
-                ExecuteSCPICommand(":MATH:OPERator ADD", "Set operator to ADD");
+                await ExecuteSCPICommandAsync(":MATH:OPERator ADD", "Set operator to ADD");
                 await Task.Delay(COMMAND_DELAY);
 
                 OnStatusUpdated($"ADD operation applied: {source1} + {source2}");
@@ -251,16 +277,16 @@ namespace DS1000Z_E_USB_Control.Mathematics
             {
                 OnStatusUpdated("Applying SUBTract operation...");
 
-                ExecuteSCPICommand(":MATH:DISPlay ON", "Enable math display");
+                await ExecuteSCPICommandAsync(":MATH:DISPlay ON", "Enable math display");
                 await Task.Delay(COMMAND_DELAY);
 
-                ExecuteSCPICommand($":MATH:SOURce1 {source1}", $"Set source 1 to {source1}");
+                await ExecuteSCPICommandAsync($":MATH:SOURce1 {source1}", $"Set source 1 to {source1}");
                 await Task.Delay(COMMAND_DELAY);
 
-                ExecuteSCPICommand($":MATH:SOURce2 {source2}", $"Set source 2 to {source2}");
+                await ExecuteSCPICommandAsync($":MATH:SOURce2 {source2}", $"Set source 2 to {source2}");
                 await Task.Delay(COMMAND_DELAY);
 
-                ExecuteSCPICommand(":MATH:OPERator SUBTract", "Set operator to SUBTract");
+                await ExecuteSCPICommandAsync(":MATH:OPERator SUBTract", "Set operator to SUBTract");
                 await Task.Delay(COMMAND_DELAY);
 
                 OnStatusUpdated($"SUBTract operation applied: {source1} - {source2}");
@@ -280,16 +306,16 @@ namespace DS1000Z_E_USB_Control.Mathematics
             {
                 OnStatusUpdated("Applying MULTiply operation...");
 
-                ExecuteSCPICommand(":MATH:DISPlay ON", "Enable math display");
+                await ExecuteSCPICommandAsync(":MATH:DISPlay ON", "Enable math display");
                 await Task.Delay(COMMAND_DELAY);
 
-                ExecuteSCPICommand($":MATH:SOURce1 {source1}", $"Set source 1 to {source1}");
+                await ExecuteSCPICommandAsync($":MATH:SOURce1 {source1}", $"Set source 1 to {source1}");
                 await Task.Delay(COMMAND_DELAY);
 
-                ExecuteSCPICommand($":MATH:SOURce2 {source2}", $"Set source 2 to {source2}");
+                await ExecuteSCPICommandAsync($":MATH:SOURce2 {source2}", $"Set source 2 to {source2}");
                 await Task.Delay(COMMAND_DELAY);
 
-                ExecuteSCPICommand(":MATH:OPERator MULTiply", "Set operator to MULTiply");
+                await ExecuteSCPICommandAsync(":MATH:OPERator MULTiply", "Set operator to MULTiply");
                 await Task.Delay(COMMAND_DELAY);
 
                 OnStatusUpdated($"MULTiply operation applied: {source1} * {source2}");
@@ -309,16 +335,16 @@ namespace DS1000Z_E_USB_Control.Mathematics
             {
                 OnStatusUpdated("Applying DIVision operation...");
 
-                ExecuteSCPICommand(":MATH:DISPlay ON", "Enable math display");
+                await ExecuteSCPICommandAsync(":MATH:DISPlay ON", "Enable math display");
                 await Task.Delay(COMMAND_DELAY);
 
-                ExecuteSCPICommand($":MATH:SOURce1 {source1}", $"Set source 1 to {source1}");
+                await ExecuteSCPICommandAsync($":MATH:SOURce1 {source1}", $"Set source 1 to {source1}");
                 await Task.Delay(COMMAND_DELAY);
 
-                ExecuteSCPICommand($":MATH:SOURce2 {source2}", $"Set source 2 to {source2}");
+                await ExecuteSCPICommandAsync($":MATH:SOURce2 {source2}", $"Set source 2 to {source2}");
                 await Task.Delay(COMMAND_DELAY);
 
-                ExecuteSCPICommand(":MATH:OPERator DIVision", "Set operator to DIVision");
+                await ExecuteSCPICommandAsync(":MATH:OPERator DIVision", "Set operator to DIVision");
                 await Task.Delay(COMMAND_DELAY);
 
                 OnStatusUpdated($"DIVision operation applied: {source1} / {source2}");
@@ -342,22 +368,22 @@ namespace DS1000Z_E_USB_Control.Mathematics
             {
                 OnStatusUpdated("Applying FFT operation...");
 
-                ExecuteSCPICommand(":MATH:DISPlay ON", "Enable math display");
+                await ExecuteSCPICommandAsync(":MATH:DISPlay ON", "Enable math display");
                 await Task.Delay(COMMAND_DELAY);
 
-                ExecuteSCPICommand(":MATH:OPERator FFT", "Set operator to FFT");
+                await ExecuteSCPICommandAsync(":MATH:OPERator FFT", "Set operator to FFT");
                 await Task.Delay(COMMAND_DELAY);
 
-                ExecuteSCPICommand($":MATH:FFT:SOURce {source}", $"Set FFT source to {source}");
+                await ExecuteSCPICommandAsync($":MATH:FFT:SOURce {source}", $"Set FFT source to {source}");
                 await Task.Delay(COMMAND_DELAY);
 
-                ExecuteSCPICommand($":MATH:FFT:WINDow {window}", $"Set FFT window to {window}");
+                await ExecuteSCPICommandAsync($":MATH:FFT:WINDow {window}", $"Set FFT window to {window}");
                 await Task.Delay(COMMAND_DELAY);
 
-                ExecuteSCPICommand($":MATH:FFT:SPLit {split}", $"Set FFT split to {split}");
+                await ExecuteSCPICommandAsync($":MATH:FFT:SPLit {split}", $"Set FFT split to {split}");
                 await Task.Delay(COMMAND_DELAY);
 
-                ExecuteSCPICommand($":MATH:FFT:UNIT {unit}", $"Set FFT unit to {unit}");
+                await ExecuteSCPICommandAsync($":MATH:FFT:UNIT {unit}", $"Set FFT unit to {unit}");
                 await Task.Delay(COMMAND_DELAY);
 
                 OnStatusUpdated($"FFT operation applied: {source} with {window} window, {split} split, {unit} unit");
@@ -380,10 +406,10 @@ namespace DS1000Z_E_USB_Control.Mathematics
             OnStatusUpdated($"Applying FFT workaround for {source}...");
 
             // Temporary FFT mode to set source
-            ExecuteSCPICommand(":MATH:OPERator FFT", "Temporary FFT mode");
+            await ExecuteSCPICommandAsync(":MATH:OPERator FFT", "Temporary FFT mode");
             await Task.Delay(COMMAND_DELAY);
 
-            ExecuteSCPICommand($":MATH:FFT:SOURce {source}", $"Set source to {source}");
+            await ExecuteSCPICommandAsync($":MATH:FFT:SOURce {source}", $"Set source to {source}");
             await Task.Delay(COMMAND_DELAY);
         }
 
@@ -397,41 +423,41 @@ namespace DS1000Z_E_USB_Control.Mathematics
                 OnStatusUpdated($"Applying FILTer operation on {source}...");
 
                 // STEP 1: Disable math display
-                ExecuteSCPICommand(":MATH:DISPlay OFF", "Disable math display");
+                await ExecuteSCPICommandAsync(":MATH:DISPlay OFF", "Disable math display");
                 await Task.Delay(COMMAND_DELAY);
 
                 // STEP 2: Reset math system
-                ExecuteSCPICommand(":MATH:RESet", "Reset math system");
+                await ExecuteSCPICommandAsync(":MATH:RESet", "Reset math system");
                 await Task.Delay(COMMAND_DELAY);
 
                 // STEP 3: FFT WORKAROUND - Set source via FFT first
                 OnStatusUpdated($"Setting source to {source} via FFT workaround...");
-                ExecuteSCPICommand(":MATH:OPERator FFT", "Temporary FFT mode for source selection");
+                await ExecuteSCPICommandAsync(":MATH:OPERator FFT", "Temporary FFT mode for source selection");
                 await Task.Delay(COMMAND_DELAY);
 
-                ExecuteSCPICommand($":MATH:FFT:SOURce {source}", $"Set source to {source} via FFT");
+                await ExecuteSCPICommandAsync($":MATH:FFT:SOURce {source}", $"Set source to {source} via FFT");
                 await Task.Delay(COMMAND_DELAY);
 
                 // STEP 4: Switch to Filter operation
-                ExecuteSCPICommand(":MATH:OPERator FILTer", "Switch to FILTer operation");
+                await ExecuteSCPICommandAsync(":MATH:OPERator FILTer", "Switch to FILTer operation");
                 await Task.Delay(COMMAND_DELAY);
 
                 // STEP 5: Configure filter parameters
-                ExecuteSCPICommand($":MATH:FILTer:TYPE {filterType}", $"Set filter type to {filterType}");
+                await ExecuteSCPICommandAsync($":MATH:FILTer:TYPE {filterType}", $"Set filter type to {filterType}");
                 await Task.Delay(COMMAND_DELAY);
 
-                ExecuteSCPICommand($":MATH:FILTer:W1 {w1}", $"Set W1 frequency to {w1}");
+                await ExecuteSCPICommandAsync($":MATH:FILTer:W1 {w1}", $"Set W1 frequency to {w1}");
                 await Task.Delay(COMMAND_DELAY);
 
                 // Band filters (BPASs, BSTop) need W2
                 if (w2.HasValue && (filterType == "BPASs" || filterType == "BSTop"))
                 {
-                    ExecuteSCPICommand($":MATH:FILTer:W2 {w2.Value}", $"Set W2 frequency to {w2.Value}");
+                    await ExecuteSCPICommandAsync($":MATH:FILTer:W2 {w2.Value}", $"Set W2 frequency to {w2.Value}");
                     await Task.Delay(COMMAND_DELAY);
                 }
 
                 // STEP 6: Enable math display
-                ExecuteSCPICommand(":MATH:DISPlay ON", "Enable math display");
+                await ExecuteSCPICommandAsync(":MATH:DISPlay ON", "Enable math display");
                 await Task.Delay(COMMAND_DELAY);
 
                 string message = $"FILTer operation applied on {source}: {filterType}, W1={w1}";
@@ -459,29 +485,29 @@ namespace DS1000Z_E_USB_Control.Mathematics
             {
                 OnStatusUpdated($"Applying INTG operation on {source}...");
 
-                ExecuteSCPICommand(":MATH:DISPlay OFF", "Disable math display");
+                await ExecuteSCPICommandAsync(":MATH:DISPlay OFF", "Disable math display");
                 await Task.Delay(COMMAND_DELAY);
 
-                ExecuteSCPICommand(":MATH:RESet", "Reset math system");
+                await ExecuteSCPICommandAsync(":MATH:RESet", "Reset math system");
                 await Task.Delay(COMMAND_DELAY);
 
                 // FFT WORKAROUND for source selection
                 await ApplyFFTWorkaroundAsync(source);
 
                 // Switch to Integration
-                ExecuteSCPICommand(":MATH:OPERator INTG", "Set operator to INTG");
+                await ExecuteSCPICommandAsync(":MATH:OPERator INTG", "Set operator to INTG");
                 await Task.Delay(COMMAND_DELAY);
 
-                ExecuteSCPICommand(":MATH:OPTion:FX:OPERator INTG", "Set advanced function to INTG");
+                await ExecuteSCPICommandAsync(":MATH:OPTion:FX:OPERator INTG", "Set advanced function to INTG");
                 await Task.Delay(COMMAND_DELAY);
 
-                ExecuteSCPICommand($":MATH:OPTion:STARt {startPoint}", $"Set start point to {startPoint}");
+                await ExecuteSCPICommandAsync($":MATH:OPTion:STARt {startPoint}", $"Set start point to {startPoint}");
                 await Task.Delay(COMMAND_DELAY);
 
-                ExecuteSCPICommand($":MATH:OPTion:END {endPoint}", $"Set end point to {endPoint}");
+                await ExecuteSCPICommandAsync($":MATH:OPTion:END {endPoint}", $"Set end point to {endPoint}");
                 await Task.Delay(COMMAND_DELAY);
 
-                ExecuteSCPICommand(":MATH:DISPlay ON", "Enable math display");
+                await ExecuteSCPICommandAsync(":MATH:DISPlay ON", "Enable math display");
                 await Task.Delay(COMMAND_DELAY);
 
                 OnStatusUpdated($"INTG operation applied on {source}: {startPoint} to {endPoint}");
@@ -501,29 +527,29 @@ namespace DS1000Z_E_USB_Control.Mathematics
             {
                 OnStatusUpdated($"Applying DIFF operation on {source}...");
 
-                ExecuteSCPICommand(":MATH:DISPlay OFF", "Disable math display");
+                await ExecuteSCPICommandAsync(":MATH:DISPlay OFF", "Disable math display");
                 await Task.Delay(COMMAND_DELAY);
 
-                ExecuteSCPICommand(":MATH:RESet", "Reset math system");
+                await ExecuteSCPICommandAsync(":MATH:RESet", "Reset math system");
                 await Task.Delay(COMMAND_DELAY);
 
                 // FFT WORKAROUND for source selection
                 await ApplyFFTWorkaroundAsync(source);
 
                 // Switch to Differentiation
-                ExecuteSCPICommand(":MATH:OPERator DIFF", "Set operator to DIFF");
+                await ExecuteSCPICommandAsync(":MATH:OPERator DIFF", "Set operator to DIFF");
                 await Task.Delay(COMMAND_DELAY);
 
-                ExecuteSCPICommand(":MATH:OPTion:FX:OPERator DIFF", "Set advanced function to DIFF");
+                await ExecuteSCPICommandAsync(":MATH:OPTion:FX:OPERator DIFF", "Set advanced function to DIFF");
                 await Task.Delay(COMMAND_DELAY);
 
-                ExecuteSCPICommand($":MATH:OPTion:STARt {startPoint}", $"Set start point to {startPoint}");
+                await ExecuteSCPICommandAsync($":MATH:OPTion:STARt {startPoint}", $"Set start point to {startPoint}");
                 await Task.Delay(COMMAND_DELAY);
 
-                ExecuteSCPICommand($":MATH:OPTion:END {endPoint}", $"Set end point to {endPoint}");
+                await ExecuteSCPICommandAsync($":MATH:OPTion:END {endPoint}", $"Set end point to {endPoint}");
                 await Task.Delay(COMMAND_DELAY);
 
-                ExecuteSCPICommand(":MATH:DISPlay ON", "Enable math display");
+                await ExecuteSCPICommandAsync(":MATH:DISPlay ON", "Enable math display");
                 await Task.Delay(COMMAND_DELAY);
 
                 OnStatusUpdated($"DIFF operation applied on {source}: {startPoint} to {endPoint}");
@@ -543,23 +569,23 @@ namespace DS1000Z_E_USB_Control.Mathematics
             {
                 OnStatusUpdated($"Applying {operation} operation on {source}...");
 
-                ExecuteSCPICommand(":MATH:DISPlay OFF", "Disable math display");
+                await ExecuteSCPICommandAsync(":MATH:DISPlay OFF", "Disable math display");
                 await Task.Delay(COMMAND_DELAY);
 
-                ExecuteSCPICommand(":MATH:RESet", "Reset math system");
+                await ExecuteSCPICommandAsync(":MATH:RESet", "Reset math system");
                 await Task.Delay(COMMAND_DELAY);
 
                 // FFT WORKAROUND for source selection
                 await ApplyFFTWorkaroundAsync(source);
 
                 // Switch to target operation
-                ExecuteSCPICommand($":MATH:OPERator {operation}", $"Set operator to {operation}");
+                await ExecuteSCPICommandAsync($":MATH:OPERator {operation}", $"Set operator to {operation}");
                 await Task.Delay(COMMAND_DELAY);
 
-                ExecuteSCPICommand($":MATH:OPTion:FX:OPERator {operation}", $"Set advanced function to {operation}");
+                await ExecuteSCPICommandAsync($":MATH:OPTion:FX:OPERator {operation}", $"Set advanced function to {operation}");
                 await Task.Delay(COMMAND_DELAY);
 
-                ExecuteSCPICommand(":MATH:DISPlay ON", "Enable math display");
+                await ExecuteSCPICommandAsync(":MATH:DISPlay ON", "Enable math display");
                 await Task.Delay(COMMAND_DELAY);
 
                 OnStatusUpdated($"{operation} operation applied on {source}");
@@ -769,7 +795,7 @@ namespace DS1000Z_E_USB_Control.Mathematics
             try
             {
                 // Query current timebase from oscilloscope
-                var response = ExecuteSCPICommand(":TIMebase:SCALe?", "Query timebase");
+                var response = await ExecuteSCPICommandAsync(":TIMebase:SCALe?", "Query timebase");
                 if (double.TryParse(response, out double timebase))
                 {
                     return timebase;
@@ -783,19 +809,29 @@ namespace DS1000Z_E_USB_Control.Mathematics
         }
 
         /// <summary>
-        /// Helper method to execute SCPI commands safely
+        /// Helper method to execute SCPI commands safely - FIXED: Added async version
         /// </summary>
         private string ExecuteSCPICommand(string command, string description)
         {
             try
             {
-                return SendSCPICommand?.Invoke(command, description) ?? "";
+                var response = SendSCPICommand?.Invoke(command, description) ?? "";
+                SCPICommandGenerated?.Invoke(command, description); // Fire event for logging
+                return response;
             }
             catch (Exception ex)
             {
                 OnErrorOccurred($"SCPI command failed ({command}): {ex.Message}");
                 return "";
             }
+        }
+
+        /// <summary>
+        /// Async version of ExecuteSCPICommand - FIXED: Proper async implementation
+        /// </summary>
+        private async Task<string> ExecuteSCPICommandAsync(string command, string description)
+        {
+            return await Task.Run(() => ExecuteSCPICommand(command, description));
         }
 
         #endregion

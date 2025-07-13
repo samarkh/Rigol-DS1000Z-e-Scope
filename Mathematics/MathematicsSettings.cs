@@ -170,35 +170,35 @@ namespace DS1000Z_E_USB_Control.Mathematics
 
         #region Digital Filter Properties - CORRECTED
 
-        /// <summary>
-        /// Digital filter type (LPASs, HPASs, BPASs, BSTop)
-        /// </summary>
-        [JsonPropertyName("filterType")]
-        public string FilterType
-        {
-            get => _filterType;
-            set => SetProperty(ref _filterType, value);
-        }
+        ///// <summary>
+        ///// Digital filter type (LPASs, HPASs, BPASs, BSTop)
+        ///// </summary>
+        //[JsonPropertyName("filterType")]
+        //public string FilterType
+        //{
+        //    get => _filterType;
+        //    set => SetProperty(ref _filterType, value);
+        //}
 
-        /// <summary>
-        /// Filter cutoff frequency 1 (W1) - Timebase dependent
-        /// </summary>
-        [JsonPropertyName("filterW1")]
-        public string FilterW1
-        {
-            get => _filterW1;
-            set => SetProperty(ref _filterW1, value);
-        }
+        ///// <summary>
+        ///// Filter cutoff frequency 1 (W1) - Timebase dependent
+        ///// </summary>
+        //[JsonPropertyName("filterW1")]
+        //public string FilterW1
+        //{
+        //    get => _filterW1;
+        //    set => SetProperty(ref _filterW1, value);
+        //}
 
-        /// <summary>
-        /// Filter cutoff frequency 2 (W2) - For band filters only
-        /// </summary>
-        [JsonPropertyName("filterW2")]
-        public string FilterW2
-        {
-            get => _filterW2;
-            set => SetProperty(ref _filterW2, value);
-        }
+        ///// <summary>
+        ///// Filter cutoff frequency 2 (W2) - For band filters only
+        ///// </summary>
+        //[JsonPropertyName("filterW2")]
+        //public string FilterW2
+        //{
+        //    get => _filterW2;
+        //    set => SetProperty(ref _filterW2, value);
+        //}
 
         /// <summary>
         /// Current timebase setting (for frequency validation)
@@ -244,35 +244,35 @@ namespace DS1000Z_E_USB_Control.Mathematics
 
         #region Advanced Math Properties
 
-        /// <summary>
-        /// Advanced math function (INTG, DIFF, SQRT, LG, LN, EXP, ABS)
-        /// </summary>
-        [JsonPropertyName("advancedFunction")]
-        public string AdvancedFunction
-        {
-            get => _advancedFunction;
-            set => SetProperty(ref _advancedFunction, value);
-        }
+        ///// <summary>
+        ///// Advanced math function (INTG, DIFF, SQRT, LG, LN, EXP, ABS)
+        ///// </summary>
+        //[JsonPropertyName("advancedFunction")]
+        //public string AdvancedFunction
+        //{
+        //    get => _advancedFunction;
+        //    set => SetProperty(ref _advancedFunction, value);
+        //}
 
-        /// <summary>
-        /// Start point for integration/advanced math operations
-        /// </summary>
-        [JsonPropertyName("startPoint")]
-        public string StartPoint
-        {
-            get => _startPoint;
-            set => SetProperty(ref _startPoint, value);
-        }
+        ///// <summary>
+        ///// Start point for integration/advanced math operations
+        ///// </summary>
+        //[JsonPropertyName("startPoint")]
+        //public string StartPoint
+        //{
+        //    get => _startPoint;
+        //    set => SetProperty(ref _startPoint, value);
+        //}
 
-        /// <summary>
-        /// End point for integration/advanced math operations
-        /// </summary>
-        [JsonPropertyName("endPoint")]
-        public string EndPoint
-        {
-            get => _endPoint;
-            set => SetProperty(ref _endPoint, value);
-        }
+        ///// <summary>
+        ///// End point for integration/advanced math operations
+        ///// </summary>
+        //[JsonPropertyName("endPoint")]
+        //public string EndPoint
+        //{
+        //    get => _endPoint;
+        //    set => SetProperty(ref _endPoint, value);
+        //}
 
         #endregion
 
@@ -355,66 +355,66 @@ namespace DS1000Z_E_USB_Control.Mathematics
             return (true, "");
         }
 
-        /// <summary>
-        /// Validate filter settings including timebase dependencies
-        /// </summary>
-        /// <returns>Validation result with error message if invalid</returns>
-        public (bool isValid, string errorMessage) ValidateFilter()
-        {
-            if (!IsValidFilterType(FilterType))
-                return (false, $"Invalid Filter Type: {FilterType}");
+        ///// <summary>
+        ///// Validate filter settings including timebase dependencies
+        ///// </summary>
+        ///// <returns>Validation result with error message if invalid</returns>
+        //public (bool isValid, string errorMessage) ValidateFilter()
+        //{
+        //    if (!IsValidFilterType(FilterType))
+        //        return (false, $"Invalid Filter Type: {FilterType}");
 
-            // Parse frequency values
-            if (!double.TryParse(FilterW1, out double w1))
-                return (false, $"Invalid W1 frequency: {FilterW1}");
+        //    // Parse frequency values
+        //    if (!double.TryParse(FilterW1, out double w1))
+        //        return (false, $"Invalid W1 frequency: {FilterW1}");
 
-            // Check if W2 is required for band filters
-            bool isBandFilter = FilterType == "BPASs" || FilterType == "BSTop";
+        //    // Check if W2 is required for band filters
+        //    bool isBandFilter = FilterType == "BPASs" || FilterType == "BSTop";
 
-            if (isBandFilter)
-            {
-                if (!double.TryParse(FilterW2, out double w2))
-                    return (false, $"Invalid W2 frequency: {FilterW2}");
+        //    if (isBandFilter)
+        //    {
+        //        if (!double.TryParse(FilterW2, out double w2))
+        //            return (false, $"Invalid W2 frequency: {FilterW2}");
 
-                if (w1 >= w2)
-                    return (false, "W1 must be less than W2 for band filters");
-            }
+        //        if (w1 >= w2)
+        //            return (false, "W1 must be less than W2 for band filters");
+        //    }
 
-            return (true, "");
-        }
+        //    return (true, "");
+        //}
 
-        /// <summary>
-        /// Validate advanced math function settings
-        /// </summary>
-        /// <returns>Validation result with error message if invalid</returns>
-        public (bool isValid, string errorMessage) ValidateAdvancedMath()
-        {
-            if (!IsValidAdvancedOperator(AdvancedFunction))
-                return (false, $"Invalid Advanced Function: {AdvancedFunction}");
+        ///// <summary>
+        ///// Validate advanced math function settings
+        ///// </summary>
+        ///// <returns>Validation result with error message if invalid</returns>
+        //public (bool isValid, string errorMessage) ValidateAdvancedMath()
+        //{
+        //    if (!IsValidAdvancedOperator(AdvancedFunction))
+        //        return (false, $"Invalid Advanced Function: {AdvancedFunction}");
 
-            if (!double.TryParse(StartPoint, out double start))
-                return (false, $"Invalid Start Point: {StartPoint}");
+        //    if (!double.TryParse(StartPoint, out double start))
+        //        return (false, $"Invalid Start Point: {StartPoint}");
 
-            if (!double.TryParse(EndPoint, out double end))
-                return (false, $"Invalid End Point: {EndPoint}");
+        //    if (!double.TryParse(EndPoint, out double end))
+        //        return (false, $"Invalid End Point: {EndPoint}");
 
-            if (start >= end)
-                return (false, "Start point must be less than end point");
+        //    if (start >= end)
+        //        return (false, "Start point must be less than end point");
 
-            return (true, "");
-        }
+        //    return (true, "");
+        //}
 
-        /// <summary>
-        /// Validate if a source is valid
-        /// </summary>
-        /// <param name="source">Source to validate</param>
-        /// <returns>True if valid</returns>
-        private static bool IsValidSource(string source)
-        {
-            return source == "CHANnel1" ||
-                   source == "CHANnel2" ||
-                   source == "MATH";
-        }
+        ///// <summary>
+        ///// Validate if a source is valid
+        ///// </summary>
+        ///// <param name="source">Source to validate</param>
+        ///// <returns>True if valid</returns>
+        //private static bool IsValidSource(string source)
+        //{
+        //    return source == "CHANnel1" ||
+        //           source == "CHANnel2" ||
+        //           source == "MATH";
+        //}
 
         /// <summary>
         /// Validate if an operator is valid for :MATH:OPERator command
@@ -536,32 +536,32 @@ namespace DS1000Z_E_USB_Control.Mathematics
         /// <summary>
         /// Reset all settings to defaults
         /// </summary>
-        public void Reset()
-        {
-            ConfigurationName = "Default Math Configuration";
-            ActiveMode = "None";
-            Source1 = "CHANnel1";
-            Source2 = "CHANnel2";
-            Operation = "ADD";
-            FFTSource = "CHANnel1";
-            FFTWindow = "HANNing";
-            FFTSplit = "FULL";
-            FFTUnit = "VRMS";
-            FilterType = "LPASs";
-            FilterW1 = "1000000";
-            FilterW2 = "2000000";
-            CurrentTimebase = "";
-            CalculatedMinFreq = "";
-            CalculatedMaxFreq = "";
-            CalculatedStepSize = "";
-            AdvancedFunction = "INTG";
-            StartPoint = "0";
-            EndPoint = "100";
-            MathDisplayEnabled = true;
-            InvertWaveform = false;
-            Scale = "1.0";
-            Offset = "0.0";
-        }
+        //public void Reset()
+        //{
+        //    ConfigurationName = "Default Math Configuration";
+        //    ActiveMode = "None";
+        //    Source1 = "CHANnel1";
+        //    Source2 = "CHANnel2";
+        //    Operation = "ADD";
+        //    FFTSource = "CHANnel1";
+        //    FFTWindow = "HANNing";
+        //    FFTSplit = "FULL";
+        //    FFTUnit = "VRMS";
+        //    FilterType = "LPASs";
+        //    FilterW1 = "1000000";
+        //    FilterW2 = "2000000";
+        //    CurrentTimebase = "";
+        //    CalculatedMinFreq = "";
+        //    CalculatedMaxFreq = "";
+        //    CalculatedStepSize = "";
+        //    AdvancedFunction = "INTG";
+        //    StartPoint = "0";
+        //    EndPoint = "100";
+        //    MathDisplayEnabled = true;
+        //    InvertWaveform = false;
+        //    Scale = "1.0";
+        //    Offset = "0.0";
+        //}
 
         /// <summary>
         /// Check if current settings are equal to another instance
@@ -671,6 +671,265 @@ namespace DS1000Z_E_USB_Control.Mathematics
                 EndPoint = "100",
                 ConfigurationName = "Integration Default"
             };
+        }
+
+        #endregion
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        #region Digital Filter Properties - UPDATED with Source
+
+        /// <summary>
+        /// Digital filter source channel (CHANnel1, CHANnel2)
+        /// </summary>
+        [JsonPropertyName("filterSource")]
+        public string FilterSource
+        {
+            get => _filterSource;
+            set => SetProperty(ref _filterSource, value);
+        }
+        private string _filterSource = "CHANnel1";
+
+        /// <summary>
+        /// Digital filter type (LPASs, HPASs, BPASs, BSTop)
+        /// </summary>
+        [JsonPropertyName("filterType")]
+        public string FilterType
+        {
+            get => _filterType;
+            set => SetProperty(ref _filterType, value);
+        }
+
+        /// <summary>
+        /// Filter cutoff frequency 1 (W1) - Timebase dependent
+        /// </summary>
+        [JsonPropertyName("filterW1")]
+        public string FilterW1
+        {
+            get => _filterW1;
+            set => SetProperty(ref _filterW1, value);
+        }
+
+        /// <summary>
+        /// Filter cutoff frequency 2 (W2) - For band filters only
+        /// </summary>
+        [JsonPropertyName("filterW2")]
+        public string FilterW2
+        {
+            get => _filterW2;
+            set => SetProperty(ref _filterW2, value);
+        }
+
+        #endregion
+
+        #region Advanced Math Properties - UPDATED with Source
+
+        /// <summary>
+        /// Advanced math source channel (CHANnel1, CHANnel2)
+        /// </summary>
+        [JsonPropertyName("advancedSource")]
+        public string AdvancedSource
+        {
+            get => _advancedSource;
+            set => SetProperty(ref _advancedSource, value);
+        }
+        private string _advancedSource = "CHANnel1";
+
+        /// <summary>
+        /// Advanced math function (INTG, DIFF, SQRT, LG, LN, EXP, ABS)
+        /// </summary>
+        [JsonPropertyName("advancedFunction")]
+        public string AdvancedFunction
+        {
+            get => _advancedFunction;
+            set => SetProperty(ref _advancedFunction, value);
+        }
+
+        /// <summary>
+        /// Start point for integration/advanced math operations (0-1199)
+        /// </summary>
+        [JsonPropertyName("startPoint")]
+        public string StartPoint
+        {
+            get => _startPoint;
+            set => SetProperty(ref _startPoint, value);
+        }
+
+        /// <summary>
+        /// End point for integration/advanced math operations (0-1199)
+        /// </summary>
+        [JsonPropertyName("endPoint")]
+        public string EndPoint
+        {
+            get => _endPoint;
+            set => SetProperty(ref _endPoint, value);
+        }
+
+        #endregion
+
+        #region UPDATED: Validation Methods with Source
+
+        /// <summary>
+        /// Validate filter settings including source channel
+        /// </summary>
+        /// <returns>Validation result with error message if invalid</returns>
+        public (bool isValid, string errorMessage) ValidateFilter()
+        {
+            if (!IsValidSource(FilterSource))
+                return (false, $"Invalid Filter Source: {FilterSource}");
+
+            if (!IsValidFilterType(FilterType))
+                return (false, $"Invalid Filter Type: {FilterType}");
+
+            // Parse frequency values
+            if (!double.TryParse(FilterW1, out double w1))
+                return (false, $"Invalid W1 frequency: {FilterW1}");
+
+            // Check if W2 is required for band filters
+            bool isBandFilter = FilterType == "BPASs" || FilterType == "BSTop";
+
+            if (isBandFilter)
+            {
+                if (!double.TryParse(FilterW2, out double w2))
+                    return (false, $"Invalid W2 frequency: {FilterW2}");
+
+                if (w1 >= w2)
+                    return (false, "W1 must be less than W2 for band filters");
+            }
+
+            return (true, "");
+        }
+
+        /// <summary>
+        /// Validate advanced math function settings including source
+        /// </summary>
+        /// <returns>Validation result with error message if invalid</returns>
+        public (bool isValid, string errorMessage) ValidateAdvancedMath()
+        {
+            if (!IsValidSource(AdvancedSource))
+                return (false, $"Invalid Advanced Math Source: {AdvancedSource}");
+
+            if (!IsValidAdvancedOperator(AdvancedFunction))
+                return (false, $"Invalid Advanced Function: {AdvancedFunction}");
+
+            if (!double.TryParse(StartPoint, out double start))
+                return (false, $"Invalid Start Point: {StartPoint}");
+
+            if (!double.TryParse(EndPoint, out double end))
+                return (false, $"Invalid End Point: {EndPoint}");
+
+            // Validate memory depth limits (0-1199)
+            if (start < 0 || start > 1199)
+                return (false, $"Start Point must be between 0-1199: {start}");
+
+            if (end < 0 || end > 1199)
+                return (false, $"End Point must be between 0-1199: {end}");
+
+            if (start >= end)
+                return (false, "Start point must be less than end point");
+
+            return (true, "");
+        }
+
+        /// <summary>
+        /// Validate if a source is valid for Filter/Advanced Math
+        /// </summary>
+        /// <param name="source">Source to validate</param>
+        /// <returns>True if valid</returns>
+        private static bool IsValidSource(string source)
+        {
+            return source == "CHANnel1" || source == "CHANnel2";
+        }
+
+        #endregion
+
+        #region UPDATED: Factory Methods with Source
+
+        /// <summary>
+        /// Create default settings for Digital Filters with source
+        /// </summary>
+        public static MathematicsSettings CreateDigitalFilterDefault(string source = "CHANnel1")
+        {
+            return new MathematicsSettings
+            {
+                ActiveMode = "DigitalFilter",
+                FilterSource = source,
+                FilterType = "LPASs",
+                FilterW1 = "1000",
+                ConfigurationName = $"Low Pass Filter on {source}"
+            };
+        }
+
+        /// <summary>
+        /// Create default settings for Advanced Math with source
+        /// </summary>
+        public static MathematicsSettings CreateAdvancedMathDefault(string source = "CHANnel1")
+        {
+            return new MathematicsSettings
+            {
+                ActiveMode = "AdvancedMath",
+                AdvancedSource = source,
+                AdvancedFunction = "INTG",
+                StartPoint = "0",
+                EndPoint = "1199",
+                ConfigurationName = $"Integration on {source}"
+            };
+        }
+
+        #endregion
+
+        #region UPDATED: Reset Method
+
+        /// <summary>
+        /// Reset all settings to defaults
+        /// </summary>
+        public void Reset()
+        {
+            ConfigurationName = "Default Math Configuration";
+            ActiveMode = "None";
+            Source1 = "CHANnel1";
+            Source2 = "CHANnel2";
+            Operation = "ADD";
+            FFTSource = "CHANnel1";
+            FFTWindow = "HANNing";
+            FFTSplit = "FULL";
+            FFTUnit = "VRMS";
+            FilterSource = "CHANnel1";        // NEW
+            FilterType = "LPASs";
+            FilterW1 = "1000";
+            FilterW2 = "10000";
+            CurrentTimebase = "";
+            CalculatedMinFreq = "";
+            CalculatedMaxFreq = "";
+            CalculatedStepSize = "";
+            AdvancedSource = "CHANnel1";      // NEW
+            AdvancedFunction = "INTG";
+            StartPoint = "0";
+            EndPoint = "1199";                // UPDATED limit
+            MathDisplayEnabled = true;
+            InvertWaveform = false;
+            Scale = "1.0";
+            Offset = "0.0";
         }
 
         #endregion

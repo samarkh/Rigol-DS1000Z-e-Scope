@@ -836,15 +836,15 @@ namespace DS1000Z_E_USB_Control.Mathematics
 
         #endregion
 
-        #region Control References (Properties for XAML binding)
+        //#region Control References (Properties for XAML binding)
 
-        // These properties provide safe access to XAML controls
-        private GroupBox BasicOperationsSection => this.FindName("BasicOperationsSection") as GroupBox;
-        private GroupBox FFTAnalysisSection => this.FindName("FFTAnalysisSection") as GroupBox;
-        private GroupBox DigitalFiltersSection => this.FindName("DigitalFiltersSection") as GroupBox;
-        private GroupBox AdvancedMathSection => this.FindName("AdvancedMathSection") as GroupBox;
+        //// These properties provide safe access to XAML controls
+        //private GroupBox BasicOperationsSection => this.FindName("BasicOperationsSection") as GroupBox;
+        //private GroupBox FFTAnalysisSection => this.FindName("FFTAnalysisSection") as GroupBox;
+        //private GroupBox DigitalFiltersSection => this.FindName("DigitalFiltersSection") as GroupBox;
+        //private GroupBox AdvancedMathSection => this.FindName("AdvancedMathSection") as GroupBox;
 
-        #endregion
+        //#endregion
 
         #region Event Helper Methods
 

@@ -83,17 +83,21 @@ namespace DS1000Z_E_USB_Control.Mathematics
         #endregion
 
         #region Public Methods
-        public async Task<bool> InitializeAsync(object visaManager)
+        public Task<bool> InitializeAsync(object visaManager)
         {
             try
             {
-                OnStatusUpdated("Mathematics window ready");
-                return true;
+                if (!isInitialized)
+                {
+                    OnStatusUpdated("Mathematics window ready");
+                    isInitialized = true;  // ← Now it's used
+                }
+                return Task.FromResult(true);
             }
             catch (Exception ex)
             {
                 OnErrorOccurred($"Async initialization failed: {ex.Message}");
-                return false;
+                return Task.FromResult(false);
             }
         }
         #endregion
@@ -115,11 +119,8 @@ namespace DS1000Z_E_USB_Control.Mathematics
         {
             try
             {
-                var eventArgs = new SCPICommandEventArgs
-                {
-                    Command = command,
-                    Source = "MathematicsPanel"
-                };
+                // ✅ Use constructor instead of object initializer
+                var eventArgs = new SCPICommandEventArgs(command, "MathematicsPanel", "MATH");
                 SCPICommandGenerated?.Invoke(this, eventArgs);
             }
             catch (Exception ex)
@@ -174,7 +175,7 @@ namespace DS1000Z_E_USB_Control.Mathematics
             {
                 var eventArgs = new ErrorEventArgs(error)
                 {
-                    Source = "MathematicsPanel",
+                    Source = "MathematicsPanel",     // ✅ These are settable
                     Category = "MATH",
                     Severity = ErrorSeverity.Error
                 };

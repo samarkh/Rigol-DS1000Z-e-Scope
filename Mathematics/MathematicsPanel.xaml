@@ -221,9 +221,9 @@
                     </StackPanel>
                 </GroupBox>
 
-                <!-- Digital Filters Section -->
+                <!-- Digital Filters Section - UPDATED with Source Selection -->
                 <GroupBox x:Name="DigitalFiltersSection" Header="🔧 Digital Filters" 
-                          Style="{StaticResource SectionStyle}" Visibility="Collapsed">
+          Style="{StaticResource SectionStyle}" Visibility="Collapsed">
                     <StackPanel>
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -235,36 +235,44 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
-                            <Label Grid.Row="0" Grid.Column="0" Content="Filter Type:" Style="{StaticResource LabelStyle}"/>
-                            <ComboBox x:Name="FilterTypeCombo" Grid.Row="0" Grid.Column="1" Style="{StaticResource ComboBoxStyle}">
+                            <!-- NEW: Source Channel Selection -->
+                            <Label Grid.Row="0" Grid.Column="0" Content="Source Channel:" Style="{StaticResource LabelStyle}"/>
+                            <ComboBox x:Name="FilterSourceCombo" Grid.Row="0" Grid.Column="1" Style="{StaticResource ComboBoxStyle}">
+                                <ComboBoxItem Content="Channel 1" Tag="CHANnel1" IsSelected="True"/>
+                                <ComboBoxItem Content="Channel 2" Tag="CHANnel2"/>
+                            </ComboBox>
+
+                            <Label Grid.Row="1" Grid.Column="0" Content="Filter Type:" Style="{StaticResource LabelStyle}"/>
+                            <ComboBox x:Name="FilterTypeCombo" Grid.Row="1" Grid.Column="1" Style="{StaticResource ComboBoxStyle}">
                                 <ComboBoxItem Content="Low Pass" Tag="LPASs" IsSelected="True"/>
                                 <ComboBoxItem Content="High Pass" Tag="HPASs"/>
                                 <ComboBoxItem Content="Band Pass" Tag="BPASs"/>
                                 <ComboBoxItem Content="Band Stop" Tag="BSTop"/>
                             </ComboBox>
 
-                            <Label Grid.Row="1" Grid.Column="0" Content="Lower Freq (Hz):" Style="{StaticResource LabelStyle}"/>
-                            <TextBox x:Name="FilterW1Text" Grid.Row="1" Grid.Column="1" Style="{StaticResource TextBoxStyle}" 
-                                     Text="1000" ToolTip="Enter frequency in Hz"/>
+                            <Label Grid.Row="2" Grid.Column="0" Content="Lower Freq (Hz):" Style="{StaticResource LabelStyle}"/>
+                            <TextBox x:Name="FilterW1Text" Grid.Row="2" Grid.Column="1" Style="{StaticResource TextBoxStyle}" 
+                     Text="1000" ToolTip="Enter frequency in Hz"/>
 
-                            <Label Grid.Row="2" Grid.Column="0" Content="Upper Freq (Hz):" Style="{StaticResource LabelStyle}"/>
-                            <TextBox x:Name="FilterW2Text" Grid.Row="2" Grid.Column="1" Style="{StaticResource TextBoxStyle}" 
-                                     Text="10000" ToolTip="Enter frequency in Hz"/>
+                            <Label Grid.Row="3" Grid.Column="0" Content="Upper Freq (Hz):" Style="{StaticResource LabelStyle}"/>
+                            <TextBox x:Name="FilterW2Text" Grid.Row="3" Grid.Column="1" Style="{StaticResource TextBoxStyle}" 
+                     Text="10000" ToolTip="Enter frequency in Hz"/>
 
-                            <Button Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2"
-                                    Content="🔧 Apply Filter"
-                                    Style="{StaticResource MathButtonStyle}"
-                                    Background="#9C27B0" BorderBrush="#7B1FA2"
-                                    Click="ApplyFilter_Click" Margin="0,15,0,5"/>
+                            <Button Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2"
+                    Content="🔧 Apply Filter"
+                    Style="{StaticResource MathButtonStyle}"
+                    Background="#9C27B0" BorderBrush="#7B1FA2"
+                    Click="ApplyFilter_Click" Margin="0,15,0,5"/>
                         </Grid>
                     </StackPanel>
                 </GroupBox>
 
-                <!-- Advanced Maths Section -->
-                <GroupBox x:Name="AdvancedMathSection" Header="🔬 Advanced Maths" 
-                          Style="{StaticResource SectionStyle}" Visibility="Collapsed">
+                <!-- Advanced Math Section - UPDATED with Source Selection -->
+                <GroupBox x:Name="AdvancedMathSection" Header="🔬 Advanced Math" 
+          Style="{StaticResource SectionStyle}" Visibility="Collapsed">
                     <StackPanel>
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -276,10 +284,18 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
-                            <Label Grid.Row="0" Grid.Column="0" Content="Function:" Style="{StaticResource LabelStyle}"/>
-                            <ComboBox x:Name="AdvancedFunctionCombo" Grid.Row="0" Grid.Column="1" Style="{StaticResource ComboBoxStyle}">
+                            <!-- NEW: Source Channel Selection -->
+                            <Label Grid.Row="0" Grid.Column="0" Content="Source Channel:" Style="{StaticResource LabelStyle}"/>
+                            <ComboBox x:Name="AdvancedSourceCombo" Grid.Row="0" Grid.Column="1" Style="{StaticResource ComboBoxStyle}">
+                                <ComboBoxItem Content="Channel 1" Tag="CHANnel1" IsSelected="True"/>
+                                <ComboBoxItem Content="Channel 2" Tag="CHANnel2"/>
+                            </ComboBox>
+
+                            <Label Grid.Row="1" Grid.Column="0" Content="Function:" Style="{StaticResource LabelStyle}"/>
+                            <ComboBox x:Name="AdvancedFunctionCombo" Grid.Row="1" Grid.Column="1" Style="{StaticResource ComboBoxStyle}">
                                 <ComboBoxItem Content="Integration" Tag="INTG" IsSelected="True"/>
                                 <ComboBoxItem Content="Differentiation" Tag="DIFF"/>
                                 <ComboBoxItem Content="Square Root" Tag="SQRT"/>
@@ -288,22 +304,26 @@
                                 <ComboBoxItem Content="Absolute Value" Tag="ABS"/>
                             </ComboBox>
 
-                            <Label Grid.Row="1" Grid.Column="0" Content="Start Point:" Style="{StaticResource LabelStyle}"/>
-                            <TextBox x:Name="StartPointText" Grid.Row="1" Grid.Column="1" Style="{StaticResource TextBoxStyle}" 
-                                     Text="0" ToolTip="Enter start point for calculation (0 to 1198)"/>
+                            <Label Grid.Row="2" Grid.Column="0" Content="Start Point:" Style="{StaticResource LabelStyle}"/>
+                            <TextBox x:Name="StartPointText" Grid.Row="2" Grid.Column="1" Style="{StaticResource TextBoxStyle}" 
+                     Text="0" ToolTip="Enter start point (0-1199)"/>
 
-                            <Label Grid.Row="2" Grid.Column="0" Content="End Point:" Style="{StaticResource LabelStyle}"/>
-                            <TextBox x:Name="EndPointText" Grid.Row="2" Grid.Column="1" Style="{StaticResource TextBoxStyle}" 
-                                     Text="100" ToolTip="Enter end point for calculation  (1 to 1199)"/>
+                            <Label Grid.Row="3" Grid.Column="0" Content="End Point:" Style="{StaticResource LabelStyle}"/>
+                            <TextBox x:Name="EndPointText" Grid.Row="3" Grid.Column="1" Style="{StaticResource TextBoxStyle}" 
+                     Text="1199" ToolTip="Enter end point (0-1199)"/>
 
-                            <Button Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2"
-                                    Content="🔬 Apply Advanced Maths"
-                                    Style="{StaticResource MathButtonStyle}"
-                                    Background="#E67E22" BorderBrush="#D35400"
-                                    Click="ApplyAdvancedMath_Click" Margin="0,15,0,5"/>
+                            <Button Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2"
+                    Content="🔬 Apply Advanced Math"
+                    Style="{StaticResource MathButtonStyle}"
+                    Background="#FF6F00" BorderBrush="#E65100"
+                    Click="ApplyAdvancedMath_Click" Margin="0,15,0,5"/>
                         </Grid>
                     </StackPanel>
                 </GroupBox>
+
+
+
+
 
             </Grid>
         </ScrollViewer>

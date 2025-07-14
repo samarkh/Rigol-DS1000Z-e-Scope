@@ -401,7 +401,7 @@ namespace DS1000Z_E_USB_Control
                 bool success = true;
 
                 // Read main timebase mode
-                string modeResponse = oscilloscope.SendCommand(":TIMebase:MODE?");
+                string modeResponse = oscilloscope.SendQuery(":TIMebase:MODE?");
                 if (!string.IsNullOrEmpty(modeResponse))
                 {
                     TimeBaseSettings.Mode = modeResponse.Trim().ToUpper();
@@ -413,7 +413,7 @@ namespace DS1000Z_E_USB_Control
                 }
 
                 // Read main timebase scale - CORRECTED COMMAND
-                string scaleResponse = oscilloscope.SendCommand(":TIMebase:MAIN:SCALe?");
+                string scaleResponse = oscilloscope.SendQuery(":TIMebase:MAIN:SCALe?");
                 if (!string.IsNullOrEmpty(scaleResponse) && double.TryParse(scaleResponse, out double scale))
                 {
                     TimeBaseSettings.MainScale = scale;
@@ -425,7 +425,7 @@ namespace DS1000Z_E_USB_Control
                 }
 
                 // Read main timebase offset - CORRECTED COMMAND  
-                string offsetResponse = oscilloscope.SendCommand(":TIMebase:MAIN:OFFSet?");
+                string offsetResponse = oscilloscope.SendQuery(":TIMebase:MAIN:OFFSet?");
                 if (!string.IsNullOrEmpty(offsetResponse) && double.TryParse(offsetResponse, out double offset))
                 {
                     TimeBaseSettings.MainOffset = offset;
@@ -437,7 +437,7 @@ namespace DS1000Z_E_USB_Control
                 }
 
                 // Read delayed timebase enable status
-                string delayEnabledResponse = oscilloscope.SendCommand(":TIMebase:DELay:ENABle?");
+                string delayEnabledResponse = oscilloscope.SendQuery(":TIMebase:DELay:ENABle?");
                 if (!string.IsNullOrEmpty(delayEnabledResponse))
                 {
                     string delayEnabled = delayEnabledResponse.Trim();
@@ -450,7 +450,7 @@ namespace DS1000Z_E_USB_Control
                 }
 
                 // FIXED: Read delay scale/offset regardless of enabled status
-                string delayScaleResponse = oscilloscope.SendCommand(":TIMebase:DELay:SCALe?");
+                string delayScaleResponse = oscilloscope.SendQuery(":TIMebase:DELay:SCALe?");
                 if (!string.IsNullOrEmpty(delayScaleResponse) && double.TryParse(delayScaleResponse, out double delayScale))
                 {
                     TimeBaseSettings.DelayScale = delayScale;
@@ -460,7 +460,7 @@ namespace DS1000Z_E_USB_Control
                     Log("⚠️ Failed to read delay timebase scale");
                 }
 
-                string delayOffsetResponse = oscilloscope.SendCommand(":TIMebase:DELay:OFFSet?");
+                string delayOffsetResponse = oscilloscope.SendQuery(":TIMebase:DELay:OFFSet?");
                 if (!string.IsNullOrEmpty(delayOffsetResponse) && double.TryParse(delayOffsetResponse, out double delayOffset))
                 {
                     TimeBaseSettings.DelayOffset = delayOffset;
@@ -534,7 +534,7 @@ namespace DS1000Z_E_USB_Control
                 {
                     try
                     {
-                        string response = oscilloscope.SendCommand(command);
+                        string response = oscilloscope.SendQuery(command);
 
                         if (!string.IsNullOrEmpty(response))
                         {

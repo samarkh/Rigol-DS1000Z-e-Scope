@@ -778,76 +778,8 @@ namespace DS1000Z_E_USB_Control.Mathematics
 
         #endregion
 
-
         // Add this new region to MathematicsPanel.xaml.cs after your existing regions
-
         #region Dynamic Tooltip Management
-
-        //private System.Windows.Threading.DispatcherTimer tooltipUpdateTimer;
-
-
-        /// <summary>
-        /// Improved tooltip update that tries multiple approaches
-        /// </summary>
-        //private async Task UpdateFrequencyTooltipsImprovedAsync()
-        //{
-        //    try
-        //    {
-        //        // Try multiple approaches to get the timebase
-        //        double timebase = lastKnownTimebase;
-
-        //        // Approach 1: Use TimeBase controller if available
-        //        if (TimeBaseController != null)
-        //        {
-        //            timebase = await GetTimebaseViaTimeBaseControllerAsync();
-        //        }
-        //        else
-        //        {
-        //            // Approach 2: Direct SCPI query
-        //            timebase = await GetCurrentTimebaseAsync();
-        //        }
-
-        //        var filterType = GetSelectedTag(this.FindName("FilterTypeCombo") as ComboBox) ?? "LPASs";
-
-        //        OnStatusUpdated($"🔧 Updating tooltips - Timebase: {MathematicsCommands.FormatTime(timebase)}, Filter: {filterType}");
-
-        //        // Update UI elements
-        //        var w1TextBox = this.FindName("FilterW1Text") as TextBox;
-        //        var w2TextBox = this.FindName("FilterW2Text") as TextBox;
-
-        //        if (w1TextBox != null)
-        //        {
-        //            string w1Tooltip = MathematicsCommands.GenerateW1TooltipText(timebase, filterType);
-        //            w1TextBox.ToolTip = w1Tooltip;
-        //            OnStatusUpdated("✅ W1 tooltip updated");
-        //        }
-
-        //        if (w2TextBox != null)
-        //        {
-        //            bool isBandFilter = filterType == "BPASs" || filterType == "BSTop";
-        //            if (isBandFilter)
-        //            {
-        //                string w2Tooltip = MathematicsCommands.GenerateW2TooltipText(timebase);
-        //                w2TextBox.ToolTip = w2Tooltip;
-        //                w2TextBox.IsEnabled = true;
-        //                OnStatusUpdated("✅ W2 tooltip updated (band filter)");
-        //            }
-        //            else
-        //            {
-        //                w2TextBox.ToolTip = "W2 frequency is only used for Band Pass and Band Stop filters";
-        //                w2TextBox.IsEnabled = false;
-        //                OnStatusUpdated("✅ W2 disabled (not band filter)");
-        //            }
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        OnErrorOccurred($"Error updating frequency tooltips: {ex.Message}");
-        //    }
-        //}
-
-
-
 
         /// <summary>
         /// Improved tooltip update that tries multiple approaches
@@ -960,68 +892,6 @@ namespace DS1000Z_E_USB_Control.Mathematics
             }
         }
 
-
-
-
-        ///// <summary>
-        ///// Update tooltips for frequency input fields based on current timebase and filter type
-        ///// </summary>
-        //private async Task UpdateFrequencyTooltipsAsync()
-        //{
-        //    try
-        //    {
-        //        // Get current timebase and filter type
-        //        double timebase = await GetCurrentTimebaseAsync();
-        //        var filterType = GetSelectedTag(this.FindName("FilterTypeCombo") as ComboBox) ?? "LPASs";
-
-        //        // Get references to the textboxes
-        //        var w1TextBox = this.FindName("FilterW1Text") as TextBox;
-        //        var w2TextBox = this.FindName("FilterW2Text") as TextBox;
-
-        //        if (w1TextBox != null)
-        //        {
-        //            string w1Tooltip = MathematicsCommands.GenerateW1TooltipText(timebase, filterType);
-        //            w1TextBox.ToolTip = w1Tooltip;
-        //        }
-
-        //        if (w2TextBox != null)
-        //        {
-        //            bool isBandFilter = filterType == "BPASs" || filterType == "BSTop";
-        //            if (isBandFilter)
-        //            {
-        //                string w2Tooltip = MathematicsCommands.GenerateW2TooltipText(timebase);
-        //                w2TextBox.ToolTip = w2Tooltip;
-        //                w2TextBox.IsEnabled = true;
-        //            }
-        //            else
-        //            {
-        //                w2TextBox.ToolTip = "W2 frequency is only used for Band Pass and Band Stop filters";
-        //                w2TextBox.IsEnabled = false;
-        //            }
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        OnErrorOccurred($"Error updating frequency tooltips: {ex.Message}");
-        //    }
-        //}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         // <summary>
         /// Update tooltips for frequency input fields based on current timebase and filter type
         /// </summary>
@@ -1112,26 +982,6 @@ namespace DS1000Z_E_USB_Control.Mathematics
             await UpdateFrequencyTooltipsAsync();
         }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         /// <summary>
         /// Start the tooltip update timer
         /// </summary>
@@ -1143,48 +993,10 @@ namespace DS1000Z_E_USB_Control.Mathematics
             tooltipUpdateTimer.Start();
         }
 
-        /// <summary>
-        /// Stop the tooltip update timer
-        /// </summary>
-        //private void StopTooltipUpdateTimer()
-        //{
-        //    tooltipUpdateTimer?.Stop();
-        //    tooltipUpdateTimer = null;
-        //}
-
         #endregion
 
-
         // Add these event handlers to your existing event handler region in MathematicsPanel.xaml.cs
-
         #region UI Event Handlers (add to existing region or create new)
-
-        /// <summary>
-        /// Event handler for filter type selection change
-        /// </summary>
-        //private async void FilterTypeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        //{
-        //    if (!isModeChanging) // Use existing flag to prevent updates during initialization
-        //    {
-        //        await UpdateFrequencyTooltipsAsync();
-        //    }
-        //}
-
-        ///// <summary>
-        ///// Update tooltips when the panel is loaded or becomes visible
-        ///// </summary>
-        //private async void MathematicsPanel_Loaded(object sender, RoutedEventArgs e)
-        //{
-        //    try
-        //    {
-        //        await UpdateFrequencyTooltipsAsync();
-        //        StartTooltipUpdateTimer();
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        OnErrorOccurred($"Error initializing tooltips: {ex.Message}");
-        //    }
-        //}
 
         /// <summary>
         /// Event handler for filter type selection change
@@ -1222,21 +1034,6 @@ namespace DS1000Z_E_USB_Control.Mathematics
         }
 
 
-
-
-
-
-
-
-        ///// <summary>
-        ///// Cleanup when panel is unloaded
-        ///// </summary>
-        //private void MathematicsPanel_Unloaded(object sender, RoutedEventArgs e)
-        //{
-        //    StopTooltipUpdateTimer();
-        //}
-
-
         /// <summary>
         /// Cleanup when panel is unloaded
         /// </summary>
@@ -1259,16 +1056,7 @@ namespace DS1000Z_E_USB_Control.Mathematics
             }
         }
 
-
-
-
-
-
-
-
         #endregion
-
-
 
         #region Utility Methods
 
@@ -1307,28 +1095,6 @@ namespace DS1000Z_E_USB_Control.Mathematics
                 OnErrorOccurred($"Error updating status display: {ex.Message}");
             }
         }
-
-        //private async Task<double> GetCurrentTimebaseAsync()
-        //{
-        //    try
-        //    {
-        //        // Query current timebase from oscilloscope
-        //        var response = await ExecuteSCPICommandAsync(":TIMebase:SCALe?", "Query timebase");
-        //        if (double.TryParse(response, out double timebase))
-        //        {
-        //            return timebase;
-        //        }
-        //        return 1e-3; // Default 1ms if query fails
-        //    }
-        //    catch
-        //    {
-        //        return 1e-3; // Default fallback
-        //    }
-        //}
-
-
-        private System.Windows.Threading.DispatcherTimer tooltipUpdateTimer;
-        private double lastKnownTimebase = 1e-3; // Cache last successful value
 
         /// <summary>
         /// Get current timebase from oscilloscope with improved error handling and debugging

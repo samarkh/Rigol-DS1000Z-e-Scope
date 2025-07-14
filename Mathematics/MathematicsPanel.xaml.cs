@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DS1000Z_E_USB_Control.TimeBase;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Windows;
@@ -757,20 +758,99 @@ namespace DS1000Z_E_USB_Control.Mathematics
 
         #region Dynamic Tooltip Management
 
-        private System.Windows.Threading.DispatcherTimer tooltipUpdateTimer;
+        //private System.Windows.Threading.DispatcherTimer tooltipUpdateTimer;
+
 
         /// <summary>
-        /// Update tooltips for frequency input fields based on current timebase and filter type
+        /// Improved tooltip update that tries multiple approaches
         /// </summary>
-        private async Task UpdateFrequencyTooltipsAsync()
+        //private async Task UpdateFrequencyTooltipsImprovedAsync()
+        //{
+        //    try
+        //    {
+        //        // Try multiple approaches to get the timebase
+        //        double timebase = lastKnownTimebase;
+
+        //        // Approach 1: Use TimeBase controller if available
+        //        if (TimeBaseController != null)
+        //        {
+        //            timebase = await GetTimebaseViaTimeBaseControllerAsync();
+        //        }
+        //        else
+        //        {
+        //            // Approach 2: Direct SCPI query
+        //            timebase = await GetCurrentTimebaseAsync();
+        //        }
+
+        //        var filterType = GetSelectedTag(this.FindName("FilterTypeCombo") as ComboBox) ?? "LPASs";
+
+        //        OnStatusUpdated($"🔧 Updating tooltips - Timebase: {MathematicsCommands.FormatTime(timebase)}, Filter: {filterType}");
+
+        //        // Update UI elements
+        //        var w1TextBox = this.FindName("FilterW1Text") as TextBox;
+        //        var w2TextBox = this.FindName("FilterW2Text") as TextBox;
+
+        //        if (w1TextBox != null)
+        //        {
+        //            string w1Tooltip = MathematicsCommands.GenerateW1TooltipText(timebase, filterType);
+        //            w1TextBox.ToolTip = w1Tooltip;
+        //            OnStatusUpdated("✅ W1 tooltip updated");
+        //        }
+
+        //        if (w2TextBox != null)
+        //        {
+        //            bool isBandFilter = filterType == "BPASs" || filterType == "BSTop";
+        //            if (isBandFilter)
+        //            {
+        //                string w2Tooltip = MathematicsCommands.GenerateW2TooltipText(timebase);
+        //                w2TextBox.ToolTip = w2Tooltip;
+        //                w2TextBox.IsEnabled = true;
+        //                OnStatusUpdated("✅ W2 tooltip updated (band filter)");
+        //            }
+        //            else
+        //            {
+        //                w2TextBox.ToolTip = "W2 frequency is only used for Band Pass and Band Stop filters";
+        //                w2TextBox.IsEnabled = false;
+        //                OnStatusUpdated("✅ W2 disabled (not band filter)");
+        //            }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        OnErrorOccurred($"Error updating frequency tooltips: {ex.Message}");
+        //    }
+        //}
+
+
+
+
+        /// <summary>
+        /// Improved tooltip update that tries multiple approaches
+        /// </summary>
+        //private async Task UpdateFrequencyTooltipsImprovedAsync()
+        private async Task UpdateFrequencyTooltipsImprovedAsync()
         {
             try
             {
-                // Get current timebase and filter type
-                double timebase = await GetCurrentTimebaseAsync();
+                // Try multiple approaches to get the timebase
+                double timebase = lastKnownTimebase;
+
+                // Approach 1: Use TimeBase controller if available
+                if (TimeBaseController != null)
+                {
+                    timebase = await GetTimebaseViaTimeBaseControllerAsync();
+                }
+                else
+                {
+                    // Approach 2: Direct SCPI query
+                    timebase = await GetCurrentTimebaseAsync();
+                }
+
                 var filterType = GetSelectedTag(this.FindName("FilterTypeCombo") as ComboBox) ?? "LPASs";
 
-                // Get references to the textboxes
+                OnStatusUpdated($"🔧 Updating tooltips - Timebase: {MathematicsCommands.FormatTime(timebase)}, Filter: {filterType}");
+
+                // Update UI elements
                 var w1TextBox = this.FindName("FilterW1Text") as TextBox;
                 var w2TextBox = this.FindName("FilterW2Text") as TextBox;
 
@@ -778,6 +858,7 @@ namespace DS1000Z_E_USB_Control.Mathematics
                 {
                     string w1Tooltip = MathematicsCommands.GenerateW1TooltipText(timebase, filterType);
                     w1TextBox.ToolTip = w1Tooltip;
+                    OnStatusUpdated("✅ W1 tooltip updated");
                 }
 
                 if (w2TextBox != null)
@@ -788,11 +869,13 @@ namespace DS1000Z_E_USB_Control.Mathematics
                         string w2Tooltip = MathematicsCommands.GenerateW2TooltipText(timebase);
                         w2TextBox.ToolTip = w2Tooltip;
                         w2TextBox.IsEnabled = true;
+                        OnStatusUpdated("✅ W2 tooltip updated (band filter)");
                     }
                     else
                     {
                         w2TextBox.ToolTip = "W2 frequency is only used for Band Pass and Band Stop filters";
                         w2TextBox.IsEnabled = false;
+                        OnStatusUpdated("✅ W2 disabled (not band filter)");
                     }
                 }
             }
@@ -801,6 +884,228 @@ namespace DS1000Z_E_USB_Control.Mathematics
                 OnErrorOccurred($"Error updating frequency tooltips: {ex.Message}");
             }
         }
+
+
+        /// <summary>
+        /// Reference to the main TimeBase controller (if available)
+        /// Set this from the parent window/application
+        /// </summary>
+        public object TimeBaseController { get; set; }
+
+        /// <summary>
+        /// Alternative method to get timebase using existing TimeBase infrastructure
+        /// </summary>
+        private async Task<double> GetTimebaseViaTimeBaseControllerAsync()
+        {
+            try
+            {
+                // If we have access to the TimeBase controller, use it
+                if (TimeBaseController != null)
+                {
+                    // Use reflection to access the MainScale property
+                    var timebaseType = TimeBaseController.GetType();
+                    var settingsProperty = timebaseType.GetProperty("settings");
+
+                    if (settingsProperty != null)
+                    {
+                        var settings = settingsProperty.GetValue(TimeBaseController);
+                        if (settings != null)
+                        {
+                            var mainScaleProperty = settings.GetType().GetProperty("MainScale");
+                            if (mainScaleProperty != null)
+                            {
+                                var mainScale = mainScaleProperty.GetValue(settings);
+                                if (mainScale is double timebase && timebase > 0)
+                                {
+                                    OnStatusUpdated($"✅ Timebase from controller: {MathematicsCommands.FormatTime(timebase)}");
+                                    return timebase;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Fallback to direct SCPI query
+                return await GetCurrentTimebaseAsync();
+            }
+            catch (Exception ex)
+            {
+                OnStatusUpdated($"⚠️ Error accessing TimeBase controller: {ex.Message}");
+                return await GetCurrentTimebaseAsync();
+            }
+        }
+
+
+
+
+        ///// <summary>
+        ///// Update tooltips for frequency input fields based on current timebase and filter type
+        ///// </summary>
+        //private async Task UpdateFrequencyTooltipsAsync()
+        //{
+        //    try
+        //    {
+        //        // Get current timebase and filter type
+        //        double timebase = await GetCurrentTimebaseAsync();
+        //        var filterType = GetSelectedTag(this.FindName("FilterTypeCombo") as ComboBox) ?? "LPASs";
+
+        //        // Get references to the textboxes
+        //        var w1TextBox = this.FindName("FilterW1Text") as TextBox;
+        //        var w2TextBox = this.FindName("FilterW2Text") as TextBox;
+
+        //        if (w1TextBox != null)
+        //        {
+        //            string w1Tooltip = MathematicsCommands.GenerateW1TooltipText(timebase, filterType);
+        //            w1TextBox.ToolTip = w1Tooltip;
+        //        }
+
+        //        if (w2TextBox != null)
+        //        {
+        //            bool isBandFilter = filterType == "BPASs" || filterType == "BSTop";
+        //            if (isBandFilter)
+        //            {
+        //                string w2Tooltip = MathematicsCommands.GenerateW2TooltipText(timebase);
+        //                w2TextBox.ToolTip = w2Tooltip;
+        //                w2TextBox.IsEnabled = true;
+        //            }
+        //            else
+        //            {
+        //                w2TextBox.ToolTip = "W2 frequency is only used for Band Pass and Band Stop filters";
+        //                w2TextBox.IsEnabled = false;
+        //            }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        OnErrorOccurred($"Error updating frequency tooltips: {ex.Message}");
+        //    }
+        //}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        // <summary>
+        /// Update tooltips for frequency input fields based on current timebase and filter type
+        /// </summary>
+        private async Task UpdateFrequencyTooltipsAsync()
+        {
+            try
+            {
+                // Get current timebase and filter type
+                double timebase = await GetCurrentTimebaseAsync();
+                var filterType = GetSelectedTag(this.FindName("FilterTypeCombo") as ComboBox) ?? "LPASs";
+
+                OnStatusUpdated($"🔧 Updating tooltips - Timebase: {MathematicsCommands.FormatTime(timebase)}, Filter: {filterType}");
+
+                // Get references to the textboxes
+                var w1TextBox = this.FindName("FilterW1Text") as TextBox;
+                var w2TextBox = this.FindName("FilterW2Text") as TextBox;
+
+                if (w1TextBox != null)
+                {
+                    string w1Tooltip = MathematicsCommands.GenerateW1TooltipText(timebase, filterType);
+                    w1TextBox.ToolTip = w1Tooltip;
+                    OnStatusUpdated("✅ W1 tooltip updated");
+                }
+
+                if (w2TextBox != null)
+                {
+                    bool isBandFilter = filterType == "BPASs" || filterType == "BSTop";
+                    if (isBandFilter)
+                    {
+                        string w2Tooltip = MathematicsCommands.GenerateW2TooltipText(timebase);
+                        w2TextBox.ToolTip = w2Tooltip;
+                        w2TextBox.IsEnabled = true;
+                        OnStatusUpdated("✅ W2 tooltip updated (band filter)");
+                    }
+                    else
+                    {
+                        w2TextBox.ToolTip = "W2 frequency is only used for Band Pass and Band Stop filters";
+                        w2TextBox.IsEnabled = false;
+                        OnStatusUpdated("✅ W2 disabled (not band filter)");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error updating frequency tooltips: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Start the tooltip update timer with configurable interval
+        /// </summary>
+        private void StartTooltipUpdateTimer(int intervalSeconds = 3)
+        {
+            StopTooltipUpdateTimer(); // Stop any existing timer
+
+            tooltipUpdateTimer = new System.Windows.Threading.DispatcherTimer();
+            tooltipUpdateTimer.Interval = TimeSpan.FromSeconds(intervalSeconds);
+            tooltipUpdateTimer.Tick += async (s, e) =>
+            {
+                if (!isModeChanging) // Only update when not changing modes
+                {
+                    await UpdateFrequencyTooltipsAsync();
+                }
+            };
+            tooltipUpdateTimer.Start();
+            OnStatusUpdated($"🔄 Tooltip update timer started ({intervalSeconds}s interval)");
+        }
+
+        /// <summary>
+        /// Stop the tooltip update timer
+        /// </summary>
+        private void StopTooltipUpdateTimer()
+        {
+            if (tooltipUpdateTimer != null)
+            {
+                tooltipUpdateTimer.Stop();
+                tooltipUpdateTimer = null;
+                OnStatusUpdated("⏹️ Tooltip update timer stopped");
+            }
+        }
+
+        /// <summary>
+        /// Force immediate tooltip update (for manual refresh)
+        /// </summary>
+        public async Task RefreshTooltipsAsync()
+        {
+            OnStatusUpdated("🔄 Manual tooltip refresh requested");
+            await UpdateFrequencyTooltipsAsync();
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         /// <summary>
         /// Start the tooltip update timer
@@ -816,11 +1121,11 @@ namespace DS1000Z_E_USB_Control.Mathematics
         /// <summary>
         /// Stop the tooltip update timer
         /// </summary>
-        private void StopTooltipUpdateTimer()
-        {
-            tooltipUpdateTimer?.Stop();
-            tooltipUpdateTimer = null;
-        }
+        //private void StopTooltipUpdateTimer()
+        //{
+        //    tooltipUpdateTimer?.Stop();
+        //    tooltipUpdateTimer = null;
+        //}
 
         #endregion
 
@@ -906,23 +1211,93 @@ namespace DS1000Z_E_USB_Control.Mathematics
             }
         }
 
+        //private async Task<double> GetCurrentTimebaseAsync()
+        //{
+        //    try
+        //    {
+        //        // Query current timebase from oscilloscope
+        //        var response = await ExecuteSCPICommandAsync(":TIMebase:SCALe?", "Query timebase");
+        //        if (double.TryParse(response, out double timebase))
+        //        {
+        //            return timebase;
+        //        }
+        //        return 1e-3; // Default 1ms if query fails
+        //    }
+        //    catch
+        //    {
+        //        return 1e-3; // Default fallback
+        //    }
+        //}
+
+
+        private System.Windows.Threading.DispatcherTimer tooltipUpdateTimer;
+        private double lastKnownTimebase = 1e-3; // Cache last successful value
+
+        /// <summary>
+        /// Get current timebase from oscilloscope with improved error handling and debugging
+        /// </summary>
         private async Task<double> GetCurrentTimebaseAsync()
         {
             try
             {
-                // Query current timebase from oscilloscope
-                var response = await ExecuteSCPICommandAsync(":TIMebase:SCALe?", "Query timebase");
-                if (double.TryParse(response, out double timebase))
+                // First check if we have a valid SCPI connection
+                if (SendSCPICommand == null)
                 {
-                    return timebase;
+                    OnStatusUpdated("⚠️ SCPI connection not available, using cached timebase");
+                    return lastKnownTimebase;
                 }
-                return 1e-3; // Default 1ms if query fails
+
+                // Query current timebase from oscilloscope using multiple possible commands
+                string response = "";
+
+                // Try the main timebase scale command
+                response = await ExecuteSCPICommandAsync(":TIMebase:MAIN:SCALe?", "Query main timebase scale");
+
+                // If that fails, try the shorter version
+                if (string.IsNullOrEmpty(response?.Trim()))
+                {
+                    response = await ExecuteSCPICommandAsync(":TIMebase:SCALe?", "Query timebase scale");
+                }
+
+                OnStatusUpdated($"🔍 Timebase query response: '{response}'");
+
+                if (!string.IsNullOrEmpty(response?.Trim()))
+                {
+                    // Try parsing with different culture settings
+                    if (double.TryParse(response.Trim(), System.Globalization.NumberStyles.Float,
+                                      System.Globalization.CultureInfo.InvariantCulture, out double timebase))
+                    {
+                        if (timebase > 0 && timebase < 1000) // Sanity check: reasonable timebase range
+                        {
+                            lastKnownTimebase = timebase;
+                            OnStatusUpdated($"✅ Timebase updated: {MathematicsCommands.FormatTime(timebase)}");
+                            return timebase;
+                        }
+                        else
+                        {
+                            OnStatusUpdated($"⚠️ Timebase value out of range: {timebase}s, using cached value");
+                        }
+                    }
+                    else
+                    {
+                        OnStatusUpdated($"⚠️ Failed to parse timebase response: '{response}'");
+                    }
+                }
+                else
+                {
+                    OnStatusUpdated("⚠️ Empty timebase response from oscilloscope");
+                }
+
+                // Return cached value if query failed
+                return lastKnownTimebase;
             }
-            catch
+            catch (Exception ex)
             {
-                return 1e-3; // Default fallback
+                OnStatusUpdated($"❌ Error querying timebase: {ex.Message}");
+                return lastKnownTimebase; // Return cached value on error
             }
         }
+
 
         /// <summary>
         /// Helper method to execute SCPI commands safely - FIXED: Added async version

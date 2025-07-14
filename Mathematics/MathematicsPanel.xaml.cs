@@ -1222,6 +1222,116 @@ namespace DS1000Z_E_USB_Control.Mathematics
 
         #endregion
 
+        #region Missing Methods (ADDED - Required by other parts of the code)
+
+        /// <summary>
+        /// Get the current mathematics mode
+        /// </summary>
+        public string GetCurrentMathMode()
+        {
+            return currentActiveMode;
+        }
+
+        /// <summary>
+        /// Event handler for math mode combo box selection changes
+        /// Referenced in MathematicsPanel.xaml
+        /// </summary>
+        private async void MathModeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            try
+            {
+                if (sender is ComboBox comboBox && comboBox.SelectedItem is ComboBoxItem selectedItem)
+                {
+                    string selectedMode = selectedItem.Tag?.ToString() ?? "BasicOperations";
+                    await ChangeMathModeAsync(selectedMode);
+                }
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error changing math mode: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Async method to change mathematics mode
+        /// Called from MathematicsWindow.xaml.cs
+        /// </summary>
+        public async Task ChangeMathModeAsync(string mode)
+        {
+            try
+            {
+                isModeChanging = true;
+                OnStatusUpdated($"🔄 Changing math mode to: {mode}");
+
+                // Set the active mode
+                SetActiveMode(mode);
+
+                // Allow UI to update
+                await Task.Delay(200);
+
+                OnStatusUpdated($"✅ Math mode changed to: {mode}");
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error changing math mode: {ex.Message}");
+            }
+            finally
+            {
+                isModeChanging = false;
+            }
+        }
+
+        /// <summary>
+        /// Alternative timebase access method (for compatibility)
+        /// </summary>
+        private async Task<double> GetTimebaseViaTimeBaseControllerAsync()
+        {
+            try
+            {
+                // If we have access to the TimeBase controller, use it
+                if (TimeBaseController != null)
+                {
+                    // Use reflection to access the MainScale property
+                    var timebaseType = TimeBaseController.GetType();
+                    var settingsProperty = timebaseType.GetProperty("settings");
+
+                    if (settingsProperty != null)
+                    {
+                        var settings = settingsProperty.GetValue(TimeBaseController);
+                        if (settings != null)
+                        {
+                            var mainScaleProperty = settings.GetType().GetProperty("MainScale");
+                            if (mainScaleProperty != null)
+                            {
+                                var mainScale = mainScaleProperty.GetValue(settings);
+                                if (mainScale is double timebase && timebase > 0)
+                                {
+                                    OnStatusUpdated($"✅ Timebase from controller: {MathematicsCommands.FormatTime(timebase)}");
+                                    return timebase;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Fallback to direct SCPI query
+                return await GetCurrentTimebaseAsync();
+            }
+            catch (Exception ex)
+            {
+                OnStatusUpdated($"⚠️ Error accessing TimeBase controller: {ex.Message}");
+                return await GetCurrentTimebaseAsync();
+            }
+        }
+
+        /// <summary>
+        /// Reference to the main TimeBase controller (if available)
+        /// Set this from the parent window/application
+        /// </summary>
+        public object TimeBaseController { get; set; }
+
+        #endregion
+
         #region Event Helper Methods
 
         private void OnStatusUpdated(string message)

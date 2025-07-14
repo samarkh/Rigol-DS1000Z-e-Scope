@@ -436,6 +436,18 @@ namespace Rigol_DS1000Z_E_Control
                     // Subscribe to SCPI command events - THIS IS THE KEY
                     _mathematicsWindow.SCPICommandGenerated += OnMathematicsSCPICommand;
 
+                    // ⭐ ADD THESE LINES RIGHT HERE ⭐
+                    // Set the TimeBase controller reference for frequency calculations
+                    if (TimeBasePanel?.GetController() != null)
+                    {
+                        _mathematicsWindow.MathPanel.TimeBaseController = TimeBasePanel.GetController();
+                        Log("✅ TimeBase controller reference set for Mathematics tooltips");
+                    }
+                    else
+                    {
+                        Log("⚠️ TimeBase controller not available for Mathematics tooltips");
+                    }
+
                     // Position relative to main window
                     _mathematicsWindow.Owner = this;
                     _mathematicsWindow.WindowStartupLocation = WindowStartupLocation.CenterOwner;

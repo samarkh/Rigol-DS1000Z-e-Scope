@@ -30,6 +30,9 @@ namespace DS1000Z_E_USB_Control.Mathematics
         public event Func<string, string, string> SendSCPICommand; // Returns response
         public event Action<string, string> SCPICommandGenerated; // ADDED: Missing event
 
+        private System.Windows.Threading.DispatcherTimer tooltipUpdateTimer;
+        private double lastKnownTimebase = 1e-3;
+
         #endregion
 
         #region Constructor and Initialization
@@ -38,6 +41,28 @@ namespace DS1000Z_E_USB_Control.Mathematics
         {
             InitializeComponent();
             SetInitialMode();
+            InitializeTooltipSystem();
+        }
+
+        // Then ADD this new method right after your constructor:
+        /// <summary>
+        /// Initialize the tooltip system and wire up events
+        /// </summary>
+        private void InitializeTooltipSystem()
+        {
+            try
+            {
+                // Wire up events for tooltip updates
+                this.Loaded += MathematicsPanel_Loaded;
+                this.Unloaded += MathematicsPanel_Unloaded;
+                this.IsVisibleChanged += MathematicsPanel_IsVisibleChanged;
+
+                OnStatusUpdated("🔧 Tooltip system events wired up");
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error initializing tooltip system: {ex.Message}");
+            }
         }
 
         private void SetInitialMode()
@@ -1137,10 +1162,38 @@ namespace DS1000Z_E_USB_Control.Mathematics
         /// <summary>
         /// Event handler for filter type selection change
         /// </summary>
+        //private async void FilterTypeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        //{
+        //    if (!isModeChanging) // Use existing flag to prevent updates during initialization
+        //    {
+        //        await UpdateFrequencyTooltipsAsync();
+        //    }
+        //}
+
+        ///// <summary>
+        ///// Update tooltips when the panel is loaded or becomes visible
+        ///// </summary>
+        //private async void MathematicsPanel_Loaded(object sender, RoutedEventArgs e)
+        //{
+        //    try
+        //    {
+        //        await UpdateFrequencyTooltipsAsync();
+        //        StartTooltipUpdateTimer();
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        OnErrorOccurred($"Error initializing tooltips: {ex.Message}");
+        //    }
+        //}
+
+        /// <summary>
+        /// Event handler for filter type selection change
+        /// </summary>
         private async void FilterTypeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (!isModeChanging) // Use existing flag to prevent updates during initialization
             {
+                OnStatusUpdated("🔧 Filter type changed, updating tooltips...");
                 await UpdateFrequencyTooltipsAsync();
             }
         }
@@ -1152,8 +1205,15 @@ namespace DS1000Z_E_USB_Control.Mathematics
         {
             try
             {
+                OnStatusUpdated("📐 Mathematics panel loaded, initializing tooltips...");
+
+                // Initial tooltip update
                 await UpdateFrequencyTooltipsAsync();
-                StartTooltipUpdateTimer();
+
+                // Start the update timer
+                StartTooltipUpdateTimer(3); // Update every 3 seconds
+
+                OnStatusUpdated("✅ Tooltip system initialized");
             }
             catch (Exception ex)
             {
@@ -1161,13 +1221,50 @@ namespace DS1000Z_E_USB_Control.Mathematics
             }
         }
 
+
+
+
+
+
+
+
+        ///// <summary>
+        ///// Cleanup when panel is unloaded
+        ///// </summary>
+        //private void MathematicsPanel_Unloaded(object sender, RoutedEventArgs e)
+        //{
+        //    StopTooltipUpdateTimer();
+        //}
+
+
         /// <summary>
         /// Cleanup when panel is unloaded
         /// </summary>
         private void MathematicsPanel_Unloaded(object sender, RoutedEventArgs e)
         {
+            OnStatusUpdated("📐 Mathematics panel unloading...");
             StopTooltipUpdateTimer();
         }
+
+
+        /// <summary>
+        /// Handle visibility changes to manage tooltip updates
+        /// </summary>
+        private async void MathematicsPanel_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (IsVisible && !isModeChanging)
+            {
+                OnStatusUpdated("👁️ Mathematics panel became visible, refreshing tooltips...");
+                await UpdateFrequencyTooltipsAsync();
+            }
+        }
+
+
+
+
+
+
+
 
         #endregion
 

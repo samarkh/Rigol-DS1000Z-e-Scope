@@ -14,21 +14,7 @@ namespace DS1000Z_E_USB_Control.Mathematics
     {
         #region Fields
 
-
-
         private bool isInitialized = false;
-
-
-        //// Option 1: Use it
-        //    if (!isInitialized)
-        //    {
-        //        OnErrorOccurred("Window not properly initialized");
-        //        return Task.FromResult(false);
-        //    }
-
-// Option 2: Remove the field entirely if not needed
-// private bool isInitialized = false;  // ← Delete this line
-
 
         #endregion
 
@@ -49,7 +35,7 @@ namespace DS1000Z_E_USB_Control.Mathematics
         {
             OnStatusUpdated("🔥 STEP 1: Method started");
             // Add this as the FIRST line to verify the method runs
-            MessageBox.Show("InitializeWindow is running with your changes!", "Debug");
+            //MessageBox.Show("InitializeWindow is running with your changes!", "Debug");
 
             try
             {
@@ -103,17 +89,6 @@ namespace DS1000Z_E_USB_Control.Mathematics
         #endregion
 
         #region Event Handlers
-        //private void OnMathPanelSCPICommand(object sender, SCPICommandEventArgs e)
-        //{
-        //    try
-        //    {
-        //        SCPICommandGenerated?.Invoke(this, e);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        OnErrorOccurred($"Error forwarding SCPI command: {ex.Message}");
-        //    }
-        //}
 
         private void OnMathPanelSCPICommand(string command, string description)
         {
@@ -129,19 +104,6 @@ namespace DS1000Z_E_USB_Control.Mathematics
             }
         }
 
-
-        //private void OnMathPanelStatus(object sender, StatusEventArgs e)
-        //{
-        //    try
-        //    {
-        //        StatusUpdated?.Invoke(this, e);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        OnErrorOccurred($"Error forwarding status: {ex.Message}");
-        //    }
-        //}
-
         private void OnMathPanelStatus(string message)
         {
             try
@@ -154,20 +116,6 @@ namespace DS1000Z_E_USB_Control.Mathematics
                 OnErrorOccurred($"Error forwarding status: {ex.Message}");
             }
         }
-
-
-        //private void OnMathPanelError(object sender, ErrorEventArgs e)
-        //{
-        //    try
-        //    {
-        //        ErrorOccurred?.Invoke(this, e);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        System.Diagnostics.Debug.WriteLine($"Error in error handler: {ex.Message}");
-        //    }
-        //}
-
 
         private void OnMathPanelError(string error)
         {
@@ -186,7 +134,6 @@ namespace DS1000Z_E_USB_Control.Mathematics
                 System.Diagnostics.Debug.WriteLine($"Error in error handler: {ex.Message}");
             }
         }
-
 
         // Menu event handlers - SIMPLIFIED
         private void Help_Click(object sender, RoutedEventArgs e)
@@ -240,7 +187,6 @@ Compatible with Rigol DS1000Z-E Series";
                 OnErrorOccurred($"Error in direct mode switching: {ex.Message}");
             }
         }
-
 
         #endregion
 

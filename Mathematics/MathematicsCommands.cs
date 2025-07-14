@@ -223,6 +223,110 @@ namespace DS1000Z_E_USB_Control.Mathematics
         #endregion
 
         #region Utility Methods
+
+
+
+
+        /// <summary>
+        /// Format frequency value for display with appropriate units
+        /// </summary>
+        /// <param name="frequency">Frequency in Hz</param>
+        /// <returns>Formatted frequency string with appropriate units</returns>
+        public static string FormatFrequency(double frequency)
+        {
+            if (frequency >= 1e9)
+                return $"{frequency / 1e9:F2} GHz";
+            else if (frequency >= 1e6)
+                return $"{frequency / 1e6:F2} MHz";
+            else if (frequency >= 1e3)
+                return $"{frequency / 1e3:F2} kHz";
+            else
+                return $"{frequency:F2} Hz";
+        }
+
+        /// <summary>
+        /// Format time value for display with appropriate units
+        /// </summary>
+        /// <param name="timeSeconds">Time in seconds</param>
+        /// <returns>Formatted time string with appropriate units</returns>
+        public static string FormatTime(double timeSeconds)
+        {
+            if (timeSeconds >= 1)
+                return $"{timeSeconds:F3} s";
+            else if (timeSeconds >= 1e-3)
+                return $"{timeSeconds * 1e3:F3} ms";
+            else if (timeSeconds >= 1e-6)
+                return $"{timeSeconds * 1e6:F3} μs";
+            else
+                return $"{timeSeconds * 1e9:F3} ns";
+        }
+
+        /// <summary>
+        /// Generate tooltip text for W1 frequency input
+        /// </summary>
+        /// <param name="timebase">Current timebase in seconds</param>
+        /// <param name="filterType">Filter type (LPASs, HPASs, BPASs, BSTop)</param>
+        /// <returns>Formatted tooltip string</returns>
+        public static string GenerateW1TooltipText(double timebase, string filterType)
+        {
+            try
+            {
+                var (minFreq, maxFreq, stepSize) = CalculateFilterFrequencyRange(timebase, filterType);
+
+                string filterTypeDisplay = GetFilterTypeDisplayName(filterType);
+                double screenSampleRate = 100.0 / timebase;
+
+                return $"W1 Frequency Limits ({filterTypeDisplay}):\n" +
+                       $"• Min: {FormatFrequency(minFreq)}\n" +
+                       $"• Max: {FormatFrequency(maxFreq)}\n" +
+                       $"• Step: {FormatFrequency(stepSize)}\n" +
+                       $"• Timebase: {FormatTime(timebase)}\n" +
+                       $"• Sample Rate: {FormatFrequency(screenSampleRate)}";
+            }
+            catch (Exception ex)
+            {
+                return $"Error calculating W1 limits: {ex.Message}";
+            }
+        }
+
+        /// <summary>
+        /// Generate tooltip text for W2 frequency input
+        /// </summary>
+        /// <param name="timebase">Current timebase in seconds</param>
+        /// <returns>Formatted tooltip string</returns>
+        public static string GenerateW2TooltipText(double timebase)
+        {
+            try
+            {
+                var (minFreq, maxFreq, stepSize) = CalculateW2FrequencyRange(timebase);
+
+                double screenSampleRate = 100.0 / timebase;
+
+                return $"W2 Frequency Limits (Band Filters):\n" +
+                       $"• Min: {FormatFrequency(minFreq)}\n" +
+                       $"• Max: {FormatFrequency(maxFreq)}\n" +
+                       $"• Step: {FormatFrequency(stepSize)}\n" +
+                       $"• Timebase: {FormatTime(timebase)}\n" +
+                       $"• Sample Rate: {FormatFrequency(screenSampleRate)}\n" +
+                       $"• Note: W2 must be greater than W1";
+            }
+            catch (Exception ex)
+            {
+                return $"Error calculating W2 limits: {ex.Message}";
+            }
+        }
+
+
+
+
+
+
+
+
+
+
+
+
         /// <summary>
         /// Round frequency to nearest valid step size
         /// </summary>

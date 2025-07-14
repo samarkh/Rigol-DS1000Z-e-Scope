@@ -246,20 +246,29 @@
                             </ComboBox>
 
                             <Label Grid.Row="1" Grid.Column="0" Content="Filter Type:" Style="{StaticResource LabelStyle}"/>
-                            <ComboBox x:Name="FilterTypeCombo" Grid.Row="1" Grid.Column="1" Style="{StaticResource ComboBoxStyle}">
+                            <ComboBox x:Name="FilterTypeCombo" Grid.Row="1" Grid.Column="1" Style="{StaticResource ComboBoxStyle}"
+                                      SelectionChanged="FilterTypeCombo_SelectionChanged">
                                 <ComboBoxItem Content="Low Pass" Tag="LPASs" IsSelected="True"/>
                                 <ComboBoxItem Content="High Pass" Tag="HPASs"/>
                                 <ComboBoxItem Content="Band Pass" Tag="BPASs"/>
                                 <ComboBoxItem Content="Band Stop" Tag="BSTop"/>
                             </ComboBox>
 
-                            <Label Grid.Row="2" Grid.Column="0" Content="Lower Freq (Hz):" Style="{StaticResource LabelStyle}"/>
-                            <TextBox x:Name="FilterW1Text" Grid.Row="2" Grid.Column="1" Style="{StaticResource TextBoxStyle}" 
-                     Text="1000" ToolTip="Enter frequency in Hz"/>
+                            <!-- Enhanced W1 TextBox with improved tooltip styling -->
+                            <TextBox x:Name="FilterW1Text" Grid.Row="2" Grid.Column="1" 
+         Style="{StaticResource TextBoxStyle}" 
+         Text="1000" 
+         ToolTip="Loading frequency limits (Hz)..."
+         ToolTipService.ShowDuration="15000"
+         ToolTipService.InitialShowDelay="500"/>
 
-                            <Label Grid.Row="3" Grid.Column="0" Content="Upper Freq (Hz):" Style="{StaticResource LabelStyle}"/>
-                            <TextBox x:Name="FilterW2Text" Grid.Row="3" Grid.Column="1" Style="{StaticResource TextBoxStyle}" 
-                     Text="10000" ToolTip="Enter frequency in Hz"/>
+                            <!-- Enhanced W2 TextBox with improved tooltip styling -->
+                            <TextBox x:Name="FilterW2Text" Grid.Row="3" Grid.Column="1" 
+         Style="{StaticResource TextBoxStyle}" 
+         Text="10000" 
+         ToolTip="Loading frequency limits (Hz)..."
+         ToolTipService.ShowDuration="15000"
+         ToolTipService.InitialShowDelay="500"/>
 
                             <Button Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2"
                     Content="🔧 Apply Filter"

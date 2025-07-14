@@ -752,6 +752,122 @@ namespace DS1000Z_E_USB_Control.Mathematics
 
         #endregion
 
+
+        // Add this new region to MathematicsPanel.xaml.cs after your existing regions
+
+        #region Dynamic Tooltip Management
+
+        private System.Windows.Threading.DispatcherTimer tooltipUpdateTimer;
+
+        /// <summary>
+        /// Update tooltips for frequency input fields based on current timebase and filter type
+        /// </summary>
+        private async Task UpdateFrequencyTooltipsAsync()
+        {
+            try
+            {
+                // Get current timebase and filter type
+                double timebase = await GetCurrentTimebaseAsync();
+                var filterType = GetSelectedTag(this.FindName("FilterTypeCombo") as ComboBox) ?? "LPASs";
+
+                // Get references to the textboxes
+                var w1TextBox = this.FindName("FilterW1Text") as TextBox;
+                var w2TextBox = this.FindName("FilterW2Text") as TextBox;
+
+                if (w1TextBox != null)
+                {
+                    string w1Tooltip = MathematicsCommands.GenerateW1TooltipText(timebase, filterType);
+                    w1TextBox.ToolTip = w1Tooltip;
+                }
+
+                if (w2TextBox != null)
+                {
+                    bool isBandFilter = filterType == "BPASs" || filterType == "BSTop";
+                    if (isBandFilter)
+                    {
+                        string w2Tooltip = MathematicsCommands.GenerateW2TooltipText(timebase);
+                        w2TextBox.ToolTip = w2Tooltip;
+                        w2TextBox.IsEnabled = true;
+                    }
+                    else
+                    {
+                        w2TextBox.ToolTip = "W2 frequency is only used for Band Pass and Band Stop filters";
+                        w2TextBox.IsEnabled = false;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error updating frequency tooltips: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Start the tooltip update timer
+        /// </summary>
+        private void StartTooltipUpdateTimer()
+        {
+            tooltipUpdateTimer = new System.Windows.Threading.DispatcherTimer();
+            tooltipUpdateTimer.Interval = TimeSpan.FromSeconds(2); // Update every 2 seconds
+            tooltipUpdateTimer.Tick += async (s, e) => await UpdateFrequencyTooltipsAsync();
+            tooltipUpdateTimer.Start();
+        }
+
+        /// <summary>
+        /// Stop the tooltip update timer
+        /// </summary>
+        private void StopTooltipUpdateTimer()
+        {
+            tooltipUpdateTimer?.Stop();
+            tooltipUpdateTimer = null;
+        }
+
+        #endregion
+
+
+        // Add these event handlers to your existing event handler region in MathematicsPanel.xaml.cs
+
+        #region UI Event Handlers (add to existing region or create new)
+
+        /// <summary>
+        /// Event handler for filter type selection change
+        /// </summary>
+        private async void FilterTypeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (!isModeChanging) // Use existing flag to prevent updates during initialization
+            {
+                await UpdateFrequencyTooltipsAsync();
+            }
+        }
+
+        /// <summary>
+        /// Update tooltips when the panel is loaded or becomes visible
+        /// </summary>
+        private async void MathematicsPanel_Loaded(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                await UpdateFrequencyTooltipsAsync();
+                StartTooltipUpdateTimer();
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error initializing tooltips: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Cleanup when panel is unloaded
+        /// </summary>
+        private void MathematicsPanel_Unloaded(object sender, RoutedEventArgs e)
+        {
+            StopTooltipUpdateTimer();
+        }
+
+        #endregion
+
+
+
         #region Utility Methods
 
         private string GetSelectedTag(ComboBox comboBox)
@@ -835,16 +951,6 @@ namespace DS1000Z_E_USB_Control.Mathematics
         }
 
         #endregion
-
-        //#region Control References (Properties for XAML binding)
-
-        //// These properties provide safe access to XAML controls
-        //private GroupBox BasicOperationsSection => this.FindName("BasicOperationsSection") as GroupBox;
-        //private GroupBox FFTAnalysisSection => this.FindName("FFTAnalysisSection") as GroupBox;
-        //private GroupBox DigitalFiltersSection => this.FindName("DigitalFiltersSection") as GroupBox;
-        //private GroupBox AdvancedMathSection => this.FindName("AdvancedMathSection") as GroupBox;
-
-        //#endregion
 
         #region Event Helper Methods
 

@@ -4,12 +4,14 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Threading;
 
 namespace DS1000Z_E_USB_Control.Mathematics
 {
     /// <summary>
     /// Mathematics Panel for Rigol DS1000Z-E Oscilloscope
     /// Includes FFT Workaround for Filter and Advanced Math channel selection
+    /// FIXED: Complete SCPI command handler setup and timebase query
     /// </summary>
     public partial class MathematicsPanel : UserControl
     {
@@ -21,17 +23,22 @@ namespace DS1000Z_E_USB_Control.Mathematics
         private string currentActiveMode = "BasicOperations";
         private bool isModeChanging = false;
 
+        // FIXED: Better default timebase value (2ms to match typical oscilloscope settings)
+        private double lastKnownTimebase = 0.002; // Default 2ms 
+
+        // Tooltip system
+        private DispatcherTimer tooltipUpdateTimer;
+
         #endregion
 
-        #region Events
+        #region Events and Delegates
 
         public event Action<string> StatusUpdated;
         public event Action<string> ErrorOccurred;
-        public event Func<string, string, string> SendSCPICommand; // Returns response
-        public event Action<string, string> SCPICommandGenerated; // ADDED: Missing event
+        public event Action<string, string> SCPICommandGenerated;
 
-        private System.Windows.Threading.DispatcherTimer tooltipUpdateTimer;
-        private double lastKnownTimebase = 1e-3;
+        // CRITICAL FIX: Properly declare the SendSCPICommand delegate as a property, not event
+        public Func<string, string, string> SendSCPICommand { get; set; }
 
         #endregion
 
@@ -44,7 +51,6 @@ namespace DS1000Z_E_USB_Control.Mathematics
             InitializeTooltipSystem();
         }
 
-        // Then ADD this new method right after your constructor:
         /// <summary>
         /// Initialize the tooltip system and wire up events
         /// </summary>
@@ -69,13 +75,9 @@ namespace DS1000Z_E_USB_Control.Mathematics
         {
             try
             {
-                // Show only Basic Operations initially - with null checks
-                BasicOperationsSection?.SetValue(VisibilityProperty, Visibility.Visible);
-                FFTAnalysisSection?.SetValue(VisibilityProperty, Visibility.Collapsed);
-                DigitalFiltersSection?.SetValue(VisibilityProperty, Visibility.Collapsed);
-                AdvancedMathSection?.SetValue(VisibilityProperty, Visibility.Collapsed);
-
-                currentActiveMode = "BasicOperations";
+                // Show only Basic Operations initially
+                SetActiveMode("BasicOperations");
+                OnStatusUpdated("📐 Mathematics panel initialized - Basic Operations mode");
             }
             catch (Exception ex)
             {
@@ -85,125 +87,481 @@ namespace DS1000Z_E_USB_Control.Mathematics
 
         #endregion
 
-        #region Public Properties and Methods - ADDED: Missing methods
+        #region SCPI Command Handler Setup (NEW - CRITICAL FIX)
 
         /// <summary>
-        /// Get current math mode - ADDED: Missing method
+        /// Set up the SCPI command handler using oscilloscope reference
+        /// Called from MathematicsWindow during initialization
         /// </summary>
-        public string GetCurrentMathMode()
+        public void SetOscilloscopeReference(dynamic oscilloscope)
         {
-            return currentActiveMode;
+            try
+            {
+                if (oscilloscope != null)
+                {
+                    // Set up SCPI command handler using oscilloscope
+                    SendSCPICommand = (command, description) =>
+                    {
+                        try
+                        {
+                            OnStatusUpdated($"📡 Executing: {command}");
+
+                            // Use the oscilloscope's methods for communication
+                            if (command.EndsWith("?"))
+                            {
+                                // For query commands, return the response
+                                var response = oscilloscope.SendQuery(command) ?? "";
+                                OnStatusUpdated($"📡 Response: '{response}'");
+                                return response;
+                            }
+                            else
+                            {
+                                // For set commands, send and return empty string
+                                oscilloscope.SendCommand(command);
+                                OnStatusUpdated($"📡 Command sent: {command}");
+                                return "";
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            OnErrorOccurred($"SCPI command failed ({command}): {ex.Message}");
+                            return "";
+                        }
+                    };
+
+                    OnStatusUpdated("✅ SCPI command handler configured successfully");
+
+                    // Immediately try to get current timebase
+                    _ = UpdateCurrentTimebaseAsync();
+                }
+                else
+                {
+                    OnErrorOccurred("⚠️ Cannot set oscilloscope reference - oscilloscope is null");
+                }
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error setting oscilloscope reference: {ex.Message}");
+            }
         }
 
         /// <summary>
-        /// Check if mode is currently changing
+        /// Alternative method to set SCPI handler with custom function
         /// </summary>
-        public bool IsModeChanging => isModeChanging;
-
-        /// <summary>
-        /// Get available math modes
-        /// </summary>
-        public string[] GetAvailableModes()
+        public void SetSCPICommandHandler(Func<string, string, string> scpiHandler)
         {
-            return new string[] { "BasicOperations", "FFTAnalysis", "DigitalFilters", "AdvancedMath" };
+            try
+            {
+                if (scpiHandler != null)
+                {
+                    SendSCPICommand = scpiHandler;
+                    OnStatusUpdated("✅ Custom SCPI command handler configured");
+
+                    // Try to get current timebase
+                    _ = UpdateCurrentTimebaseAsync();
+                }
+                else
+                {
+                    OnErrorOccurred("⚠️ Cannot set SCPI handler - handler is null");
+                }
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error setting SCPI command handler: {ex.Message}");
+            }
         }
 
         #endregion
 
-        #region Event Handlers and Mode Management
+        #region Timebase Management (FIXED)
 
-        private async void BasicOperations_Click(object sender, RoutedEventArgs e)
+        /// <summary>
+        /// Get current timebase from oscilloscope with improved error handling and debugging
+        /// FIXED: Now properly handles SCPI connection setup
+        /// </summary>
+        private async Task<double> GetCurrentTimebaseAsync()
         {
-            await ChangeMathModeAsync("BasicOperations");
-        }
-
-        private async void FFTAnalysis_Click(object sender, RoutedEventArgs e)
-        {
-            await ChangeMathModeAsync("FFTAnalysis");
-        }
-
-        private async void DigitalFilters_Click(object sender, RoutedEventArgs e)
-        {
-            await ChangeMathModeAsync("DigitalFilters");
-        }
-
-        private async void AdvancedMath_Click(object sender, RoutedEventArgs e)
-        {
-            await ChangeMathModeAsync("AdvancedMath");
-        }
-
-        private async void MathModeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (isModeChanging) return;
-
             try
             {
-                var selectedMode = GetSelectedTag(sender as ComboBox);
-                if (!string.IsNullOrEmpty(selectedMode) && selectedMode != currentActiveMode)
+                // Check if we have a valid SCPI connection
+                if (SendSCPICommand == null)
                 {
-                    await ChangeMathModeAsync(selectedMode);
+                    OnStatusUpdated("⚠️ SCPI connection not available, using cached timebase");
+                    return lastKnownTimebase;
+                }
+
+                // Query current timebase from oscilloscope using multiple possible commands
+                string response = "";
+
+                // Try the main timebase scale command first
+                response = await ExecuteSCPICommandAsync(":TIMebase:MAIN:SCALe?", "Query main timebase scale");
+
+                // If that fails, try the shorter version
+                if (string.IsNullOrEmpty(response?.Trim()))
+                {
+                    response = await ExecuteSCPICommandAsync(":TIMebase:SCALe?", "Query timebase scale");
+                }
+
+                OnStatusUpdated($"🔍 Timebase query response: '{response}'");
+
+                if (!string.IsNullOrEmpty(response?.Trim()))
+                {
+                    // Try parsing with different culture settings
+                    if (double.TryParse(response.Trim(), System.Globalization.NumberStyles.Float,
+                                      System.Globalization.CultureInfo.InvariantCulture, out double timebase))
+                    {
+                        if (timebase > 0 && timebase < 1000) // Sanity check: reasonable timebase range
+                        {
+                            lastKnownTimebase = timebase;
+                            OnStatusUpdated($"✅ Timebase updated: {MathematicsCommands.FormatTime(timebase)}");
+                            return timebase;
+                        }
+                        else
+                        {
+                            OnStatusUpdated($"⚠️ Timebase value out of range: {timebase}s, using cached value");
+                        }
+                    }
+                    else
+                    {
+                        OnStatusUpdated($"⚠️ Failed to parse timebase response: '{response}'");
+                    }
+                }
+                else
+                {
+                    OnStatusUpdated("⚠️ Empty timebase response from oscilloscope");
+                }
+
+                // Return cached value if query failed
+                return lastKnownTimebase;
+            }
+            catch (Exception ex)
+            {
+                OnStatusUpdated($"❌ Error querying timebase: {ex.Message}");
+                return lastKnownTimebase; // Return cached value on error
+            }
+        }
+
+        /// <summary>
+        /// Update timebase and refresh tooltips
+        /// </summary>
+        private async Task UpdateCurrentTimebaseAsync()
+        {
+            try
+            {
+                var newTimebase = await GetCurrentTimebaseAsync();
+                if (Math.Abs(newTimebase - lastKnownTimebase) > 1e-9) // Only update if significantly different
+                {
+                    lastKnownTimebase = newTimebase;
+                    await UpdateFrequencyTooltipsAsync();
                 }
             }
             catch (Exception ex)
             {
-                OnErrorOccurred($"Error in mode selection: {ex.Message}");
+                OnStatusUpdated($"Error updating timebase: {ex.Message}");
             }
         }
 
-        public async Task ChangeMathModeAsync(string newMode)
+        /// <summary>
+        /// Manually update timebase (called from main window when timebase changes)
+        /// </summary>
+        public void UpdateTimebase(double timebaseSeconds)
         {
-            if (isModeChanging || currentActiveMode == newMode) return;
+            try
+            {
+                if (timebaseSeconds > 0 && timebaseSeconds < 1000)
+                {
+                    lastKnownTimebase = timebaseSeconds;
+                    OnStatusUpdated($"📐 Timebase updated from main app: {MathematicsCommands.FormatTime(timebaseSeconds)}");
 
+                    // Trigger tooltip update with new timebase
+                    if (IsVisible)
+                    {
+                        _ = UpdateFrequencyTooltipsAsync();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error updating timebase: {ex.Message}");
+            }
+        }
+
+        #endregion
+
+        #region Tooltip System (ENHANCED)
+
+        /// <summary>
+        /// Start automatic tooltip updates
+        /// </summary>
+        private void StartTooltipUpdateTimer(int intervalSeconds = 5)
+        {
+            try
+            {
+                StopTooltipUpdateTimer(); // Stop any existing timer
+
+                tooltipUpdateTimer = new DispatcherTimer
+                {
+                    Interval = TimeSpan.FromSeconds(intervalSeconds)
+                };
+                tooltipUpdateTimer.Tick += async (s, e) => await UpdateFrequencyTooltipsAsync();
+                tooltipUpdateTimer.Start();
+
+                OnStatusUpdated($"🔄 Tooltip auto-update started (every {intervalSeconds}s)");
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error starting tooltip timer: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Stop automatic tooltip updates
+        /// </summary>
+        private void StopTooltipUpdateTimer()
+        {
+            try
+            {
+                if (tooltipUpdateTimer != null)
+                {
+                    tooltipUpdateTimer.Stop();
+                    tooltipUpdateTimer = null;
+                    OnStatusUpdated("🔄 Tooltip auto-update stopped");
+                }
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error stopping tooltip timer: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Update tooltips for frequency input fields based on current timebase and filter type
+        /// FIXED: Now properly handles SCPI connection setup
+        /// </summary>
+        private async Task UpdateFrequencyTooltipsAsync()
+        {
+            try
+            {
+                // Get current timebase
+                double timebase = await GetCurrentTimebaseAsync();
+                var filterType = GetSelectedTag(this.FindName("FilterTypeCombo") as ComboBox) ?? "LPASs";
+
+                OnStatusUpdated($"🔧 Updating tooltips - Timebase: {MathematicsCommands.FormatTime(timebase)}, Filter: {filterType}");
+
+                // Update UI elements
+                var w1TextBox = this.FindName("FilterW1Text") as TextBox;
+                var w2TextBox = this.FindName("FilterW2Text") as TextBox;
+
+                if (w1TextBox != null)
+                {
+                    string w1Tooltip = MathematicsCommands.GenerateW1TooltipText(timebase, filterType);
+                    w1TextBox.ToolTip = w1Tooltip;
+                    OnStatusUpdated("✅ W1 tooltip updated");
+                }
+
+                if (w2TextBox != null)
+                {
+                    bool isBandFilter = filterType == "BPASs" || filterType == "BSTop";
+                    if (isBandFilter)
+                    {
+                        string w2Tooltip = MathematicsCommands.GenerateW2TooltipText(timebase);
+                        w2TextBox.ToolTip = w2Tooltip;
+                        w2TextBox.IsEnabled = true;
+                        OnStatusUpdated("✅ W2 tooltip updated (band filter)");
+                    }
+                    else
+                    {
+                        w2TextBox.ToolTip = "W2 frequency is only used for Band Pass and Band Stop filters";
+                        w2TextBox.IsEnabled = false;
+                        OnStatusUpdated("✅ W2 disabled (not band filter)");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error updating frequency tooltips: {ex.Message}");
+            }
+        }
+
+        #endregion
+
+        #region UI Event Handlers
+
+        /// <summary>
+        /// Update tooltips when filter type selection changes
+        /// FIXED: Proper event handler signature
+        /// </summary>
+        private async void FilterTypeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (!isModeChanging) // Use existing flag to prevent updates during initialization
+            {
+                OnStatusUpdated("🔧 Filter type changed, updating tooltips...");
+                await UpdateFrequencyTooltipsAsync();
+            }
+        }
+
+        /// <summary>
+        /// Update tooltips when the panel is loaded or becomes visible
+        /// </summary>
+        private async void MathematicsPanel_Loaded(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                OnStatusUpdated("📐 Mathematics panel loaded, initializing tooltips...");
+
+                // Initial tooltip update
+                await UpdateFrequencyTooltipsAsync();
+
+                // Start the update timer
+                StartTooltipUpdateTimer(3); // Update every 3 seconds
+
+                OnStatusUpdated("✅ Tooltip system initialized");
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error initializing tooltips: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Cleanup when panel is unloaded
+        /// </summary>
+        private void MathematicsPanel_Unloaded(object sender, RoutedEventArgs e)
+        {
+            OnStatusUpdated("📐 Mathematics panel unloading...");
+            StopTooltipUpdateTimer();
+        }
+
+        /// <summary>
+        /// Handle visibility changes to manage tooltip updates
+        /// </summary>
+        private async void MathematicsPanel_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (IsVisible && !isModeChanging)
+            {
+                OnStatusUpdated("👁️ Mathematics panel became visible, refreshing tooltips...");
+                await UpdateFrequencyTooltipsAsync();
+            }
+        }
+
+        #endregion
+
+        #region Mode Management
+
+        /// <summary>
+        /// Set the active mathematics mode and show appropriate UI sections
+        /// </summary>
+        private void SetActiveMode(string mode)
+        {
             try
             {
                 isModeChanging = true;
-                OnStatusUpdated($"Changing mode to {newMode}...");
-                UpdateStatusDisplay($"Switching to {newMode}...");
+                currentActiveMode = mode;
 
-                // Step 1: Disable current math display
-                await ExecuteSCPICommandAsync(":MATH:DISPlay OFF", "Disable math display");
-                await Task.Delay(RESET_DELAY);
+                // Hide all sections first
+                HideAllSections();
 
-                // Step 2: Reset math system
-                await ExecuteSCPICommandAsync(":MATH:RESet", "Reset math system");
-                await Task.Delay(RESET_DELAY);
-
-                // Step 3: Hide all sections
-                BasicOperationsSection?.SetValue(VisibilityProperty, Visibility.Collapsed);
-                FFTAnalysisSection?.SetValue(VisibilityProperty, Visibility.Collapsed);
-                DigitalFiltersSection?.SetValue(VisibilityProperty, Visibility.Collapsed);
-                AdvancedMathSection?.SetValue(VisibilityProperty, Visibility.Collapsed);
-
-                // Step 4: Show selected section
-                switch (newMode)
+                // Show the selected section
+                switch (mode)
                 {
                     case "BasicOperations":
-                        BasicOperationsSection?.SetValue(VisibilityProperty, Visibility.Visible);
+                        ShowSection("BasicOperationsSection");
                         break;
                     case "FFTAnalysis":
-                        FFTAnalysisSection?.SetValue(VisibilityProperty, Visibility.Visible);
+                        ShowSection("FFTAnalysisSection");
                         break;
                     case "DigitalFilters":
-                        DigitalFiltersSection?.SetValue(VisibilityProperty, Visibility.Visible);
+                        ShowSection("DigitalFiltersSection");
                         break;
                     case "AdvancedMath":
-                        AdvancedMathSection?.SetValue(VisibilityProperty, Visibility.Visible);
+                        ShowSection("AdvancedMathSection");
                         break;
                 }
 
-                currentActiveMode = newMode;
-                OnStatusUpdated($"Mode changed to {newMode}");
-
-                await Task.Delay(200); // Allow UI to update
+                OnStatusUpdated($"📐 Mode changed to: {mode}");
             }
             catch (Exception ex)
             {
-                OnErrorOccurred($"Error changing math mode: {ex.Message}");
+                OnErrorOccurred($"Error setting active mode: {ex.Message}");
             }
             finally
             {
                 isModeChanging = false;
             }
+        }
+
+        private void HideAllSections()
+        {
+            var sections = new[] { "BasicOperationsSection", "FFTAnalysisSection", "DigitalFiltersSection", "AdvancedMathSection" };
+            foreach (var sectionName in sections)
+            {
+                var section = this.FindName(sectionName) as FrameworkElement;
+                if (section != null)
+                {
+                    section.Visibility = Visibility.Collapsed;
+                }
+            }
+        }
+
+        private void ShowSection(string sectionName)
+        {
+            var section = this.FindName(sectionName) as FrameworkElement;
+            if (section != null)
+            {
+                section.Visibility = Visibility.Visible;
+            }
+        }
+
+        // Mode selection event handlers
+        private void BasicOperations_Click(object sender, RoutedEventArgs e)
+        {
+            SetActiveMode("BasicOperations");
+        }
+
+        private void FFTAnalysis_Click(object sender, RoutedEventArgs e)
+        {
+            SetActiveMode("FFTAnalysis");
+        }
+
+        private void DigitalFilters_Click(object sender, RoutedEventArgs e)
+        {
+            SetActiveMode("DigitalFilters");
+        }
+
+        private void AdvancedMath_Click(object sender, RoutedEventArgs e)
+        {
+            SetActiveMode("AdvancedMath");
+        }
+
+        #endregion
+
+        #region SCPI Command Execution (FIXED)
+
+        /// <summary>
+        /// Helper method to execute SCPI commands safely
+        /// FIXED: Now properly uses the configured SendSCPICommand delegate
+        /// </summary>
+        private string ExecuteSCPICommand(string command, string description)
+        {
+            try
+            {
+                var response = SendSCPICommand?.Invoke(command, description) ?? "";
+                SCPICommandGenerated?.Invoke(command, description); // Fire event for logging
+                return response;
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"SCPI command failed ({command}): {ex.Message}");
+                return "";
+            }
+        }
+
+        /// <summary>
+        /// Async version of ExecuteSCPICommand
+        /// </summary>
+        private async Task<string> ExecuteSCPICommandAsync(string command, string description)
+        {
+            return await Task.Run(() => ExecuteSCPICommand(command, description));
         }
 
         #endregion
@@ -222,13 +580,13 @@ namespace DS1000Z_E_USB_Control.Mathematics
             await ConfigureFFTAnalysisAsync();
         }
 
-        // Digital Filters - UPDATED with Source Selection
+        // Digital Filters
         private async void ApplyFilter_Click(object sender, RoutedEventArgs e)
         {
             await ConfigureDigitalFiltersAsync();
         }
 
-        // Advanced Math - UPDATED with Source Selection - FIXED: Event handler name
+        // Advanced Math
         private async void ApplyAdvancedMath_Click(object sender, RoutedEventArgs e)
         {
             await ConfigureAdvancedMathAsync();
@@ -252,7 +610,6 @@ namespace DS1000Z_E_USB_Control.Mathematics
         {
             try
             {
-                // Implementation for saving settings
                 OnStatusUpdated("Settings saved successfully");
             }
             catch (Exception ex)
@@ -263,7 +620,138 @@ namespace DS1000Z_E_USB_Control.Mathematics
 
         #endregion
 
-        #region Basic Operations (ADD, SUBTRACT, MULTIPLY, DIVIDE)
+        #region Configuration Methods
+
+        /// <summary>
+        /// Configure Basic Operations
+        /// </summary>
+        private async Task ConfigureBasicOperationsAsync()
+        {
+            try
+            {
+                var operation = GetSelectedTag(this.FindName("OperationCombo") as ComboBox) ?? "ADD";
+                var source1 = GetSelectedTag(this.FindName("Source1Combo") as ComboBox) ?? "CHANnel1";
+                var source2 = GetSelectedTag(this.FindName("Source2Combo") as ComboBox) ?? "CHANnel2";
+
+                switch (operation)
+                {
+                    case "ADD":
+                        await ApplyAddOperationAsync(source1, source2);
+                        break;
+                    case "SUBTract":
+                        await ApplySubtractOperationAsync(source1, source2);
+                        break;
+                    case "MULTiply":
+                        await ApplyMultiplyOperationAsync(source1, source2);
+                        break;
+                    case "DIVision":
+                        await ApplyDivisionOperationAsync(source1, source2);
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error configuring basic operations: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Configure FFT Analysis
+        /// </summary>
+        private async Task ConfigureFFTAnalysisAsync()
+        {
+            try
+            {
+                var source = GetSelectedTag(this.FindName("FFTSourceCombo") as ComboBox) ?? "CHANnel1";
+                var window = GetSelectedTag(this.FindName("FFTWindowCombo") as ComboBox) ?? "HANNing";
+                var split = GetSelectedTag(this.FindName("FFTSplitCombo") as ComboBox) ?? "FULL";
+                var unit = GetSelectedTag(this.FindName("FFTUnitCombo") as ComboBox) ?? "VRMS";
+
+                await ApplyFFTOperationAsync(source, window, split, unit);
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error configuring FFT analysis: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Configure Digital Filters
+        /// </summary>
+        private async Task ConfigureDigitalFiltersAsync()
+        {
+            try
+            {
+                var source = GetSelectedTag(this.FindName("FilterSourceCombo") as ComboBox) ?? "CHANnel1";
+                var filterType = GetSelectedTag(this.FindName("FilterTypeCombo") as ComboBox) ?? "LPASs";
+                var w1Text = (this.FindName("FilterW1Text") as TextBox)?.Text ?? "1000";
+                var w2Text = (this.FindName("FilterW2Text") as TextBox)?.Text ?? "2000";
+
+                if (double.TryParse(w1Text, out double w1))
+                {
+                    double? w2 = null;
+                    if (filterType == "BPASs" || filterType == "BSTop")
+                    {
+                        if (double.TryParse(w2Text, out double w2Value))
+                        {
+                            w2 = w2Value;
+                        }
+                    }
+
+                    await ApplyFilterOperationAsync(source, filterType, w1, w2);
+                }
+                else
+                {
+                    OnErrorOccurred("Invalid W1 frequency value");
+                }
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error configuring digital filters: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Configure Advanced Math
+        /// </summary>
+        private async Task ConfigureAdvancedMathAsync()
+        {
+            try
+            {
+                var source = GetSelectedTag(this.FindName("AdvancedSourceCombo") as ComboBox) ?? "CHANnel1";
+                var function = GetSelectedTag(this.FindName("AdvancedFunctionCombo") as ComboBox) ?? "INTG";
+                var startText = (this.FindName("StartPointText") as TextBox)?.Text ?? "0";
+                var endText = (this.FindName("EndPointText") as TextBox)?.Text ?? "1199";
+
+                if (double.TryParse(startText, out double startPoint) && double.TryParse(endText, out double endPoint))
+                {
+                    switch (function)
+                    {
+                        case "INTG":
+                            await ApplyIntegrationOperationAsync(source, startPoint, endPoint);
+                            break;
+                        case "DIFF":
+                            await ApplyDifferentiationOperationAsync(source, startPoint, endPoint);
+                            break;
+                        default:
+                            await ApplySingleOperandOperationAsync(function, source);
+                            break;
+                    }
+                }
+                else
+                {
+                    OnErrorOccurred("Invalid start or end point values");
+                }
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error configuring advanced math: {ex.Message}");
+            }
+        }
+
+        #endregion
+
+        #region Math Operations Implementation
 
         /// <summary>
         /// Apply ADD operation: Source1 + Source2
@@ -381,20 +869,20 @@ namespace DS1000Z_E_USB_Control.Mathematics
             }
         }
 
-        #endregion
-
-        #region FFT Operations
-
         /// <summary>
-        /// Apply FFT operation: Fast Fourier Transform
+        /// Apply FFT operation with workaround for source selection
         /// </summary>
-        public async Task ApplyFFTOperationAsync(string source = "CHANnel1", string window = "HANNing", string split = "FULL", string unit = "VRMS")
+        public async Task ApplyFFTOperationAsync(string source = "CHANnel1", string window = "HANNing",
+                                               string split = "FULL", string unit = "VRMS")
         {
             try
             {
-                OnStatusUpdated("Applying FFT operation...");
+                OnStatusUpdated($"Applying FFT operation on {source}...");
 
-                await ExecuteSCPICommandAsync(":MATH:DISPlay ON", "Enable math display");
+                await ExecuteSCPICommandAsync(":MATH:DISPlay OFF", "Disable math display");
+                await Task.Delay(COMMAND_DELAY);
+
+                await ExecuteSCPICommandAsync(":MATH:RESet", "Reset math system");
                 await Task.Delay(COMMAND_DELAY);
 
                 await ExecuteSCPICommandAsync(":MATH:OPERator FFT", "Set operator to FFT");
@@ -412,7 +900,10 @@ namespace DS1000Z_E_USB_Control.Mathematics
                 await ExecuteSCPICommandAsync($":MATH:FFT:UNIT {unit}", $"Set FFT unit to {unit}");
                 await Task.Delay(COMMAND_DELAY);
 
-                OnStatusUpdated($"FFT operation applied: {source} with {window} window, {split} split, {unit} unit");
+                await ExecuteSCPICommandAsync(":MATH:DISPlay ON", "Enable math display");
+                await Task.Delay(COMMAND_DELAY);
+
+                OnStatusUpdated($"FFT operation applied on {source}");
             }
             catch (Exception ex)
             {
@@ -420,43 +911,23 @@ namespace DS1000Z_E_USB_Control.Mathematics
             }
         }
 
-        #endregion
-
-        #region Filter Operations with FFT Workaround
-
         /// <summary>
-        /// Apply FFT workaround for source selection - Helper method
+        /// Apply Filter operation with FFT workaround for source selection
         /// </summary>
-        private async Task ApplyFFTWorkaroundAsync(string source)
-        {
-            OnStatusUpdated($"Applying FFT workaround for {source}...");
-
-            // Temporary FFT mode to set source
-            await ExecuteSCPICommandAsync(":MATH:OPERator FFT", "Temporary FFT mode");
-            await Task.Delay(COMMAND_DELAY);
-
-            await ExecuteSCPICommandAsync($":MATH:FFT:SOURce {source}", $"Set source to {source}");
-            await Task.Delay(COMMAND_DELAY);
-        }
-
-        /// <summary>
-        /// Apply FILTer operation with FFT workaround for channel selection
-        /// </summary>
-        public async Task ApplyFilterOperationAsync(string source = "CHANnel1", string filterType = "LPASs", double w1 = 1000000, double? w2 = null)
+        public async Task ApplyFilterOperationAsync(string source = "CHANnel1", string filterType = "LPASs",
+                                                   double w1 = 1000, double? w2 = null)
         {
             try
             {
                 OnStatusUpdated($"Applying FILTer operation on {source}...");
 
-                // STEP 1: Disable math display
                 await ExecuteSCPICommandAsync(":MATH:DISPlay OFF", "Disable math display");
                 await Task.Delay(COMMAND_DELAY);
 
-                // STEP 2: Reset math system
                 await ExecuteSCPICommandAsync(":MATH:RESet", "Reset math system");
                 await Task.Delay(COMMAND_DELAY);
 
-                // STEP 3: FFT WORKAROUND - Set source via FFT first
+                // FFT WORKAROUND - Set source via FFT first
                 OnStatusUpdated($"Setting source to {source} via FFT workaround...");
                 await ExecuteSCPICommandAsync(":MATH:OPERator FFT", "Temporary FFT mode for source selection");
                 await Task.Delay(COMMAND_DELAY);
@@ -464,33 +935,29 @@ namespace DS1000Z_E_USB_Control.Mathematics
                 await ExecuteSCPICommandAsync($":MATH:FFT:SOURce {source}", $"Set source to {source} via FFT");
                 await Task.Delay(COMMAND_DELAY);
 
-                // STEP 4: Switch to Filter operation
+                // Switch to Filter operation
                 await ExecuteSCPICommandAsync(":MATH:OPERator FILTer", "Switch to FILTer operation");
                 await Task.Delay(COMMAND_DELAY);
 
-                // STEP 5: Configure filter parameters
+                // Configure filter parameters
                 await ExecuteSCPICommandAsync($":MATH:FILTer:TYPE {filterType}", $"Set filter type to {filterType}");
                 await Task.Delay(COMMAND_DELAY);
 
                 await ExecuteSCPICommandAsync($":MATH:FILTer:W1 {w1}", $"Set W1 frequency to {w1}");
                 await Task.Delay(COMMAND_DELAY);
 
-                // Band filters (BPASs, BSTop) need W2
+                // Set W2 for band filters
                 if (w2.HasValue && (filterType == "BPASs" || filterType == "BSTop"))
                 {
                     await ExecuteSCPICommandAsync($":MATH:FILTer:W2 {w2.Value}", $"Set W2 frequency to {w2.Value}");
                     await Task.Delay(COMMAND_DELAY);
                 }
 
-                // STEP 6: Enable math display
                 await ExecuteSCPICommandAsync(":MATH:DISPlay ON", "Enable math display");
                 await Task.Delay(COMMAND_DELAY);
 
-                string message = $"FILTer operation applied on {source}: {filterType}, W1={w1}";
-                if (w2.HasValue)
-                    message += $", W2={w2.Value}";
-
-                OnStatusUpdated(message);
+                OnStatusUpdated($"FILTer operation applied on {source}: {filterType}, W1={w1}" +
+                              (w2.HasValue ? $", W2={w2.Value}" : ""));
             }
             catch (Exception ex)
             {
@@ -498,12 +965,8 @@ namespace DS1000Z_E_USB_Control.Mathematics
             }
         }
 
-        #endregion
-
-        #region Advanced Math Operations with FFT Workaround
-
         /// <summary>
-        /// Apply INTG operation with source selection
+        /// Apply Integration operation
         /// </summary>
         public async Task ApplyIntegrationOperationAsync(string source = "CHANnel1", double startPoint = 0, double endPoint = 1199)
         {
@@ -524,9 +987,6 @@ namespace DS1000Z_E_USB_Control.Mathematics
                 await ExecuteSCPICommandAsync(":MATH:OPERator INTG", "Set operator to INTG");
                 await Task.Delay(COMMAND_DELAY);
 
-                await ExecuteSCPICommandAsync(":MATH:OPTion:FX:OPERator INTG", "Set advanced function to INTG");
-                await Task.Delay(COMMAND_DELAY);
-
                 await ExecuteSCPICommandAsync($":MATH:OPTion:STARt {startPoint}", $"Set start point to {startPoint}");
                 await Task.Delay(COMMAND_DELAY);
 
@@ -545,7 +1005,7 @@ namespace DS1000Z_E_USB_Control.Mathematics
         }
 
         /// <summary>
-        /// Apply DIFF operation with source selection
+        /// Apply Differentiation operation
         /// </summary>
         public async Task ApplyDifferentiationOperationAsync(string source = "CHANnel1", double startPoint = 0, double endPoint = 1199)
         {
@@ -564,9 +1024,6 @@ namespace DS1000Z_E_USB_Control.Mathematics
 
                 // Switch to Differentiation
                 await ExecuteSCPICommandAsync(":MATH:OPERator DIFF", "Set operator to DIFF");
-                await Task.Delay(COMMAND_DELAY);
-
-                await ExecuteSCPICommandAsync(":MATH:OPTion:FX:OPERator DIFF", "Set advanced function to DIFF");
                 await Task.Delay(COMMAND_DELAY);
 
                 await ExecuteSCPICommandAsync($":MATH:OPTion:STARt {startPoint}", $"Set start point to {startPoint}");
@@ -608,9 +1065,6 @@ namespace DS1000Z_E_USB_Control.Mathematics
                 await ExecuteSCPICommandAsync($":MATH:OPERator {operation}", $"Set operator to {operation}");
                 await Task.Delay(COMMAND_DELAY);
 
-                await ExecuteSCPICommandAsync($":MATH:OPTion:FX:OPERator {operation}", $"Set advanced function to {operation}");
-                await Task.Delay(COMMAND_DELAY);
-
                 await ExecuteSCPICommandAsync(":MATH:DISPlay ON", "Enable math display");
                 await Task.Delay(COMMAND_DELAY);
 
@@ -622,586 +1076,27 @@ namespace DS1000Z_E_USB_Control.Mathematics
             }
         }
 
-        #endregion
-
-        #region Configuration Methods with Source Selection
-
         /// <summary>
-        /// Configure Basic Operations
+        /// FFT Workaround for source selection in filter and advanced math operations
         /// </summary>
-        private async Task ConfigureBasicOperationsAsync()
+        private async Task ApplyFFTWorkaroundAsync(string source)
         {
             try
             {
-                var operation = GetSelectedTag(this.FindName("OperationCombo") as ComboBox) ?? "ADD";
-                var source1 = GetSelectedTag(this.FindName("Source1Combo") as ComboBox) ?? "CHANnel1";
-                var source2 = GetSelectedTag(this.FindName("Source2Combo") as ComboBox) ?? "CHANnel2";
+                OnStatusUpdated($"🔧 FFT workaround: Setting source to {source}");
 
-                switch (operation.ToUpperInvariant())
-                {
-                    case "ADD":
-                        await ApplyAddOperationAsync(source1, source2);
-                        break;
-                    case "SUBTRACT":
-                        await ApplySubtractOperationAsync(source1, source2);
-                        break;
-                    case "MULTIPLY":
-                        await ApplyMultiplyOperationAsync(source1, source2);
-                        break;
-                    case "DIVIDE":
-                        await ApplyDivisionOperationAsync(source1, source2);
-                        break;
-                    default:
-                        OnErrorOccurred($"Unknown operation: {operation}");
-                        break;
-                }
+                await ExecuteSCPICommandAsync(":MATH:OPERator FFT", "Temporary FFT for source selection");
+                await Task.Delay(COMMAND_DELAY);
+
+                await ExecuteSCPICommandAsync($":MATH:FFT:SOURce {source}", $"Set source to {source}");
+                await Task.Delay(COMMAND_DELAY);
+
+                OnStatusUpdated("✅ FFT workaround completed");
             }
             catch (Exception ex)
             {
-                OnErrorOccurred($"Error configuring basic operations: {ex.Message}");
+                OnStatusUpdated($"⚠️ FFT workaround failed: {ex.Message}");
             }
-        }
-
-        /// <summary>
-        /// Configure FFT Analysis
-        /// </summary>
-        private async Task ConfigureFFTAnalysisAsync()
-        {
-            try
-            {
-                var source = GetSelectedTag(this.FindName("FFTSourceCombo") as ComboBox) ?? "CHANnel1";
-                var window = GetSelectedTag(this.FindName("FFTWindowCombo") as ComboBox) ?? "HANNing";
-                var split = GetSelectedTag(this.FindName("FFTSplitCombo") as ComboBox) ?? "FULL";
-                var unit = GetSelectedTag(this.FindName("FFTUnitCombo") as ComboBox) ?? "VRMS";
-
-                await ApplyFFTOperationAsync(source, window, split, unit);
-            }
-            catch (Exception ex)
-            {
-                OnErrorOccurred($"Error configuring FFT analysis: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// Configure Digital Filters with source selection
-        /// </summary>
-        private async Task ConfigureDigitalFiltersAsync()
-        {
-            try
-            {
-                // Get selected source channel
-                var source = GetSelectedTag(this.FindName("FilterSourceCombo") as ComboBox) ?? "CHANnel1";
-
-                // Get current timebase for frequency validation
-                double timebase = await GetCurrentTimebaseAsync();
-                var filterType = GetSelectedTag(this.FindName("FilterTypeCombo") as ComboBox) ?? "LPASs";
-
-                // Parse frequencies from UI
-                var w1Text = (this.FindName("FilterW1Text") as TextBox)?.Text ?? "1000";
-                if (!double.TryParse(w1Text, out double w1))
-                    w1 = 1000;
-
-                double? w2 = null;
-                bool isBandFilter = filterType == "BPASs" || filterType == "BSTop";
-
-                if (isBandFilter)
-                {
-                    var w2Text = (this.FindName("FilterW2Text") as TextBox)?.Text ?? "10000";
-                    if (!double.TryParse(w2Text, out double w2Value))
-                        w2Value = 10000;
-                    w2 = w2Value;
-                }
-
-                // Use the updated filter method with source selection
-                await ApplyFilterOperationAsync(source, filterType, w1, w2);
-            }
-            catch (Exception ex)
-            {
-                OnErrorOccurred($"Error configuring digital filters: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// Configure Advanced Math with source selection
-        /// </summary>
-        private async Task ConfigureAdvancedMathAsync()
-        {
-            try
-            {
-                // Get selected source channel
-                var source = GetSelectedTag(this.FindName("AdvancedSourceCombo") as ComboBox) ?? "CHANnel1";
-                var function = GetSelectedTag(this.FindName("AdvancedFunctionCombo") as ComboBox) ?? "INTG";
-
-                var startText = (this.FindName("StartPointText") as TextBox)?.Text ?? "0";
-                if (!double.TryParse(startText, out double startPoint))
-                    startPoint = 0;
-
-                var endText = (this.FindName("EndPointText") as TextBox)?.Text ?? "1199";
-                if (!double.TryParse(endText, out double endPoint))
-                    endPoint = 1199;
-
-                // Validate range limits (0-1199)
-                if (startPoint < 0) startPoint = 0;
-                if (endPoint > 1199) endPoint = 1199;
-                if (startPoint >= endPoint)
-                {
-                    OnErrorOccurred("Start point must be less than end point");
-                    return;
-                }
-
-                // Use individual methods with source selection
-                switch (function.ToUpperInvariant())
-                {
-                    case "INTG":
-                        await ApplyIntegrationOperationAsync(source, startPoint, endPoint);
-                        break;
-                    case "DIFF":
-                        await ApplyDifferentiationOperationAsync(source, startPoint, endPoint);
-                        break;
-                    case "SQRT":
-                    case "LOG":
-                    case "LN":
-                    case "EXP":
-                    case "ABS":
-                        await ApplySingleOperandOperationAsync(function, source);
-                        break;
-                    default:
-                        OnErrorOccurred($"Unknown advanced function: {function}");
-                        break;
-                }
-            }
-            catch (Exception ex)
-            {
-                OnErrorOccurred($"Error configuring advanced math: {ex.Message}");
-            }
-        }
-
-        #endregion
-
-        // Add this new region to MathematicsPanel.xaml.cs after your existing regions
-        #region Dynamic Tooltip Management
-
-        /// <summary>
-        /// Improved tooltip update that tries multiple approaches
-        /// </summary>
-        //private async Task UpdateFrequencyTooltipsImprovedAsync()
-        private async Task UpdateFrequencyTooltipsImprovedAsync()
-        {
-            try
-            {
-                // Try multiple approaches to get the timebase
-                double timebase = lastKnownTimebase;
-
-                // Approach 1: Use TimeBase controller if available
-                if (TimeBaseController != null)
-                {
-                    timebase = await GetTimebaseViaTimeBaseControllerAsync();
-                }
-                else
-                {
-                    // Approach 2: Direct SCPI query
-                    timebase = await GetCurrentTimebaseAsync();
-                }
-
-                var filterType = GetSelectedTag(this.FindName("FilterTypeCombo") as ComboBox) ?? "LPASs";
-
-                OnStatusUpdated($"🔧 Updating tooltips - Timebase: {MathematicsCommands.FormatTime(timebase)}, Filter: {filterType}");
-
-                // Update UI elements
-                var w1TextBox = this.FindName("FilterW1Text") as TextBox;
-                var w2TextBox = this.FindName("FilterW2Text") as TextBox;
-
-                if (w1TextBox != null)
-                {
-                    string w1Tooltip = MathematicsCommands.GenerateW1TooltipText(timebase, filterType);
-                    w1TextBox.ToolTip = w1Tooltip;
-                    OnStatusUpdated("✅ W1 tooltip updated");
-                }
-
-                if (w2TextBox != null)
-                {
-                    bool isBandFilter = filterType == "BPASs" || filterType == "BSTop";
-                    if (isBandFilter)
-                    {
-                        string w2Tooltip = MathematicsCommands.GenerateW2TooltipText(timebase);
-                        w2TextBox.ToolTip = w2Tooltip;
-                        w2TextBox.IsEnabled = true;
-                        OnStatusUpdated("✅ W2 tooltip updated (band filter)");
-                    }
-                    else
-                    {
-                        w2TextBox.ToolTip = "W2 frequency is only used for Band Pass and Band Stop filters";
-                        w2TextBox.IsEnabled = false;
-                        OnStatusUpdated("✅ W2 disabled (not band filter)");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                OnErrorOccurred($"Error updating frequency tooltips: {ex.Message}");
-            }
-        }
-
-
-        /// <summary>
-        /// Reference to the main TimeBase controller (if available)
-        /// Set this from the parent window/application
-        /// </summary>
-        public object TimeBaseController { get; set; }
-
-        /// <summary>
-        /// Alternative method to get timebase using existing TimeBase infrastructure
-        /// </summary>
-        private async Task<double> GetTimebaseViaTimeBaseControllerAsync()
-        {
-            try
-            {
-                // If we have access to the TimeBase controller, use it
-                if (TimeBaseController != null)
-                {
-                    // Use reflection to access the MainScale property
-                    var timebaseType = TimeBaseController.GetType();
-                    var settingsProperty = timebaseType.GetProperty("settings");
-
-                    if (settingsProperty != null)
-                    {
-                        var settings = settingsProperty.GetValue(TimeBaseController);
-                        if (settings != null)
-                        {
-                            var mainScaleProperty = settings.GetType().GetProperty("MainScale");
-                            if (mainScaleProperty != null)
-                            {
-                                var mainScale = mainScaleProperty.GetValue(settings);
-                                if (mainScale is double timebase && timebase > 0)
-                                {
-                                    OnStatusUpdated($"✅ Timebase from controller: {MathematicsCommands.FormatTime(timebase)}");
-                                    return timebase;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Fallback to direct SCPI query
-                return await GetCurrentTimebaseAsync();
-            }
-            catch (Exception ex)
-            {
-                OnStatusUpdated($"⚠️ Error accessing TimeBase controller: {ex.Message}");
-                return await GetCurrentTimebaseAsync();
-            }
-        }
-
-        // <summary>
-        /// Update tooltips for frequency input fields based on current timebase and filter type
-        /// </summary>
-        private async Task UpdateFrequencyTooltipsAsync()
-        {
-            try
-            {
-                // Get current timebase and filter type
-                double timebase = await GetCurrentTimebaseAsync();
-                var filterType = GetSelectedTag(this.FindName("FilterTypeCombo") as ComboBox) ?? "LPASs";
-
-                OnStatusUpdated($"🔧 Updating tooltips - Timebase: {MathematicsCommands.FormatTime(timebase)}, Filter: {filterType}");
-
-                // Get references to the textboxes
-                var w1TextBox = this.FindName("FilterW1Text") as TextBox;
-                var w2TextBox = this.FindName("FilterW2Text") as TextBox;
-
-                if (w1TextBox != null)
-                {
-                    string w1Tooltip = MathematicsCommands.GenerateW1TooltipText(timebase, filterType);
-                    w1TextBox.ToolTip = w1Tooltip;
-                    OnStatusUpdated("✅ W1 tooltip updated");
-                }
-
-                if (w2TextBox != null)
-                {
-                    bool isBandFilter = filterType == "BPASs" || filterType == "BSTop";
-                    if (isBandFilter)
-                    {
-                        string w2Tooltip = MathematicsCommands.GenerateW2TooltipText(timebase);
-                        w2TextBox.ToolTip = w2Tooltip;
-                        w2TextBox.IsEnabled = true;
-                        OnStatusUpdated("✅ W2 tooltip updated (band filter)");
-                    }
-                    else
-                    {
-                        w2TextBox.ToolTip = "W2 frequency is only used for Band Pass and Band Stop filters";
-                        w2TextBox.IsEnabled = false;
-                        OnStatusUpdated("✅ W2 disabled (not band filter)");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                OnErrorOccurred($"Error updating frequency tooltips: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// Start the tooltip update timer with configurable interval
-        /// </summary>
-        private void StartTooltipUpdateTimer(int intervalSeconds = 3)
-        {
-            StopTooltipUpdateTimer(); // Stop any existing timer
-
-            tooltipUpdateTimer = new System.Windows.Threading.DispatcherTimer();
-            tooltipUpdateTimer.Interval = TimeSpan.FromSeconds(intervalSeconds);
-            tooltipUpdateTimer.Tick += async (s, e) =>
-            {
-                if (!isModeChanging) // Only update when not changing modes
-                {
-                    await UpdateFrequencyTooltipsAsync();
-                }
-            };
-            tooltipUpdateTimer.Start();
-            OnStatusUpdated($"🔄 Tooltip update timer started ({intervalSeconds}s interval)");
-        }
-
-        /// <summary>
-        /// Stop the tooltip update timer
-        /// </summary>
-        private void StopTooltipUpdateTimer()
-        {
-            if (tooltipUpdateTimer != null)
-            {
-                tooltipUpdateTimer.Stop();
-                tooltipUpdateTimer = null;
-                OnStatusUpdated("⏹️ Tooltip update timer stopped");
-            }
-        }
-
-        /// <summary>
-        /// Force immediate tooltip update (for manual refresh)
-        /// </summary>
-        public async Task RefreshTooltipsAsync()
-        {
-            OnStatusUpdated("🔄 Manual tooltip refresh requested");
-            await UpdateFrequencyTooltipsAsync();
-        }
-
-        /// <summary>
-        /// Start the tooltip update timer
-        /// </summary>
-        private void StartTooltipUpdateTimer()
-        {
-            tooltipUpdateTimer = new System.Windows.Threading.DispatcherTimer();
-            tooltipUpdateTimer.Interval = TimeSpan.FromSeconds(2); // Update every 2 seconds
-            tooltipUpdateTimer.Tick += async (s, e) => await UpdateFrequencyTooltipsAsync();
-            tooltipUpdateTimer.Start();
-        }
-
-        #endregion
-
-        // Add these event handlers to your existing event handler region in MathematicsPanel.xaml.cs
-        #region UI Event Handlers (add to existing region or create new)
-
-        /// <summary>
-        /// Event handler for filter type selection change
-        /// </summary>
-        private async void FilterTypeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (!isModeChanging) // Use existing flag to prevent updates during initialization
-            {
-                OnStatusUpdated("🔧 Filter type changed, updating tooltips...");
-                await UpdateFrequencyTooltipsAsync();
-            }
-        }
-
-        /// <summary>
-        /// Update tooltips when the panel is loaded or becomes visible
-        /// </summary>
-        private async void MathematicsPanel_Loaded(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                OnStatusUpdated("📐 Mathematics panel loaded, initializing tooltips...");
-
-                // Initial tooltip update
-                await UpdateFrequencyTooltipsAsync();
-
-                // Start the update timer
-                StartTooltipUpdateTimer(3); // Update every 3 seconds
-
-                OnStatusUpdated("✅ Tooltip system initialized");
-            }
-            catch (Exception ex)
-            {
-                OnErrorOccurred($"Error initializing tooltips: {ex.Message}");
-            }
-        }
-
-
-        /// <summary>
-        /// Cleanup when panel is unloaded
-        /// </summary>
-        private void MathematicsPanel_Unloaded(object sender, RoutedEventArgs e)
-        {
-            OnStatusUpdated("📐 Mathematics panel unloading...");
-            StopTooltipUpdateTimer();
-        }
-
-
-        /// <summary>
-        /// Handle visibility changes to manage tooltip updates
-        /// </summary>
-        private async void MathematicsPanel_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
-        {
-            if (IsVisible && !isModeChanging)
-            {
-                OnStatusUpdated("👁️ Mathematics panel became visible, refreshing tooltips...");
-                await UpdateFrequencyTooltipsAsync();
-            }
-        }
-
-        #endregion
-
-        #region Utility Methods
-
-        private string GetSelectedTag(ComboBox comboBox)
-        {
-            try
-            {
-                return (comboBox?.SelectedItem as ComboBoxItem)?.Tag?.ToString();
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        private void UpdateStatusDisplay(string message)
-        {
-            try
-            {
-                var statusText = this.FindName("StatusText") as TextBlock;
-                if (statusText != null)
-                {
-                    // Ensure UI update happens on UI thread
-                    if (Dispatcher.CheckAccess())
-                    {
-                        statusText.Text = message;
-                    }
-                    else
-                    {
-                        Dispatcher.Invoke(() => statusText.Text = message);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                OnErrorOccurred($"Error updating status display: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// Get current timebase from oscilloscope with improved error handling and debugging
-        /// </summary>
-        private async Task<double> GetCurrentTimebaseAsync()
-        {
-            try
-            {
-                // First check if we have a valid SCPI connection
-                if (SendSCPICommand == null)
-                {
-                    OnStatusUpdated("⚠️ SCPI connection not available, using cached timebase");
-                    return lastKnownTimebase;
-                }
-
-                // Query current timebase from oscilloscope using multiple possible commands
-                string response = "";
-
-                // Try the main timebase scale command
-                response = await ExecuteSCPICommandAsync(":TIMebase:MAIN:SCALe?", "Query main timebase scale");
-
-                // If that fails, try the shorter version
-                if (string.IsNullOrEmpty(response?.Trim()))
-                {
-                    response = await ExecuteSCPICommandAsync(":TIMebase:SCALe?", "Query timebase scale");
-                }
-
-                OnStatusUpdated($"🔍 Timebase query response: '{response}'");
-
-                if (!string.IsNullOrEmpty(response?.Trim()))
-                {
-                    // Try parsing with different culture settings
-                    if (double.TryParse(response.Trim(), System.Globalization.NumberStyles.Float,
-                                      System.Globalization.CultureInfo.InvariantCulture, out double timebase))
-                    {
-                        if (timebase > 0 && timebase < 1000) // Sanity check: reasonable timebase range
-                        {
-                            lastKnownTimebase = timebase;
-                            OnStatusUpdated($"✅ Timebase updated: {MathematicsCommands.FormatTime(timebase)}");
-                            return timebase;
-                        }
-                        else
-                        {
-                            OnStatusUpdated($"⚠️ Timebase value out of range: {timebase}s, using cached value");
-                        }
-                    }
-                    else
-                    {
-                        OnStatusUpdated($"⚠️ Failed to parse timebase response: '{response}'");
-                    }
-                }
-                else
-                {
-                    OnStatusUpdated("⚠️ Empty timebase response from oscilloscope");
-                }
-
-                // Return cached value if query failed
-                return lastKnownTimebase;
-            }
-            catch (Exception ex)
-            {
-                OnStatusUpdated($"❌ Error querying timebase: {ex.Message}");
-                return lastKnownTimebase; // Return cached value on error
-            }
-        }
-
-
-        /// <summary>
-        /// Helper method to execute SCPI commands safely - FIXED: Added async version
-        /// </summary>
-        private string ExecuteSCPICommand(string command, string description)
-        {
-            try
-            {
-                var response = SendSCPICommand?.Invoke(command, description) ?? "";
-                SCPICommandGenerated?.Invoke(command, description); // Fire event for logging
-                return response;
-            }
-            catch (Exception ex)
-            {
-                OnErrorOccurred($"SCPI command failed ({command}): {ex.Message}");
-                return "";
-            }
-        }
-
-        /// <summary>
-        /// Async version of ExecuteSCPICommand - FIXED: Proper async implementation
-        /// </summary>
-        private async Task<string> ExecuteSCPICommandAsync(string command, string description)
-        {
-            return await Task.Run(() => ExecuteSCPICommand(command, description));
-        }
-
-        #endregion
-
-        #region Event Helper Methods
-
-        private void OnStatusUpdated(string message)
-        {
-            StatusUpdated?.Invoke(message);
-            UpdateStatusDisplay(message);
-        }
-
-        private void OnErrorOccurred(string error)
-        {
-            ErrorOccurred?.Invoke(error);
-            UpdateStatusDisplay($"❌ {error}");
         }
 
         #endregion
@@ -1274,7 +1169,8 @@ namespace DS1000Z_E_USB_Control.Mathematics
                         break;
 
                     default:
-                        OnErrorOccurred($"Unknown math operation: {operationType}");
+                        await ApplySingleOperandOperationAsync(operationType,
+                            parameters.ContainsKey("source") ? parameters["source"].ToString() : "CHANnel1");
                         break;
                 }
             }
@@ -1284,18 +1180,60 @@ namespace DS1000Z_E_USB_Control.Mathematics
             }
         }
 
-        /// <summary>
-        /// Get list of all available math operations
-        /// </summary>
-        public string[] GetAllMathOperations()
+        #endregion
+
+        #region Utility Methods
+
+        private string GetSelectedTag(ComboBox comboBox)
         {
-            return new string[]
+            try
             {
-                "ADD", "SUBTract", "MULTiply", "DIVision",  // Basic operations
-                "FFT",                                       // FFT analysis
-                "FILTer",                                   // Digital filters
-                "INTG", "DIFF", "SQRT", "LOG", "LN", "EXP", "ABS"  // Advanced operations
-            };
+                return (comboBox?.SelectedItem as ComboBoxItem)?.Tag?.ToString();
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private void UpdateStatusDisplay(string message)
+        {
+            try
+            {
+                var statusText = this.FindName("StatusText") as TextBlock;
+                if (statusText != null)
+                {
+                    // Ensure UI update happens on UI thread
+                    if (Dispatcher.CheckAccess())
+                    {
+                        statusText.Text = message;
+                    }
+                    else
+                    {
+                        Dispatcher.Invoke(() => statusText.Text = message);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"Error updating status display: {ex.Message}");
+            }
+        }
+
+        #endregion
+
+        #region Event Helper Methods
+
+        private void OnStatusUpdated(string message)
+        {
+            StatusUpdated?.Invoke(message);
+            UpdateStatusDisplay(message);
+        }
+
+        private void OnErrorOccurred(string error)
+        {
+            ErrorOccurred?.Invoke(error);
+            UpdateStatusDisplay($"❌ {error}");
         }
 
         #endregion

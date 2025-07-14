@@ -357,30 +357,142 @@ namespace DS1000Z_E_USB_Control
             }
         }
 
+        ///// <summary>
+        ///// Read TimeBase settings from oscilloscope
+        ///// </summary>
+        //private bool ReadTimeBaseSettings()
+        //{
+        //    try
+        //    {
+        //        // Read timebase parameters
+        //        string mode = oscilloscope.SendQuery(":TIMebase:MODE?");
+        //        string mainScale = oscilloscope.SendQuery(":TIMebase:SCALe?");
+        //        string mainOffset = oscilloscope.SendQuery(":TIMebase:OFFSet?");
+
+        //        // Parse settings
+        //        if (!string.IsNullOrEmpty(mode))
+        //            TimeBaseSettings.Mode = mode.Trim();
+
+        //        if (!string.IsNullOrEmpty(mainScale) && double.TryParse(mainScale, NumberStyles.Float, CultureInfo.InvariantCulture, out double scaleVal))
+        //            TimeBaseSettings.MainScale = scaleVal;
+
+        //        if (!string.IsNullOrEmpty(mainOffset) && double.TryParse(mainOffset, NumberStyles.Float, CultureInfo.InvariantCulture, out double offsetVal))
+        //            TimeBaseSettings.MainOffset = offsetVal;
+
+        //        Log($"📊 TimeBase settings read: {TimeBaseSettings}");
+        //        return true;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Log($"❌ Error reading TimeBase settings: {ex.Message}");
+        //        return false;
+        //    }
+        //}
+
+
         /// <summary>
-        /// Read TimeBase settings from oscilloscope
+        /// Read TimeBase settings from oscilloscope - CORRECTED VERSION
         /// </summary>
         private bool ReadTimeBaseSettings()
         {
             try
             {
-                // Read timebase parameters
-                string mode = oscilloscope.SendQuery(":TIMebase:MODE?");
-                string mainScale = oscilloscope.SendQuery(":TIMebase:SCALe?");
-                string mainOffset = oscilloscope.SendQuery(":TIMebase:OFFSet?");
+                Log("Reading TimeBase settings...");
+                bool success = true;
 
-                // Parse settings
-                if (!string.IsNullOrEmpty(mode))
-                    TimeBaseSettings.Mode = mode.Trim();
+                // Read main timebase mode
+                string modeResponse = oscilloscope.SendCommand(":TIMebase:MODE?");
+                if (!string.IsNullOrEmpty(modeResponse))
+                {
+                    TimeBaseSettings.Mode = modeResponse.Trim().ToUpper();
+                }
+                else
+                {
+                    Log("⚠️ Failed to read timebase mode");
+                    success = false;
+                }
 
-                if (!string.IsNullOrEmpty(mainScale) && double.TryParse(mainScale, NumberStyles.Float, CultureInfo.InvariantCulture, out double scaleVal))
-                    TimeBaseSettings.MainScale = scaleVal;
+                // Read main timebase scale - CORRECTED COMMAND
+                string scaleResponse = oscilloscope.SendCommand(":TIMebase:MAIN:SCALe?");
+                if (!string.IsNullOrEmpty(scaleResponse) && double.TryParse(scaleResponse, out double scale))
+                {
+                    TimeBaseSettings.MainScale = scale;
+                }
+                else
+                {
+                    Log("⚠️ Failed to read main timebase scale");
+                    success = false;
+                }
 
-                if (!string.IsNullOrEmpty(mainOffset) && double.TryParse(mainOffset, NumberStyles.Float, CultureInfo.InvariantCulture, out double offsetVal))
-                    TimeBaseSettings.MainOffset = offsetVal;
+                // Read main timebase offset - CORRECTED COMMAND  
+                string offsetResponse = oscilloscope.SendCommand(":TIMebase:MAIN:OFFSet?");
+                if (!string.IsNullOrEmpty(offsetResponse) && double.TryParse(offsetResponse, out double offset))
+                {
+                    TimeBaseSettings.MainOffset = offset;
+                }
+                else
+                {
+                    Log("⚠️ Failed to read main timebase offset");
+                    success = false;
+                }
 
-                Log($"📊 TimeBase settings read: {TimeBaseSettings}");
-                return true;
+                // Read delayed timebase enable status
+                string delayEnabledResponse = oscilloscope.SendCommand(":TIMebase:DELay:ENABle?");
+                if (!string.IsNullOrEmpty(delayEnabledResponse))
+                {
+                    string delayEnabled = delayEnabledResponse.Trim();
+                    TimeBaseSettings.DelayEnabled = (delayEnabled == "1" || delayEnabled.ToUpper() == "ON");
+                }
+                else
+                {
+                    Log("⚠️ Failed to read delay enabled status");
+                    TimeBaseSettings.DelayEnabled = false;
+                }
+
+                // FIXED: Read delay scale/offset regardless of enabled status
+                string delayScaleResponse = oscilloscope.SendCommand(":TIMebase:DELay:SCALe?");
+                if (!string.IsNullOrEmpty(delayScaleResponse) && double.TryParse(delayScaleResponse, out double delayScale))
+                {
+                    TimeBaseSettings.DelayScale = delayScale;
+                }
+                else
+                {
+                    Log("⚠️ Failed to read delay timebase scale");
+                }
+
+                string delayOffsetResponse = oscilloscope.SendCommand(":TIMebase:DELay:OFFSet?");
+                if (!string.IsNullOrEmpty(delayOffsetResponse) && double.TryParse(delayOffsetResponse, out double delayOffset))
+                {
+                    TimeBaseSettings.DelayOffset = delayOffset;
+                }
+                else
+                {
+                    Log("⚠️ Failed to read delay timebase offset");
+                }
+
+                // Calculate time window (12 divisions for DS1000Z-E)
+                double timeWindow = TimeBaseSettings.MainScale * 12.0;
+
+                // FIXED: Safe property access with null checking
+                string mainScaleDisplay = TimeBaseSettings.MainScaleDisplay ?? $"{TimeBaseSettings.MainScale:E3}s/div";
+                string mainOffsetDisplay = TimeBaseSettings.MainOffsetDisplay ?? $"{TimeBaseSettings.MainOffset:E3}s";
+
+                string delayInfo = "";
+                if (TimeBaseSettings.DelayEnabled)
+                {
+                    string delayScaleDisplay = TimeBaseSettings.DelayScaleDisplay ?? $"{TimeBaseSettings.DelayScale:E3}s/div";
+                    string delayOffsetDisplay = TimeBaseSettings.DelayOffsetDisplay ?? $"{TimeBaseSettings.DelayOffset:E3}s";
+                    delayInfo = $", DelayScale={delayScaleDisplay}, DelayOffset={delayOffsetDisplay}";
+                }
+
+                Log($"✅ TimeBase settings read: Mode={TimeBaseSettings.Mode}, " +
+                    $"Scale={mainScaleDisplay}, " +
+                    $"Offset={mainOffsetDisplay}, " +
+                    $"Window={timeWindow:E3}s, " +
+                    $"DelayEnabled={TimeBaseSettings.DelayEnabled}" +
+                    delayInfo);
+
+                return success;
             }
             catch (Exception ex)
             {
@@ -388,6 +500,85 @@ namespace DS1000Z_E_USB_Control
                 return false;
             }
         }
+
+        /// <summary>
+        /// Diagnostic method to test all timebase SCPI commands - CORRECTED VERSION
+        /// </summary>
+        public void DiagnoseTimeBaseCommands()
+        {
+            try
+            {
+                Log("🔍 Diagnosing TimeBase SCPI commands...");
+
+                if (!oscilloscope.IsConnected)
+                {
+                    Log("❌ Cannot diagnose - oscilloscope not connected");
+                    return;
+                }
+
+                // Test each command individually with correct syntax
+                var commands = new[]
+                {
+            ":TIMebase:MODE?",           // Mode (MAIN/DELayed)
+            ":TIMebase:MAIN:SCALe?",     // CORRECTED: Main scale 
+            ":TIMebase:MAIN:OFFSet?",    // CORRECTED: Main offset
+            ":TIMebase:DELay:ENABle?",   // Delay enabled
+            ":TIMebase:DELay:SCALe?",    // Delay scale
+            ":TIMebase:DELay:OFFSet?"    // Delay offset
+        };
+
+                int successCount = 0;
+                int totalCommands = commands.Length;
+
+                foreach (string command in commands)
+                {
+                    try
+                    {
+                        string response = oscilloscope.SendCommand(command);
+
+                        if (!string.IsNullOrEmpty(response))
+                        {
+                            Log($"✅ {command} → '{response.Trim()}'");
+                            successCount++;
+                        }
+                        else
+                        {
+                            Log($"⚠️ {command} → (empty response)");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log($"❌ {command} → ERROR: {ex.Message}");
+                    }
+
+                    // Small delay between commands
+                    System.Threading.Thread.Sleep(50);
+                }
+
+                Log($"🔍 TimeBase diagnosis complete: {successCount}/{totalCommands} commands successful");
+
+                if (successCount == totalCommands)
+                {
+                    Log("✅ All timebase commands working correctly");
+                }
+                else if (successCount == 0)
+                {
+                    Log("❌ No timebase commands working - check SCPI connection");
+                }
+                else
+                {
+                    Log($"⚠️ Partial success - {totalCommands - successCount} commands failed");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ TimeBase diagnosis failed: {ex.Message}");
+            }
+        }
+
+
+
+
 
         /// <summary>
         /// Read device information

@@ -2347,80 +2347,30 @@ namespace Rigol_DS1000Z_E_Control
 
         #region Event Argument Classes - Add These if Missing
 
-        ///// <summary>
-        ///// Event arguments for SCPI commands
-        ///// </summary>
-        //public class SCPICommandEventArgs : EventArgs
-        //{
-        //    public string Command { get; }
-        //    public string Source { get; }
-        //    public string Category { get; }
+        // Add this to your MainWindow.xaml.cs class
 
-        //    public SCPICommandEventArgs(string command, string source = "", string category = "")
-        //    {
-        //        Command = command;
-        //        Source = source;
-        //        Category = category;
-        //    }
-        //}
+        /// <summary>
+        /// Notify mathematics panel when timebase changes
+        /// Call this whenever the timebase is changed
+        /// </summary>
+        private void NotifyMathematicsPanelTimebaseChanged(double newTimebaseSeconds)
+        {
+            try
+            {
+                // If mathematics window is open, update its timebase
+                if (_mathematicsWindow?.IsVisible == true)
+                {
+                    _mathematicsWindow.MathPanel.UpdateTimebase(newTimebaseSeconds);
+                    Log($"📐 Mathematics panel timebase updated: {newTimebaseSeconds * 1000:F1}ms");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"⚠️ Error updating mathematics panel timebase: {ex.Message}");
+            }
+        }
 
-        ///// <summary>
-        ///// Event arguments for errors
-        ///// </summary>
-        //public class ErrorEventArgs : EventArgs
-        //{
-        //    public string Error { get; }
-        //    public string Source { get; set; }
-        //    public string Category { get; set; }
-        //    public ErrorSeverity Severity { get; set; }
 
-        //    public ErrorEventArgs(string error)
-        //    {
-        //        Error = error;
-        //        Severity = ErrorSeverity.Error;
-        //    }
-        //}
-
-        ///// <summary>
-        ///// Event arguments for status updates
-        ///// </summary>
-        //public class StatusEventArgs : EventArgs
-        //{
-        //    public string Message { get; }
-        //    public StatusLevel Level { get; }
-        //    public string Source { get; set; }
-        //    public string Category { get; set; }
-
-        //    public StatusEventArgs(string message, StatusLevel level = StatusLevel.Info, string source = "", string category = "")
-        //    {
-        //        Message = message;
-        //        Level = level;
-        //        Source = source;
-        //        Category = category;
-        //    }
-        //}
-
-        ///// <summary>
-        ///// Error severity levels
-        ///// </summary>
-        //public enum ErrorSeverity
-        //{
-        //    Info,
-        //    Warning,
-        //    Error,
-        //    Critical
-        //}
-
-        ///// <summary>
-        ///// Status levels
-        ///// </summary>
-        //public enum StatusLevel
-        //{
-        //    Info,
-        //    Warning,
-        //    Success,
-        //    Error
-        //}
 
         #endregion
 

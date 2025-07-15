@@ -40,11 +40,6 @@ namespace DS1000Z_E_USB_Control.TimeBase
             controller.TimeBaseModeComboBox = TimeBaseModeComboBox;
             controller.HorizontalScaleComboBox = HorizontalScaleComboBox;
 
-            // REMOVED: Slider assignments (now using arrow control)
-            // controller.HorizontalOffsetSlider = HorizontalOffsetSlider;
-            // controller.OffsetValueText = OffsetValueText;
-            // controller.OffsetPercentageDisplay = OffsetPercentageDisplay;
-
             // Wire up display controls
             controller.TimeWindowText = TimeWindowText;
             controller.SampleRateText = SampleRateText;
@@ -89,8 +84,6 @@ namespace DS1000Z_E_USB_Control.TimeBase
             {
                 HorizontalOffsetArrows.GraticuleMovement += HorizontalOffsetArrows_GraticuleMovement;
             }
-
-
 
             // Subscribe to settings changes to update arrow control
             if (controller != null)
@@ -221,6 +214,18 @@ namespace DS1000Z_E_USB_Control.TimeBase
                     $"Offset={FormatTime(settings.MainOffset)}, Window={FormatTime(settings.TimeWindow)}";
             }
         }
+
+        /// <summary>
+        /// Notify parent window to update mathematics panel timebase
+        /// </summary>
+        private void NotifyMathematicsPanelTimebaseChanged(double newTimebaseSeconds)
+        {
+            // Get reference to MainWindow and call the notification method
+            var mainWindow = Window.GetWindow(this) as MainWindow;
+            mainWindow?.NotifyMathematicsPanelTimebaseChanged(newTimebaseSeconds);
+        }
+
+
 
         #region Event Handlers
 

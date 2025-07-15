@@ -161,6 +161,8 @@ namespace DS1000Z_E_USB_Control.TimeBase
                 Log($"TimeBase main offset set to {offset:F6}s");
                 UpdateCurrentSettingsDisplay();
                 SettingsChanged?.Invoke(this, EventArgs.Empty);
+                // 🔥 ADD THIS EVENT 🔥
+                TimebaseChanged?.Invoke(this, scale);
             }
             else
             {

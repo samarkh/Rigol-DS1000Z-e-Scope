@@ -18,6 +18,7 @@ namespace DS1000Z_E_USB_Control.TimeBase
 
         public event EventHandler<string> LogEvent;
         public event EventHandler SettingsChanged;
+        public event EventHandler<double> TimebaseChanged;
 
         // UI Control references
         public ComboBox HorizontalScaleComboBox { get; set; }

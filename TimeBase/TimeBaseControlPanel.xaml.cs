@@ -39,6 +39,9 @@ namespace DS1000Z_E_USB_Control.TimeBase
             controller = new TimeBaseController(oscilloscope);
             controller.LogEvent += (sender, message) => LogEvent?.Invoke(this, message);
             controller.SettingsChanged += (sender, e) => LogEvent?.Invoke(this, "TimeBase settings changed");
+            controller.TimebaseChanged += OnTimebaseChanged;
+
+
 
             // Wire up UI controls to the controller
             controller.TimeBaseModeComboBox = TimeBaseModeComboBox;
@@ -229,7 +232,11 @@ namespace DS1000Z_E_USB_Control.TimeBase
             mainWindow?.NotifyMathematicsPanelTimebaseChanged(newTimebaseSeconds);
         }
 
-
+        private void OnTimebaseChanged(object sender, double newTimebaseSeconds)
+        {
+            // Notify the mathematics panel about the timebase change
+            NotifyMathematicsPanelTimebaseChanged(newTimebaseSeconds);
+        }
 
         #region Event Handlers
 

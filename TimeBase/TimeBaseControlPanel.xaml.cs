@@ -18,6 +18,10 @@ namespace DS1000Z_E_USB_Control.TimeBase
         private bool isInitialized = false;
 
         public event EventHandler<string> LogEvent;
+        public event EventHandler SettingsChanged;
+        // Add this new event:
+        public event EventHandler<double> TimebaseChanged;
+
 
         public TimeBaseControlPanel()
         {

@@ -2353,7 +2353,7 @@ namespace Rigol_DS1000Z_E_Control
         /// Notify mathematics panel when timebase changes
         /// Call this whenever the timebase is changed
         /// </summary>
-        private void NotifyMathematicsPanelTimebaseChanged(double newTimebaseSeconds)
+        public void NotifyMathematicsPanelTimebaseChanged(double newTimebaseSeconds)
         {
             try
             {

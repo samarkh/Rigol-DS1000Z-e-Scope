@@ -136,6 +136,8 @@ namespace DS1000Z_E_USB_Control.TimeBase
                 UpdateSliderRange();
                 UpdateCurrentSettingsDisplay();
                 SettingsChanged?.Invoke(this, EventArgs.Empty);
+                // Add this line to notify when scale changes:
+                TimebaseChanged?.Invoke(this, scale);
             }
             else
             {
@@ -161,8 +163,8 @@ namespace DS1000Z_E_USB_Control.TimeBase
                 Log($"TimeBase main offset set to {offset:F6}s");
                 UpdateCurrentSettingsDisplay();
                 SettingsChanged?.Invoke(this, EventArgs.Empty);
-                // 🔥 ADD THIS EVENT 🔥
-                TimebaseChanged?.Invoke(this, scale);
+                // Fix: Use settings.MainScale instead of undefined 'scale'
+                TimebaseChanged?.Invoke(this, settings.MainScale);
             }
             else
             {
@@ -633,7 +635,8 @@ namespace DS1000Z_E_USB_Control.TimeBase
             var selectedItem = HorizontalScaleComboBox?.SelectedItem as ComboBoxItem;
             if (selectedItem != null && double.TryParse(selectedItem.Tag.ToString(), out double scale))
             {
-                SetHorizontalOffset(scale);
+                // Fix: Call SetHorizontalScale instead of SetHorizontalOffset
+                SetHorizontalScale(scale);
             }
         }
 

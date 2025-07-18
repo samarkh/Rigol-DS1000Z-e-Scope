@@ -277,6 +277,7 @@ namespace DS1000Z_E_USB_Control.Mathematics
                     if (IsVisible)
                     {
                         _ = UpdateFrequencyTooltipsAsync();
+                        OnStatusUpdated($"📐 Tooltips updated for timebase: {timebaseSeconds * 1000:F1}ms");
                     }
                 }
             }

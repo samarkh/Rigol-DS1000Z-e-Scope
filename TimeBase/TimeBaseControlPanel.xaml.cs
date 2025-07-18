@@ -227,9 +227,19 @@ namespace DS1000Z_E_USB_Control.TimeBase
         /// </summary>
         private void NotifyMathematicsPanelTimebaseChanged(double newTimebaseSeconds)
         {
+            LogEvent?.Invoke(this, $"🔔 Attempting to notify Mathematics panel: {newTimebaseSeconds * 1000:F1}ms");
+
             // Get reference to MainWindow and call the notification method
             var mainWindow = Window.GetWindow(this) as MainWindow;
-            mainWindow?.NotifyMathematicsPanelTimebaseChanged(newTimebaseSeconds);
+            if (mainWindow != null)
+            {
+                mainWindow.NotifyMathematicsPanelTimebaseChanged(newTimebaseSeconds);
+                LogEvent?.Invoke(this, $"✅ MainWindow notified successfully");
+            }
+            else
+            {
+                LogEvent?.Invoke(this, $"❌ Could not find MainWindow");
+            }
         }
 
         private void OnTimebaseChanged(object sender, double newTimebaseSeconds)
@@ -267,6 +277,11 @@ namespace DS1000Z_E_USB_Control.TimeBase
             {
                 controller.SetHorizontalScale(scale);
                 UpdateHorizontalOffsetArrowControl(); // Update range when scale changes
+
+                // DIRECTLY NOTIFY THE MATHEMATICS PANEL
+                NotifyMathematicsPanelTimebaseChanged(scale);
+
+                LogEvent?.Invoke(this, $"Timebase changed to {scale * 1000:F1}ms, notifying Mathematics panel");
             }
         }
 

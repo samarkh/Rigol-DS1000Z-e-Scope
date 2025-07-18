@@ -2358,10 +2358,14 @@ namespace Rigol_DS1000Z_E_Control
             try
             {
                 // If mathematics window is open, update its timebase
-                if (_mathematicsWindow?.IsVisible == true)
+                if (_mathematicsWindow?.IsVisible == true && _mathematicsWindow.MathPanel != null)
                 {
                     _mathematicsWindow.MathPanel.UpdateTimebase(newTimebaseSeconds);
                     Log($"📐 Mathematics panel timebase updated: {newTimebaseSeconds * 1000:F1}ms");
+                }
+                else
+                {
+                    Log($"📐 Mathematics panel not available for timebase update");
                 }
             }
             catch (Exception ex)
@@ -2369,7 +2373,6 @@ namespace Rigol_DS1000Z_E_Control
                 Log($"⚠️ Error updating mathematics panel timebase: {ex.Message}");
             }
         }
-
 
 
         #endregion
